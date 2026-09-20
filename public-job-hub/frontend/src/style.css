@@ -1,0 +1,510 @@
+/* 전역 글꼴·색상과 기본 박스 모델. */
+:root {
+  font-family: Arial, 'Noto Sans KR', sans-serif;
+  color: #132136;
+  background: #f5f8fc;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+a {
+  text-decoration: none;
+  color: inherit;
+}
+/* 상단 서비스 이름과 채용정보·마이페이지 내비게이션. */
+header {
+  background: #fff;
+  border-bottom: 1px solid #e4eaf2;
+}
+.bar {
+  max-width: 1280px;
+  margin: auto;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 24px;
+  font-size: 13px;
+}
+.brand {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+.bar > span {
+  color: #67758b;
+}
+nav {
+  margin-left: auto;
+  display: flex;
+  gap: 25px;
+  font-weight: 700;
+}
+nav a:hover {
+  color: #1c60af;
+}
+/* 본문 제목, 검색창, 결과 요약과 5열 공고 목록. */
+main {
+  max-width: 1280px;
+  margin: auto;
+  padding: 36px 24px 70px;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+}
+.eyebrow {
+  margin: 0 0 7px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #2667b6;
+  letter-spacing: 0.14em;
+}
+h1 {
+  margin: 0;
+  font-size: 27px;
+  letter-spacing: -0.05em;
+}
+.sub {
+  margin: 8px 0 0;
+  color: #758399;
+  font-size: 13px;
+}
+.search {
+  display: flex;
+  background: white;
+  border: 1px solid #dce5f0;
+  border-radius: 10px;
+  overflow: hidden;
+  width: 310px;
+  height: 42px;
+}
+.search input {
+  border: 0;
+  outline: 0;
+  padding: 0 13px;
+  min-width: 0;
+  flex: 1;
+}
+.search button {
+  border: 0;
+  background: #143d71;
+  color: white;
+  padding: 0 17px;
+  cursor: pointer;
+}
+.meta {
+  display: flex;
+  justify-content: space-between;
+  margin: 25px 0 12px;
+  color: #68788e;
+  font-size: 12px;
+}
+
+/* 오프라인 앱 셸과 서버 데이터 기능의 차이를 사용자에게 알린다. */
+.offline-notice {
+  background: #fff8e8;
+  border: 1px solid #eedca8;
+  border-radius: 8px;
+  color: #74551a;
+  font-size: 13px;
+  padding: 12px 14px;
+}
+/* 데스크톱에서 한 페이지의 공고를 5열로 배치한다. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+/* 공고 카드와 스크랩·지원 완료 상태별 외곽선 색상. */
+.card {
+  min-height: 295px;
+  background: #fff;
+  border: 2px solid #e0e7f0;
+  border-radius: 13px;
+  padding: 17px;
+  box-shadow: 0 4px 12px #1e345012;
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px #1e34501f;
+}
+.card.saved {
+  border-color: #3677ce;
+}
+.card.applied {
+  border-color: #22a06b;
+}
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 5px;
+}
+.tag {
+  font-size: 10px;
+  font-weight: 800;
+}
+.source {
+  font-size: 10px;
+  color: #8490a0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card h2 {
+  font-size: 15px;
+  line-height: 1.3;
+  letter-spacing: -0.045em;
+  color: #12315e;
+  margin: 12px 0 18px;
+  min-height: 40px;
+}
+.details {
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: auto;
+}
+.details > span {
+  color: #7c8999;
+}
+.details strong {
+  font-size: 12px;
+}
+.pills {
+  display: flex;
+  gap: 5px;
+  margin-top: 3px;
+}
+.pills span {
+  background: #eaf1fc;
+  border-radius: 15px;
+  padding: 3px 8px;
+  font-size: 10px;
+}
+.date {
+  border-top: 1px solid #edf0f4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 15px;
+  padding-top: 11px;
+}
+.date > span {
+  font-size: 20px;
+}
+.date div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.date small {
+  color: #7c8999;
+  font-size: 10px;
+}
+.date strong {
+  font-size: 11px;
+}
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 13px;
+  gap: 5px;
+}
+.actions a {
+  font-size: 11px;
+  color: #2867ad;
+  font-weight: 700;
+}
+button {
+  cursor: pointer;
+}
+.actions button,
+.applied-form button {
+  font-size: 11px;
+  border: 1px solid #d5e0ee;
+  background: white;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #1e4776;
+}
+.applied-form {
+  margin-top: 7px;
+}
+.applied-form button {
+  width: 100%;
+  background: #f5faf7;
+  color: #18815b;
+}
+.empty {
+  text-align: center;
+  padding: 90px;
+  color: #8b96a6;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 28px;
+  font-size: 13px;
+}
+.pagination a {
+  font-weight: 700;
+  color: #2867ad;
+}
+/* 작은 화면에서는 카드 열 수를 단계적으로 줄인다. */
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 650px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bar > span {
+    display: none;
+  }
+  .heading {
+    display: block;
+  }
+  .search {
+    margin-top: 20px;
+    width: 100%;
+  }
+  .meta span:last-child {
+    display: none;
+  }
+}
+@media (max-width: 410px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* React 버튼의 기본 스타일과 로그인한 회원 이름 표시. */
+.brand,
+nav button {
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.brand {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+nav button {
+  font-weight: 700;
+}
+nav button.active {
+  color: #1c60af;
+}
+.actions button:disabled,
+.applied-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.applied-button {
+  margin-top: 7px;
+  width: 100%;
+  font-size: 11px;
+  border: 1px solid #d5e0ee;
+  background: #f5faf7;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #18815b;
+}
+.status {
+  font-size: 12px;
+  color: #68788e;
+  margin: 0 0 12px;
+}
+.status-error,
+.error {
+  color: #ad3440;
+}
+.error {
+  background: #fff1f2;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+}
+.pagination button {
+  border: 0;
+  background: transparent;
+  color: #2867ad;
+  font-weight: 700;
+}
+.pagination button:disabled {
+  color: #a8b3c0;
+  cursor: default;
+}
+/* 제목 클릭과 미니탭 열기 버튼은 페이지 이동 없이 상세 패널을 연다. */
+.title-button {
+  display: block;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.title-button:hover h2 {
+  color: #2867ad;
+}
+.preview-link {
+  border: 0 !important;
+  background: none !important;
+  padding: 0 !important;
+  font-weight: 700;
+  color: #2867ad !important;
+}
+.user-name {
+  font-size: 12px;
+  color: #65768d;
+  white-space: nowrap;
+}
+/* 로그인·회원가입 대화상자와 배경 오버레이. */
+.overlay,
+/* 우측 미니탭은 서버에서 가져온 원문 텍스트를 스크롤해 보여준다. */
+.preview-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #0c1c36a3;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.auth-dialog {
+  position: relative;
+  background: white;
+  width: min(100%, 420px);
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 24px 70px #0b1c3650;
+}
+.auth-dialog h2 {
+  font-size: 25px;
+  margin: 0 0 24px;
+}
+.auth-dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.auth-dialog label {
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.auth-dialog input {
+  height: 42px;
+  border: 1px solid #cdd9e7;
+  border-radius: 8px;
+  padding: 0 11px;
+  font: inherit;
+}
+.auth-dialog .primary {
+  height: 44px;
+  background: #173f76;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+.close {
+  position: absolute;
+  right: 18px;
+  top: 14px;
+  border: 0;
+  background: none;
+  font-size: 28px;
+  color: #738399;
+}
+.preview-backdrop {
+  justify-content: flex-end;
+  padding: 0;
+}
+.preview-panel {
+  height: 100%;
+  width: min(100%, 1050px);
+  background: white;
+  box-shadow: -15px 0 45px #0b1c3640;
+  display: flex;
+  flex-direction: column;
+}
+.preview-head {
+  height: 62px;
+  border-bottom: 1px solid #e4eaf2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  font-weight: 800;
+  color: #173f76;
+}
+.preview-head button {
+  border: 0;
+  background: none;
+  font-size: 28px;
+  color: #738399;
+}
+.preview-body {
+  padding: 24px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.preview-body h2 {
+  font-size: 22px;
+  line-height: 1.35;
+  color: #12315e;
+  margin: 0 0 12px;
+}
+.preview-org {
+  font-weight: 700;
+  color: #5f728a;
+  border-bottom: 1px solid #e4eaf2;
+  padding-bottom: 20px;
+}
+.preview-frame {
+  width: 100%;
+  min-height: 420px;
+  flex: 1;
+  border: 1px solid #e4eaf2;
+  border-radius: 8px;
+  background: #fff;
+}
+@media (max-width: 750px) {
+  .bar {
+    gap: 8px;
+  }
+  .bar nav {
+    gap: 8px;
+  }
+  .user-name {
+    display: none;
+  }
+}
