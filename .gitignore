@@ -1,0 +1,17 @@
+.gradle/
+build/
+out/
+bin/
+.idea/
+.vscode/
+*.iml
+node_modules/
+dist/
+data/
+*.log
+*.trace.db
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
