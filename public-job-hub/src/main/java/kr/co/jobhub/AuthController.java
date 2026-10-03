@@ -22,12 +22,12 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthController {
     /** 회원가입 입력값. 서버에서 이메일 형식과 비밀번호 길이를 검증한다. */
     public record RegisterRequest(@Email @NotBlank String email,
-                                  @NotBlank @Size(min = 8, max = 100) String password,
+                                  @NotBlank @Size(min = 10, max = 100) String password,
                                   @NotBlank @Size(max = 80) String displayName) {
     }
 
     /** 비밀번호 해시를 제외하고 화면에 공개할 회원 정보. */
-    public record Profile(Long id, String email, String displayName) {
+    public record Profile(Long id, String email, String displayName, boolean admin) {
     }
 
     /** 로그인 여부를 동일한 JSON 구조로 반환하기 위한 응답. */
@@ -59,13 +59,17 @@ public class AuthController {
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
             return new Session(null);
         }
-        return new Session(users.findByEmail(auth.getName()).map(this::profile).orElse(null));
+        boolean admin = auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        return new Session(users.findByEmail(auth.getName()).map(user -> profile(user, admin)).orElse(null));
     }
 
     /** 신규 계정을 만들고 비밀번호는 BCrypt 해시로 변환해 저장한다. */
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public Profile register(@Valid @RequestBody RegisterRequest request) {
+        if (!request.password().matches("^(?=.*[A-Za-z])(?=.*\\d).+$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호는 영문과 숫자를 모두 포함해야 합니다.");
+        }
         String email = request.email().trim().toLowerCase();
         if (users.existsByEmail(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다.");
@@ -75,14 +79,14 @@ public class AuthController {
         user.passwordHash = passwords.encode(request.password());
         user.displayName = request.displayName().trim();
         try {
-            return profile(users.save(user));
+            return profile(users.save(user), false);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다.");
         }
     }
 
     /** DB 엔티티에서 클라이언트에 필요한 안전한 필드만 골라 반환한다. */
-    private Profile profile(AppUser user) {
-        return new Profile(user.id, user.email, user.displayName);
+    private Profile profile(AppUser user, boolean admin) {
+        return new Profile(user.id, user.email, user.displayName, admin);
     }
 }

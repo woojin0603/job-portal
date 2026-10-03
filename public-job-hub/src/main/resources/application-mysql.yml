@@ -1,0 +1,25 @@
+# 운영 또는 전환 테스트에서 --spring.profiles.active=mysql 로 선택하는 MySQL 전용 설정.
+spring:
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/public_job_hub?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${MYSQL_USERNAME:jobhub}
+    password: ${MYSQL_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: JobHubMySqlPool
+      maximum-pool-size: ${MYSQL_MAX_POOL_SIZE:10}
+      minimum-idle: ${MYSQL_MIN_IDLE:2}
+      connection-timeout: 10000
+      validation-timeout: 5000
+  jpa:
+    hibernate:
+      # 최초 전환 단계에서는 기존 엔티티로 테이블을 생성·보완한다.
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Seoul
+        format_sql: false
+  h2:
+    console:
+      enabled: false

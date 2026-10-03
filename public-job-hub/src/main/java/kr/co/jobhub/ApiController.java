@@ -32,11 +32,16 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api")
 public class ApiController {
+    public record PositionDto(String standardCategory, String originalName, Integer headcount,
+                              String workRegion, String requirements) {}
+
     /** 카드 한 장에 필요한 공고 정보와 현재 회원의 개인 상태. */
     public record PostingDto(Long id, String source, String title, String organization, String region,
                              String employmentType, String organizationType, String publicInstitutionType,
                              String mobilityType, LocalDate postedAt, LocalDate deadline,
-                             String sourceUrl, boolean scrapped, boolean applied) {
+                             String sourceUrl, boolean scrapped, boolean applied,
+                             String applicationStage, LocalDate nextStepDate, String applicationMemo,
+                             List<PositionDto> positions) {
     }
 
     /** 현재 페이지 목록과 다음 페이지 여부 및 최근 수집 상태. */
@@ -55,16 +60,18 @@ public class ApiController {
     private final JobPostingRepository postings;
     private final ScrapRepository scraps;
     private final AppUserRepository users;
+    private final RecruitmentPositionRepository positions;
     private final CrawlService crawler;
     private final Set<String> sourceHosts;
 
     /** 공고·회원·스크랩 저장소와 수집 상태 제공자를 주입받는다. */
     public ApiController(JobPostingRepository postings, ScrapRepository scraps,
-                         AppUserRepository users, CrawlService crawler,
+                         AppUserRepository users, RecruitmentPositionRepository positions, CrawlService crawler,
                          @Value("${jobhub.crawl.sources}") String configuredSources) {
         this.postings = postings;
         this.scraps = scraps;
         this.users = users;
+        this.positions = positions;
         this.crawler = crawler;
         this.sourceHosts = java.util.Arrays.stream(configuredSources.split(","))
                 .map(raw -> raw.split("\\|", -1))
@@ -94,10 +101,16 @@ public class ApiController {
     @GetMapping("/postings")
     public PostingPage list(@RequestParam(defaultValue = "") String q,
                             @RequestParam(defaultValue = "0") int page,
-                            @RequestParam(defaultValue = "false") boolean mine, Principal principal) {
+                            @RequestParam(defaultValue = "false") boolean mine,
+                            @RequestParam(defaultValue = "") String region,
+                            @RequestParam(defaultValue = "") String regionFull,
+                            @RequestParam(defaultValue = "") String district,
+                            @RequestParam(defaultValue = "") String mobility,
+                            @RequestParam(defaultValue = "") String jobCategory, Principal principal) {
         long userId = principal == null ? 0L : user(principal).id;
         int safePage = Math.max(0, page);
-        var result = postings.search(q, mine, LocalDate.now(ZoneId.of("Asia/Seoul")), userId,
+        var result = postings.search(q, mine, LocalDate.now(ZoneId.of("Asia/Seoul")), region, regionFull,
+                district, mobility, jobCategory, userId,
                 PageRequest.of(safePage, 20));
         Map<Long, Scrap> saved = scraps.findByUserId(userId).stream()
                 .collect(Collectors.toMap(s -> s.posting.getId(), Function.identity()));
@@ -105,14 +118,21 @@ public class ApiController {
                 .map(p -> {
                     Scrap s = saved.get(p.id);
                     String publicInstitutionType = p.publicInstitutionType;
-                    if (publicInstitutionType == null && "JOB-ALIO".equals(p.source)) {
-                        publicInstitutionType = "CENTRAL_PUBLIC";
+                    // 서비스에서는 법적 설립 주체보다 사용자가 요청한 실제 근무 이동 범위를 우선한다.
+                    if ("PUBLIC".equals(p.organizationType)) {
+                        publicInstitutionType = "ROTATIONAL".equals(p.mobilityType) ? "CENTRAL_PUBLIC"
+                                : "FIXED".equals(p.mobilityType) ? "LOCAL_PUBLIC" : null;
                     }
                     return new PostingDto(p.id, p.source, p.title, p.organization, p.region,
                             p.employmentType, p.organizationType, publicInstitutionType,
                             p.mobilityType == null ? "UNKNOWN" : p.mobilityType,
                             p.postedAt, p.deadline, p.sourceUrl,
-                            s != null, s != null && s.applied);
+                            s != null, s != null && s.applied,
+                            s == null || s.stage == null ? "SAVED" : s.stage,
+                            s == null ? null : s.nextStepDate, s == null ? "" : s.memo,
+                            positions.findByPostingIdOrderById(p.id).stream()
+                                    .map(rp -> new PositionDto(rp.standardCategory, rp.originalName, rp.headcount,
+                                            rp.workRegion, rp.requirements)).toList());
                 })
                 .toList();
         return new PostingPage(items, result.getTotalElements(), safePage, result.hasNext(), crawler.status());

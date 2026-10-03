@@ -20,8 +20,16 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
      */
     @Query("select p from JobPosting p where (p.deadline is null or p.deadline >= :today) and " +
            "(lower(p.title) like lower(concat('%', :q, '%')) or lower(p.organization) like lower(concat('%', :q, '%'))) " +
+           "and (:region = '' or lower(p.region) like lower(concat('%', :region, '%')) " +
+           "or lower(p.region) like lower(concat('%', :regionFull, '%'))) " +
+           "and (:district = '' or lower(p.region) like lower(concat('%', :district, '%'))) " +
+           "and (:mobility = '' or p.mobilityType = :mobility) " +
+           "and (:jobCategory = '' or exists (select rp.id from RecruitmentPosition rp where rp.posting = p and rp.standardCategory = :jobCategory)) " +
            "and (:mine = false or exists (select s.id from Scrap s where s.posting = p and s.user.id = :userId)) " +
            "order by case when p.deadline is null then 1 else 0 end, p.deadline asc, p.updatedAt desc")
     Page<JobPosting> search(@Param("q") String q, @Param("mine") boolean mine, @Param("today") LocalDate today,
+                            @Param("region") String region, @Param("regionFull") String regionFull,
+                            @Param("district") String district, @Param("mobility") String mobility,
+                            @Param("jobCategory") String jobCategory,
                             @Param("userId") Long userId, Pageable pageable);
 }

@@ -49,3 +49,6 @@ data/
 # OS 파일
 .DS_Store
 Thumbs.db
+
+public-job-hub/.gradle-user-home/
+

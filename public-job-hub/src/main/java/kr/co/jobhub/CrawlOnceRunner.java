@@ -16,24 +16,29 @@ public class CrawlOnceRunner implements ApplicationRunner {
     private final CrawlService crawler;
     private final ConfigurableApplicationContext context;
     private final boolean runOnce;
+    private final boolean reanalyzeExisting;
 
     /** 수집 서비스와 실행 옵션을 주입받는다. 기본 실행에서는 아무 동작도 하지 않는다. */
     public CrawlOnceRunner(CrawlService crawler, ConfigurableApplicationContext context,
-                           @Value("${jobhub.crawl.run-once:false}") boolean runOnce) {
+                           @Value("${jobhub.crawl.run-once:false}") boolean runOnce,
+                           @Value("${jobhub.crawl.reanalyze-existing:false}") boolean reanalyzeExisting) {
         this.crawler = crawler;
         this.context = context;
         this.runOnce = runOnce;
+        this.reanalyzeExisting = reanalyzeExisting;
     }
 
     /** 요청된 경우 즉시 수집하고 결과를 출력한 뒤 임시 서버 프로세스를 닫는다. */
     @Override
     public void run(ApplicationArguments args) {
-        if (!runOnce) {
+        if (!runOnce && !reanalyzeExisting) {
             return;
         }
-        crawler.crawl();
+        if (reanalyzeExisting) crawler.reanalyzeExisting();
+        else crawler.crawl();
         CrawlService.Status status = crawler.status();
-        System.out.println("Immediate crawl: count=" + status.lastCount() + ", error=" + status.error());
+        System.out.println((reanalyzeExisting ? "Existing posting reanalysis" : "Immediate crawl")
+                + ": count=" + status.lastCount() + ", error=" + status.error());
         SpringApplication.exit(context);
     }
 }

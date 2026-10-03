@@ -18,6 +18,12 @@ spring:
 # 외부 공고 수집과 AI 보완 추출에 사용하는 서비스 전용 설정.
 # OpenAI 키는 파일에 넣지 않고 환경 변수 OPENAI_API_KEY에서 읽는다.
 jobhub:
+  # 쉼표로 구분한 이메일만 관리자 검수 API에 접근할 수 있다.
+  admin:
+    emails: ${JOBHUB_ADMIN_EMAILS:}
+  security:
+    login-max-failures: ${JOBHUB_LOGIN_MAX_FAILURES:5}
+    login-window-minutes: ${JOBHUB_LOGIN_WINDOW_MINUTES:15}
   # 실제 사이트 목록을 읽는 예약 작업의 활성화 여부와 기본 출처.
   crawl:
     enabled: true
@@ -30,3 +36,6 @@ jobhub:
   ai:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-4.1-mini}
+    # 이미지형 PDF OCR은 API 비용이 발생하므로 환경 변수로 명시적으로 켠다.
+    ocr-enabled: ${JOBHUB_OCR_ENABLED:false}
+    ocr-max-pages: ${JOBHUB_OCR_MAX_PAGES:3}

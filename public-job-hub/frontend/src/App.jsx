@@ -8,20 +8,311 @@ async function getJson(url, options = {}) {
   return data
 }
 
+const REGION_LEVELS = [
+  { code: '서울', label: '서울특별시' },
+  { code: '부산', label: '부산광역시' },
+  { code: '대구', label: '대구광역시' },
+  { code: '인천', label: '인천광역시' },
+  { code: '광주', label: '광주광역시' },
+  { code: '대전', label: '대전광역시' },
+  { code: '울산', label: '울산광역시' },
+  { code: '세종', label: '세종특별자치시' },
+  { code: '경기', label: '경기도' },
+  { code: '강원', label: '강원특별자치도' },
+  { code: '충북', label: '충청북도' },
+  { code: '충남', label: '충청남도' },
+  { code: '전북', label: '전북특별자치도' },
+  { code: '전남', label: '전라남도' },
+  { code: '경북', label: '경상북도' },
+  { code: '경남', label: '경상남도' },
+  { code: '제주', label: '제주특별자치도' },
+]
+
+const REGION_DISTRICTS = {
+  서울: [
+    '종로구',
+    '중구',
+    '용산구',
+    '성동구',
+    '광진구',
+    '동대문구',
+    '중랑구',
+    '성북구',
+    '강북구',
+    '도봉구',
+    '노원구',
+    '은평구',
+    '서대문구',
+    '마포구',
+    '양천구',
+    '강서구',
+    '구로구',
+    '금천구',
+    '영등포구',
+    '동작구',
+    '관악구',
+    '서초구',
+    '강남구',
+    '송파구',
+    '강동구',
+  ],
+  부산: [
+    '중구',
+    '서구',
+    '동구',
+    '영도구',
+    '부산진구',
+    '동래구',
+    '남구',
+    '북구',
+    '해운대구',
+    '사하구',
+    '금정구',
+    '강서구',
+    '연제구',
+    '수영구',
+    '사상구',
+    '기장군',
+  ],
+  대구: ['중구', '동구', '서구', '남구', '북구', '수성구', '달서구', '달성군', '군위군'],
+  인천: [
+    '중구',
+    '동구',
+    '미추홀구',
+    '연수구',
+    '남동구',
+    '부평구',
+    '계양구',
+    '서구',
+    '강화군',
+    '옹진군',
+  ],
+  광주: ['동구', '서구', '남구', '북구', '광산구'],
+  대전: ['동구', '중구', '서구', '유성구', '대덕구'],
+  울산: ['중구', '남구', '동구', '북구', '울주군'],
+  세종: ['세종시'],
+  경기: [
+    '수원시',
+    '고양시',
+    '용인시',
+    '성남시',
+    '부천시',
+    '화성시',
+    '안산시',
+    '남양주시',
+    '안양시',
+    '평택시',
+    '시흥시',
+    '파주시',
+    '의정부시',
+    '김포시',
+    '광주시',
+    '광명시',
+    '군포시',
+    '하남시',
+    '오산시',
+    '양주시',
+    '이천시',
+    '구리시',
+    '안성시',
+    '포천시',
+    '의왕시',
+    '여주시',
+    '동두천시',
+    '과천시',
+    '양평군',
+    '가평군',
+    '연천군',
+  ],
+  강원: [
+    '춘천시',
+    '원주시',
+    '강릉시',
+    '동해시',
+    '태백시',
+    '속초시',
+    '삼척시',
+    '홍천군',
+    '횡성군',
+    '영월군',
+    '평창군',
+    '정선군',
+    '철원군',
+    '화천군',
+    '양구군',
+    '인제군',
+    '고성군',
+    '양양군',
+  ],
+  충북: [
+    '청주시',
+    '충주시',
+    '제천시',
+    '보은군',
+    '옥천군',
+    '영동군',
+    '증평군',
+    '진천군',
+    '괴산군',
+    '음성군',
+    '단양군',
+  ],
+  충남: [
+    '천안시',
+    '공주시',
+    '보령시',
+    '아산시',
+    '서산시',
+    '논산시',
+    '계룡시',
+    '당진시',
+    '금산군',
+    '부여군',
+    '서천군',
+    '청양군',
+    '홍성군',
+    '예산군',
+    '태안군',
+  ],
+  전북: [
+    '전주시',
+    '군산시',
+    '익산시',
+    '정읍시',
+    '남원시',
+    '김제시',
+    '완주군',
+    '진안군',
+    '무주군',
+    '장수군',
+    '임실군',
+    '순창군',
+    '고창군',
+    '부안군',
+  ],
+  전남: [
+    '목포시',
+    '여수시',
+    '순천시',
+    '나주시',
+    '광양시',
+    '담양군',
+    '곡성군',
+    '구례군',
+    '고흥군',
+    '보성군',
+    '화순군',
+    '장흥군',
+    '강진군',
+    '해남군',
+    '영암군',
+    '무안군',
+    '함평군',
+    '영광군',
+    '장성군',
+    '완도군',
+    '진도군',
+    '신안군',
+  ],
+  경북: [
+    '포항시',
+    '경주시',
+    '김천시',
+    '안동시',
+    '구미시',
+    '영주시',
+    '영천시',
+    '상주시',
+    '문경시',
+    '경산시',
+    '의성군',
+    '청송군',
+    '영양군',
+    '영덕군',
+    '청도군',
+    '고령군',
+    '성주군',
+    '칠곡군',
+    '예천군',
+    '봉화군',
+    '울진군',
+    '울릉군',
+  ],
+  경남: [
+    '창원시',
+    '진주시',
+    '통영시',
+    '사천시',
+    '김해시',
+    '밀양시',
+    '거제시',
+    '양산시',
+    '의령군',
+    '함안군',
+    '창녕군',
+    '고성군',
+    '남해군',
+    '하동군',
+    '산청군',
+    '함양군',
+    '거창군',
+    '합천군',
+  ],
+  제주: ['제주시', '서귀포시'],
+}
+
+function districtsIn(provinceCode) {
+  return REGION_DISTRICTS[provinceCode] || []
+}
+
 /** 공고 한 건의 정보와 개인별 스크랩·지원 완료 상태를 카드로 보여준다. */
-function JobCard({ job, busy, onOpenSource, onScrap, onApplied }) {
-  const mobilityClass =
-    job.mobilityType === 'ROTATIONAL'
-      ? 'mobility-rotational'
-      : job.mobilityType === 'FIXED'
-        ? 'mobility-fixed'
-        : 'mobility-unknown'
+const STAGE_LABELS = {
+  SAVED: '관심 공고',
+  PREPARING: '지원 준비',
+  SUBMITTED: '지원 완료',
+  WRITTEN_TEST: '필기 예정',
+  INTERVIEW: '면접 예정',
+  PASSED: '최종 합격',
+  REJECTED: '전형 종료',
+}
+
+function JobCard({ job, busy, onOpenSource, onScrap, onTrack, onMatch, matchBusy }) {
+  const institutionClass =
+    job.organizationType === 'PRIVATE'
+      ? 'institution-private'
+      : job.publicInstitutionType === 'LOCAL_PUBLIC'
+        ? 'institution-local'
+        : job.publicInstitutionType === 'CENTRAL_PUBLIC'
+          ? 'institution-central'
+          : 'institution-public'
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const deadlineDate = job.deadline ? new Date(`${job.deadline}T00:00:00`) : null
+  const daysLeft = deadlineDate
+    ? Math.ceil((deadlineDate.getTime() - today.getTime()) / 86400000)
+    : null
+  const urgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7
+  const [tracking, setTracking] = useState({
+    stage: job.applicationStage || 'SAVED',
+    nextStepDate: job.nextStepDate || '',
+    memo: job.applicationMemo || '',
+  })
+  useEffect(() => {
+    setTracking({
+      stage: job.applicationStage || 'SAVED',
+      nextStepDate: job.nextStepDate || '',
+      memo: job.applicationMemo || '',
+    })
+  }, [job.applicationStage, job.nextStepDate, job.applicationMemo])
   return (
     <article
-      className={`card ${mobilityClass} ${job.applied ? 'applied' : job.scrapped ? 'saved' : ''}`}
+      className={`card ${institutionClass} ${urgent ? 'deadline-urgent' : ''} ${job.applied ? 'applied' : job.scrapped ? 'saved' : ''}`}
     >
       <div className="card-top">
-        <span className="tag">채용공고</span>
+        <div className="card-labels">
+          <span className="tag">채용공고</span>
+          {urgent && <span className="urgent-tag">마감임박</span>}
+        </div>
         <span className="source">{job.source}</span>
       </div>
       <button className="title-button" onClick={onOpenSource}>
@@ -30,16 +321,19 @@ function JobCard({ job, busy, onOpenSource, onScrap, onApplied }) {
       <div className="details">
         <span>채용기관</span>
         <strong>{job.organization}</strong>
-        <div className="pills">
-          {job.organizationType && (
-            <span>{job.organizationType === 'PUBLIC' ? '공공기관' : '민간기업'}</span>
-          )}
-          {job.mobilityType === 'ROTATIONAL' && <span>순환근무 가능</span>}
-          {job.mobilityType === 'FIXED' && <span>지역고정</span>}
-          {(!job.mobilityType || job.mobilityType === 'UNKNOWN') && <span>근무형태 확인 필요</span>}
-          {job.region && <span>{job.region}</span>}
-          {job.employmentType && <span>{job.employmentType}</span>}
-        </div>
+        <div className="pills">{job.employmentType && <span>{job.employmentType}</span>}</div>
+        {job.positions?.length > 0 && (
+          <div className="position-list">
+            {job.positions.map((position) => (
+              <span key={`${position.standardCategory}-${position.originalName}`}>
+                <strong>{position.standardCategory}</strong>
+                {position.originalName !== position.standardCategory &&
+                  ` · ${position.originalName}`}
+                {position.headcount && ` · ${position.headcount}명`}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="date">
         <span aria-hidden="true">▦</span>
@@ -47,28 +341,179 @@ function JobCard({ job, busy, onOpenSource, onScrap, onApplied }) {
           <small>접수 기간</small>
           <strong>
             {job.postedAt || '미확인'} ~ {job.deadline || '미확인'}
+            {urgent && ` · D-${daysLeft}`}
           </strong>
         </div>
       </div>
       <div className="actions">
         <button className="preview-link" onClick={onOpenSource}>
-          작은 창에서 원문 보기 ↗
+          원문보기 ↗
         </button>
-        <button disabled={busy} onClick={() => onScrap(job.id)}>
-          {job.scrapped ? '스크랩 해제' : '＋ 스크랩'}
-        </button>
+        <div className="career-actions">
+          <button disabled={busy} onClick={() => onScrap(job.id)}>
+            {job.scrapped ? '스크랩 해제' : '＋ 스크랩'}
+          </button>
+          <button disabled={matchBusy} onClick={() => onMatch(job)}>
+            {matchBusy ? '분석 중...' : '내 스펙 매칭'}
+          </button>
+        </div>
       </div>
       {job.scrapped && (
-        <button className="applied-button" disabled={busy} onClick={() => onApplied(job.id)}>
-          {job.applied ? '✓ 지원 완료 · 취소' : '지원 완료로 표시'}
-        </button>
+        <div className="tracking-box">
+          <strong>지원 일정 관리</strong>
+          <div className="tracking-fields">
+            <select
+              value={tracking.stage}
+              onChange={(e) => setTracking({ ...tracking, stage: e.target.value })}
+              aria-label="지원 단계"
+            >
+              {Object.entries(STAGE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={tracking.nextStepDate}
+              onChange={(e) => setTracking({ ...tracking, nextStepDate: e.target.value })}
+              aria-label="다음 일정"
+            />
+          </div>
+          <textarea
+            value={tracking.memo}
+            onChange={(e) => setTracking({ ...tracking, memo: e.target.value })}
+            placeholder="준비사항이나 전형 메모"
+            maxLength={2000}
+          />
+          <button disabled={busy} onClick={() => onTrack(job.id, tracking)}>
+            지원현황 저장
+          </button>
+        </div>
       )}
     </article>
   )
 }
 
+function MatchDialog({ value, onClose, onOpenSource }) {
+  const { job, result } = value
+  return (
+    <div className="match-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <section className="match-dialog" role="dialog" aria-modal="true" aria-label="스펙 매칭 결과">
+        <div className="match-dialog-head">
+          <div>
+            <p className="eyebrow">SPEC MATCHING</p>
+            <h2>내 스펙 매칭</h2>
+          </div>
+          <button className="close" onClick={onClose} aria-label="닫기">
+            ×
+          </button>
+        </div>
+        <h3>{job.title}</h3>
+        <p className="match-organization">{job.organization}</p>
+        <div className="match-summary">{result.summary}</div>
+        {result.matchedCertifications?.length > 0 && (
+          <div className="matched-certificates">
+            <strong>일치 자격증</strong>
+            <div>
+              {result.matchedCertifications.map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="match-evidence">
+          <strong>공고문 자격·우대 근거</strong>
+          {result.requirementEvidence?.length > 0 ? (
+            result.requirementEvidence.map((line) => <p key={line}>{line}</p>)
+          ) : (
+            <p>구조화된 자격·우대 문구를 찾지 못했습니다. 원문에서 확인해 주세요.</p>
+          )}
+        </div>
+        <button className="match-original" onClick={() => onOpenSource(job)}>
+          원문보기 ↗
+        </button>
+      </section>
+    </div>
+  )
+}
+
+function CareerToolsPanel({ preference, alerts, busy, message, onChange, onSave, onRead, onOpen }) {
+  return (
+    <section className="career-tools">
+      <div className="profile-heading">
+        <div>
+          <p className="eyebrow">PERSONAL JOB ASSISTANT</p>
+          <h2>맞춤 공고 알림</h2>
+        </div>
+        <label className="alert-toggle">
+          <input
+            type="checkbox"
+            checked={preference.enabled}
+            onChange={(e) => onChange({ ...preference, enabled: e.target.checked })}
+          />{' '}
+          알림 사용
+        </label>
+      </div>
+      <div className="preference-fields">
+        <label>
+          관심 키워드
+          <input
+            value={preference.keywords}
+            onChange={(e) => onChange({ ...preference, keywords: e.target.value })}
+            placeholder="예: 행정, 전산, 인턴 (쉼표로 구분)"
+          />
+        </label>
+        <label>
+          관심 지역
+          <input
+            value={preference.regions}
+            onChange={(e) => onChange({ ...preference, regions: e.target.value })}
+            placeholder="예: 서울, 부산 (쉼표로 구분)"
+          />
+        </label>
+        <label>
+          근무 유형
+          <select
+            value={preference.mobilityTypes}
+            onChange={(e) => onChange({ ...preference, mobilityTypes: e.target.value })}
+          >
+            <option value="">전체</option>
+            <option value="ROTATIONAL">순환근무 가능</option>
+            <option value="FIXED">지역고정</option>
+            <option value="UNKNOWN">확인 필요</option>
+          </select>
+        </label>
+        <button disabled={busy} onClick={onSave}>
+          {busy ? '저장 중...' : '알림 조건 저장'}
+        </button>
+      </div>
+      {message && <p role="status">{message}</p>}
+      <div className="alerts-head">
+        <h3>조건에 맞는 공고 {alerts.length}건</h3>
+        {alerts.some((item) => item.fresh) && <button onClick={onRead}>모두 확인</button>}
+      </div>
+      <div className="alerts-list">
+        {alerts.slice(0, 8).map((item) => (
+          <button key={item.id} className={item.fresh ? 'fresh' : ''} onClick={() => onOpen(item)}>
+            <span>
+              {item.fresh && 'NEW · '}
+              {item.organization}
+            </span>
+            <strong>{item.title}</strong>
+            <small>
+              {item.region || '지역 미정'} · 마감 {item.deadline || '미정'}
+            </small>
+          </button>
+        ))}
+        {alerts.length === 0 && <p>저장한 조건에 맞는 진행 중 공고가 없습니다.</p>}
+      </div>
+    </section>
+  )
+}
+
 /** 로그인·회원가입을 같은 입력 패널에서 처리하는 대화상자. */
-function AuthDialog({ mode, onClose, onSubmit, busy, error }) {
+function AuthDialog({ mode, onClose, onSubmit, onSwitch, busy, error }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -124,9 +569,10 @@ function AuthDialog({ mode, onClose, onSubmit, busy, error }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={mode === 'register' ? 10 : 8}
               autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
             />
+            {mode === 'register' && <small>영문과 숫자를 포함해 10자 이상 입력해 주세요.</small>}
           </label>
           {error && (
             <p className="error" role="alert">
@@ -137,6 +583,14 @@ function AuthDialog({ mode, onClose, onSubmit, busy, error }) {
             {busy ? '처리 중...' : mode === 'register' ? '가입하기' : '로그인'}
           </button>
         </form>
+        {mode === 'login' && (
+          <div className="auth-switch">
+            <span>계정이 없으신가요?</span>
+            <button type="button" onClick={onSwitch}>
+              회원가입
+            </button>
+          </div>
+        )}
       </section>
     </div>
   )
@@ -440,6 +894,68 @@ function ProfileEditor({ profile, busy, message, onSave }) {
   )
 }
 
+const ADMIN_CATEGORIES = ['행정·사무', '전산·IT', '회계·재무', '토목', '건축', '전기', '기계', '연구', '의료·보건', '사회복지']
+
+/** 관리자가 자동 추출 결과를 원문과 대조하고 공고별 분류를 바로 정정하는 화면. */
+function AdminReviewPanel({ securePost }) {
+  const [items, setItems] = useState([])
+  const [busy, setBusy] = useState(null)
+  const [message, setMessage] = useState('')
+  useEffect(() => {
+    getJson('/api/admin/reviews').then(setItems).catch((e) => setMessage(e.message))
+  }, [])
+  const change = (id, field, value) =>
+    setItems((rows) => rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)))
+  const changePosition = (id, index, field, value) =>
+    setItems((rows) => rows.map((row) => row.id === id ? {
+      ...row,
+      positions: row.positions.map((position, i) => i === index ? { ...position, [field]: value } : position),
+    } : row))
+  const addPosition = (id) => change(id, 'positions', [...items.find((row) => row.id === id).positions,
+    { standardCategory: '행정·사무', originalName: '', headcount: '', workRegion: '', requirements: '' }])
+  const removePosition = (id, index) => change(id, 'positions', items.find((row) => row.id === id).positions.filter((_, i) => i !== index))
+  async function save(item) {
+    setBusy(item.id)
+    setMessage('')
+    try {
+      const saved = await securePost(`/api/admin/reviews/${item.id}`, JSON.stringify({
+        region: item.region || null,
+        employmentType: item.employmentType || null,
+        organizationType: item.organizationType,
+        mobilityType: item.mobilityType,
+        positions: item.positions.map(({ standardCategory, originalName, headcount, workRegion, requirements }) => ({
+          standardCategory, originalName, headcount: headcount === '' ? null : Number(headcount), workRegion, requirements,
+        })),
+      }), 'application/json')
+      setItems((rows) => rows.map((row) => row.id === item.id ? saved : row))
+      setMessage(`${item.organization} 공고를 저장했습니다.`)
+    } catch (e) { setMessage(e.message) } finally { setBusy(null) }
+  }
+  return <section className="admin-review">
+    <div className="admin-title"><div><p className="eyebrow">ADMIN REVIEW</p><h1>공고 분류 검수</h1></div><p>최근 갱신 공고 30건</p></div>
+    {message && <p className="status" role="status">{message}</p>}
+    {items.map((item) => <article className="admin-card" key={item.id}>
+      <div className="admin-card-head"><div><strong>{item.title}</strong><span>{item.organization}</span></div><a href={item.sourceUrl} target="_blank" rel="noreferrer">원문 보기</a></div>
+      <div className="admin-fields">
+        <label>기관 유형<select value={item.organizationType || 'PUBLIC'} onChange={(e) => change(item.id, 'organizationType', e.target.value)}><option value="PUBLIC">공공기관</option><option value="PRIVATE">민간기업</option></select></label>
+        <label>근무 형태<select value={item.mobilityType || 'UNKNOWN'} onChange={(e) => change(item.id, 'mobilityType', e.target.value)}><option value="ROTATIONAL">순환근무</option><option value="FIXED">지역고정</option><option value="UNKNOWN">확인 필요</option></select></label>
+        <label>근무지역<input value={item.region || ''} onChange={(e) => change(item.id, 'region', e.target.value)} /></label>
+        <label>고용형태<input value={item.employmentType || ''} onChange={(e) => change(item.id, 'employmentType', e.target.value)} /></label>
+      </div>
+      <div className="admin-position-head"><strong>채용 직렬</strong><button type="button" onClick={() => addPosition(item.id)}>+ 직렬 추가</button></div>
+      {item.positions.map((position, index) => <div className="admin-position" key={position.id || index}>
+        <select value={position.standardCategory} onChange={(e) => changePosition(item.id, index, 'standardCategory', e.target.value)}>{ADMIN_CATEGORIES.map((value) => <option key={value}>{value}</option>)}</select>
+        <input aria-label="원문 직렬명" placeholder="원문 직렬명" value={position.originalName} onChange={(e) => changePosition(item.id, index, 'originalName', e.target.value)} />
+        <input aria-label="채용인원" type="number" min="0" placeholder="인원" value={position.headcount ?? ''} onChange={(e) => changePosition(item.id, index, 'headcount', e.target.value)} />
+        <input aria-label="직렬 근무지역" placeholder="근무지역" value={position.workRegion || ''} onChange={(e) => changePosition(item.id, index, 'workRegion', e.target.value)} />
+        <button className="danger-text" type="button" onClick={() => removePosition(item.id, index)}>삭제</button>
+      </div>)}
+      <div className="admin-save"><button disabled={busy === item.id} onClick={() => save(item)}>{busy === item.id ? '저장 중...' : '검수 내용 저장'}</button></div>
+    </article>)}
+    {!items.length && !message && <p className="empty">검수할 공고를 불러오는 중...</p>}
+  </section>
+}
+
 /** 검색·페이지 이동·인증·개인 상태와 원문 창을 조합하는 메인 화면. */
 export default function App() {
   // 현재 회원과 CSRF 토큰은 세션 변경 요청에 공통으로 사용한다.
@@ -450,8 +966,18 @@ export default function App() {
   const [authBusy, setAuthBusy] = useState(false)
   // 공고 검색, 마이페이지 필터, 페이지 번호 및 API 결과를 보관한다.
   const [mine, setMine] = useState(false)
+  const [adminView, setAdminView] = useState(false)
   const [queryInput, setQueryInput] = useState('')
   const [query, setQuery] = useState('')
+  const [regionProvince, setRegionProvince] = useState('')
+  const [regionDistrict, setRegionDistrict] = useState('')
+  const [mobility, setMobility] = useState('')
+  const [jobCategory, setJobCategory] = useState('')
+  const [filterOptions, setFilterOptions] = useState({
+    regions: [],
+    mobilityTypes: [],
+    jobCategories: [],
+  })
   const [page, setPage] = useState(0)
   const [data, setData] = useState({ items: [], total: 0, hasNext: false, crawlStatus: null })
   const [loading, setLoading] = useState(true)
@@ -468,6 +994,17 @@ export default function App() {
   })
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileMessage, setProfileMessage] = useState('')
+  const [preference, setPreference] = useState({
+    keywords: '',
+    regions: '',
+    mobilityTypes: '',
+    enabled: true,
+  })
+  const [alerts, setAlerts] = useState([])
+  const [toolsBusy, setToolsBusy] = useState(false)
+  const [toolsMessage, setToolsMessage] = useState('')
+  const [matchDialog, setMatchDialog] = useState(null)
+  const [matchBusyId, setMatchBusyId] = useState(null)
   // 설치 가능 여부와 네트워크 상태는 PWA 경험을 안내하는 데만 사용한다.
   const [installPrompt, setInstallPrompt] = useState(null)
   const [online, setOnline] = useState(navigator.onLine)
@@ -509,12 +1046,26 @@ export default function App() {
   useEffect(() => {
     refreshAuth().catch(() => setError('서버에 연결할 수 없습니다.'))
   }, [refreshAuth])
+  useEffect(() => {
+    getJson('/api/tools/filters')
+      .then(setFilterOptions)
+      .catch(() => {})
+  }, [])
 
   /** 현재 검색 조건에 해당하는 20개 공고를 로드하고 요청 오류를 표시한다. */
   const load = useCallback(
     async (signal) => {
       try {
-        const params = new URLSearchParams({ q: query, page: String(page), mine: String(mine) })
+        const params = new URLSearchParams({
+          q: query,
+          page: String(page),
+          mine: String(mine),
+          region: regionProvince,
+          regionFull: REGION_LEVELS.find((item) => item.code === regionProvince)?.label || '',
+          district: regionDistrict,
+          mobility,
+          jobCategory,
+        })
         setData(await getJson(`/api/postings?${params}`, { signal }))
         setError('')
       } catch (e) {
@@ -524,7 +1075,7 @@ export default function App() {
         setLoading(false)
       }
     },
-    [query, page, mine],
+    [query, page, mine, regionProvince, regionDistrict, mobility, jobCategory],
   )
   useEffect(() => {
     const controller = new AbortController()
@@ -536,9 +1087,15 @@ export default function App() {
   /** 마이페이지에 들어오면 현재 회원의 비공개 스펙을 읽는다. */
   useEffect(() => {
     if (!mine || !user) return
-    getJson('/api/profile')
-      .then((saved) => {
+    Promise.all([
+      getJson('/api/profile'),
+      getJson('/api/tools/preferences'),
+      getJson('/api/tools/alerts'),
+    ])
+      .then(([saved, savedPreference, savedAlerts]) => {
         setProfile(saved)
+        setPreference(savedPreference)
+        setAlerts(savedAlerts)
         setProfileMessage('')
       })
       .catch((e) => setProfileMessage(e.message))
@@ -630,6 +1187,62 @@ export default function App() {
       setProfileBusy(false)
     }
   }
+  async function savePreference() {
+    setToolsBusy(true)
+    setToolsMessage('')
+    try {
+      const saved = await securePost(
+        '/api/tools/preferences',
+        JSON.stringify(preference),
+        'application/json',
+      )
+      setPreference(saved)
+      setAlerts(await getJson('/api/tools/alerts'))
+      setToolsMessage('맞춤 알림 조건을 저장했습니다.')
+    } catch (e) {
+      setToolsMessage(e.message)
+    } finally {
+      setToolsBusy(false)
+    }
+  }
+  async function readAlerts() {
+    try {
+      await securePost('/api/tools/alerts/read')
+      setAlerts((items) => items.map((item) => ({ ...item, fresh: false })))
+    } catch (e) {
+      setToolsMessage(e.message)
+    }
+  }
+  async function saveTracking(id, tracking) {
+    setBusyId(id)
+    try {
+      await securePost(
+        `/api/tools/postings/${id}/application`,
+        JSON.stringify({ ...tracking, nextStepDate: tracking.nextStepDate || null }),
+        'application/json',
+      )
+      await load()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+  async function analyzeMatch(job) {
+    if (!user) {
+      setAuthMode('login')
+      return
+    }
+    setMatchBusyId(job.id)
+    try {
+      const result = await getJson(`/api/tools/postings/${job.id}/match`)
+      setMatchDialog({ job, result })
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setMatchBusyId(null)
+    }
+  }
   /** 개별 채용 공고문 PDF를 우선해 작은 창으로 열고 통합 채용 홈페이지 이동을 피한다. */
   async function openSource(job) {
     const width = Math.min(1100, Math.max(720, window.screen.availWidth - 160))
@@ -663,7 +1276,22 @@ export default function App() {
       return
     }
     setMine(nextMine)
+    setAdminView(false)
     setPage(0)
+  }
+  /** 서비스 배너를 누르면 검색·필터·개인 화면 상태를 모두 지우고 첫 화면으로 돌아간다. */
+  function resetHome() {
+    setMine(false)
+    setAdminView(false)
+    setQueryInput('')
+    setQuery('')
+    setRegionProvince('')
+    setRegionDistrict('')
+    setMobility('')
+    setJobCategory('')
+    setPage(0)
+    setMatchDialog(null)
+    setError('')
   }
   /** 검색어를 확정하고 결과의 첫 페이지를 다시 조회한다. */
   function search(e) {
@@ -672,12 +1300,17 @@ export default function App() {
     setPage(0)
   }
   const status = data.crawlStatus
+  const districtOptions = districtsIn(regionProvince)
 
   return (
     <>
       <header>
         <div className="bar">
-          <button className="brand" onClick={() => navigate(false)}>
+          <button
+            className="brand"
+            onClick={resetHome}
+            aria-label="검색과 필터를 초기화하고 처음 화면으로 이동"
+          >
             JOB HUB KOREA
           </button>
           <span>한눈에 확인하는 공공기관 채용공고</span>
@@ -689,6 +1322,7 @@ export default function App() {
             <button className={mine ? 'active' : ''} onClick={() => navigate(true)}>
               마이페이지
             </button>
+            {user?.admin && <button className={adminView ? 'active' : ''} onClick={() => { setAdminView(true); setMine(false) }}>관리자 검수</button>}
             {user ? (
               <>
                 <span className="user-name">{user.displayName}님</span>
@@ -704,6 +1338,7 @@ export default function App() {
         </div>
       </header>
       <main>
+        {adminView ? <AdminReviewPanel securePost={securePost} /> : <>
         <div className="heading">
           <div>
             <p className="eyebrow">PUBLIC CAREERS · LIVE BOARD</p>
@@ -720,9 +1355,90 @@ export default function App() {
             <button>검색</button>
           </form>
         </div>
+        <div className="filter-row">
+          <label>
+            도·광역시·특별시
+            <select
+              value={regionProvince}
+              onChange={(e) => {
+                setRegionProvince(e.target.value)
+                setRegionDistrict('')
+                setPage(0)
+              }}
+            >
+              <option value="">전국</option>
+              {REGION_LEVELS.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            시·군·구
+            <select
+              value={regionDistrict}
+              disabled={!regionProvince}
+              onChange={(e) => {
+                setRegionDistrict(e.target.value)
+                setPage(0)
+              }}
+            >
+              <option value="">{regionProvince ? '전체 시·군·구' : '상위 지역을 먼저 선택'}</option>
+              {districtOptions.map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            근무 범위
+            <select
+              value={mobility}
+              onChange={(e) => {
+                setMobility(e.target.value)
+                setPage(0)
+              }}
+            >
+              <option value="">전체</option>
+              <option value="ROTATIONAL">순환근무 가능</option>
+              <option value="FIXED">지역고정</option>
+              <option value="UNKNOWN">확인 필요</option>
+            </select>
+          </label>
+          <label>
+            채용 직렬
+            <select
+              value={jobCategory}
+              onChange={(e) => {
+                setJobCategory(e.target.value)
+                setPage(0)
+              }}
+            >
+              <option value="">전체 직렬</option>
+              {filterOptions.jobCategories?.map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
+          </label>
+          {(regionProvince || regionDistrict || mobility || jobCategory) && (
+            <button
+              onClick={() => {
+                setRegionProvince('')
+                setRegionDistrict('')
+                setMobility('')
+                setJobCategory('')
+                setPage(0)
+              }}
+            >
+              필터 초기화
+            </button>
+          )}
+        </div>
         <div className="meta">
           <span>검색 결과 {data.total}건</span>
-          <span>보라색: 순환근무 가능 · 주황색: 지역고정 · 회색: 확인 필요</span>
+          <span>
+            파란색: 중앙 공공기관 · 주황색: 지방공기업 · 청록색: 민간기업 · 빨간 강조: 마감 7일 이내
+          </span>
         </div>
         {!online && (
           <p className="offline-notice" role="status">
@@ -744,12 +1460,24 @@ export default function App() {
           </p>
         )}
         {mine && user && (
-          <ProfileEditor
-            profile={profile}
-            busy={profileBusy}
-            message={profileMessage}
-            onSave={saveProfile}
-          />
+          <>
+            <CareerToolsPanel
+              preference={preference}
+              alerts={alerts}
+              busy={toolsBusy}
+              message={toolsMessage}
+              onChange={setPreference}
+              onSave={savePreference}
+              onRead={readAlerts}
+              onOpen={openSource}
+            />
+            <ProfileEditor
+              profile={profile}
+              busy={profileBusy}
+              message={profileMessage}
+              onSave={saveProfile}
+            />
+          </>
         )}
         {loading ? (
           <p className="empty">불러오는 중...</p>
@@ -762,12 +1490,20 @@ export default function App() {
                 busy={busyId === job.id}
                 onOpenSource={() => openSource(job)}
                 onScrap={(id) => mutate(id, 'scrap')}
-                onApplied={(id) => mutate(id, 'applied')}
+                onTrack={saveTracking}
+                onMatch={analyzeMatch}
+                matchBusy={matchBusyId === job.id}
               />
             ))}
           </section>
         )}
-        {!loading && data.items.length === 0 && <p className="empty">표시할 공고가 없습니다.</p>}
+        {!loading && data.items.length === 0 && (
+          <p className="empty">
+            {regionProvince || regionDistrict
+              ? '선택한 지역에는 공고가 없습니다.'
+              : '공고가 없습니다.'}
+          </p>
+        )}
         <div className="pagination">
           <button disabled={page === 0} onClick={() => setPage(page - 1)}>
             ← 이전
@@ -777,7 +1513,15 @@ export default function App() {
             다음 →
           </button>
         </div>
+        </>}
       </main>
+      {matchDialog && (
+        <MatchDialog
+          value={matchDialog}
+          onClose={() => setMatchDialog(null)}
+          onOpenSource={openSource}
+        />
+      )}
       {authMode && (
         <AuthDialog
           key={authMode}
@@ -787,6 +1531,10 @@ export default function App() {
             setAuthError('')
           }}
           onSubmit={submitAuth}
+          onSwitch={() => {
+            setAuthMode('register')
+            setAuthError('')
+          }}
           busy={authBusy}
           error={authError}
         />

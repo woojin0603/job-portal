@@ -1,6 +1,6 @@
-# Public Job Hub (Java 21 + React)
+# Public Job Hub (Java 17 + React)
 
-Spring Boot 프로젝트를 `build.gradle`로 가져와 Java 21로 실행하세요. React는 `frontend` 폴더에서 `npm install` 후 `npm run dev`로 실행합니다. 화면 주소는 http://localhost:5173 이며 Vite가 `/api` 요청을 Spring Boot의 8080 포트로 전달합니다. PowerShell에서 npm 스크립트가 차단되면 `npm.cmd`를 사용하세요.
+Spring Boot 프로젝트를 `build.gradle`로 가져와 Java 17로 실행하세요. React는 `frontend` 폴더에서 `npm install` 후 `npm run dev`로 실행합니다. 화면 주소는 http://localhost:5173 이며 Vite가 `/api` 요청을 Spring Boot의 8080 포트로 전달합니다. PowerShell에서 npm 스크립트가 차단되면 `npm.cmd`를 사용하세요.
 
 한 주소에서 개발 화면을 확인하려면 프로젝트 루트에서 `gradlew.bat bootRun`을 실행하세요. 이 작업은 React를 먼저 빌드해 Spring Boot의 http://localhost:8080 에서 함께 제공합니다. Gradle 설정을 바꾼 뒤에는 실행 중인 서버를 종료하고 다시 시작해야 합니다.
 
@@ -39,7 +39,42 @@ $env:OPENAI_API_KEY='서비스 전용 API 키'
 | `job_postings` | `source`, `source_id`, `title`, `organization`, `organization_type`, `region`, `employment_type`, `posted_at`, `deadline`, `source_url`, `open`, `first_seen_at`, `updated_at` | 출처·원본 ID 유일 |
 | `scraps` | `user_id`, `posting_id`, `applied`, `scrapped_at`, `applied_at` | 사용자·공고 조합 유일 |
 
-H2 파일은 `./data/jobhub`에 저장됩니다. 운영 배포에는 PostgreSQL, Flyway 마이그레이션, HTTPS, 수집 출처별 파서와 실패 알림이 필요합니다. 잡알리오 외 사이트는 각 사이트의 표 구조와 이용 조건을 확인해 어댑터를 추가해야 합니다. 현재는 목록 첫 페이지만 수집합니다.
+H2 파일은 `./data/jobhub`에 저장됩니다. 운영 배포에는 MySQL, 스키마 마이그레이션, HTTPS, 수집 출처별 파서와 실패 알림이 필요합니다. 잡알리오 외 사이트는 각 사이트의 표 구조와 이용 조건을 확인해 어댑터를 추가해야 합니다.
+
+## MySQL 전환 실행
+
+기본 프로필은 기존 H2 파일 DB를 사용하므로 현재 데이터를 잃지 않습니다. MySQL 8.x에 `public_job_hub` 데이터베이스와 전용 사용자를 만든 다음 아래 환경변수를 설정하고 `mysql` 프로필로 실행하세요. 실제 비밀번호는 설정 파일이나 Git에 넣지 않습니다.
+
+```sql
+CREATE DATABASE public_job_hub CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE USER 'jobhub'@'localhost' IDENTIFIED BY '강력한-비밀번호';
+GRANT ALL PRIVILEGES ON public_job_hub.* TO 'jobhub'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+```powershell
+$env:MYSQL_USERNAME='jobhub'
+$env:MYSQL_PASSWORD='강력한-비밀번호'
+$env:MYSQL_URL='jdbc:mysql://localhost:3306/public_job_hub?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true'
+$env:JOBHUB_ADMIN_EMAILS='admin@example.com'
+.\gradlew.bat --gradle-user-home .gradle-user-home bootRun --args="--spring.profiles.active=mysql"
+```
+
+운영 서버에서는 인증서가 설정된 MySQL을 사용하고 JDBC 주소의 `useSSL`을 `true`로 바꾸세요. 연결 풀 크기는 `MYSQL_MAX_POOL_SIZE`, 최소 유휴 연결은 `MYSQL_MIN_IDLE`로 조절할 수 있습니다. 현재 설정은 최초 전환을 위해 Hibernate `ddl-auto=update`를 사용합니다. 실제 운영 데이터를 투입하기 전에는 Flyway 같은 버전 관리형 마이그레이션으로 고정하는 것이 다음 단계입니다.
+
+기존 H2 데이터는 자동으로 MySQL에 복사되지 않습니다. 두 DB의 스키마를 먼저 확인하고 별도 이관 절차로 옮겨야 하며, 이관이 검증될 때까지 `data` 폴더를 삭제하지 마세요.
+
+## 운영 인증·세션 보안
+
+신규 비밀번호는 영문과 숫자를 포함한 10자 이상이어야 하며 기존 회원의 로그인 비밀번호는 그대로 사용할 수 있습니다. 같은 IP와 이메일 조합에서 로그인을 5번 실패하면 기본 15분 동안 추가 시도를 제한합니다. 횟수와 시간은 `JOBHUB_LOGIN_MAX_FAILURES`, `JOBHUB_LOGIN_WINDOW_MINUTES`로 조절할 수 있습니다.
+
+HTTPS 운영 배포에서는 `mysql,prod` 프로필을 함께 활성화하세요. `prod` 프로필은 세션 쿠키에 `Secure`, `HttpOnly`, `SameSite=Lax`를 적용하고 세션 유효 시간을 30분으로 제한합니다. 이 프로필은 HTTPS가 아닌 localhost에서 쿠키 전송을 막으므로 로컬 개발 실행에는 사용하지 않습니다.
+
+```powershell
+java -jar build/libs/public-job-hub-0.1.0.jar --spring.profiles.active=mysql,prod
+```
+
+운영 서버는 신뢰할 수 있는 HTTPS 리버스 프록시 뒤에서 실행해야 합니다. 기본 보안 헤더는 콘텐츠 유형 추측 방지, 동일 출처 프레임 정책, 엄격한 리퍼러 정책과 콘텐츠 보안 정책을 포함합니다.
 
 ## 소스 코드 형식과 주석
 

@@ -2,6 +2,7 @@ package kr.co.jobhub.model;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * 회원과 채용공고 사이의 개인 보관 관계다.
@@ -34,4 +35,13 @@ public class Scrap {
     public Instant scrappedAt = Instant.now();
 
     public Instant appliedAt;
+
+    /** 지원 준비부터 최종 결과까지 사용자가 관리하는 진행 단계. */
+    @Column(length = 30)
+    public String stage = "SAVED";
+
+    public LocalDate nextStepDate;
+
+    @Column(length = 2000)
+    public String memo;
 }
