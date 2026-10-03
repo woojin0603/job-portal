@@ -74,5 +74,23 @@ class AuthAndScrapTest {
                 .andExpect(jsonPath("$.items[0].scrapped").value(true));
         mvc.perform(get("/api/postings").with(user("second@example.com")))
                 .andExpect(jsonPath("$.items[0].scrapped").value(false));
+
+        String profile = "{\"birthDate\":\"1995-05-10\"," +
+                "\"certifications\":[{\"name\":\"정보처리기사\",\"acquiredMonth\":\"2025-06\"}]," +
+                "\"activities\":[{\"name\":\"공공데이터 프로젝트\",\"description\":\"기획\",\"startMonth\":\"2024-01\",\"endMonth\":\"2024-06\"}]," +
+                "\"careers\":[{\"companyName\":\"테스트기관\",\"position\":\"인턴\",\"duties\":\"개발\",\"startMonth\":\"2024-07\",\"endMonth\":\"2024-12\"}]," +
+                "\"degrees\":[{\"schoolName\":\"테스트대학교\",\"major\":\"컴퓨터공학\",\"degreeType\":\"학사\",\"startMonth\":\"2020-03\",\"endMonth\":\"2024-02\",\"status\":\"졸업\"}]," +
+                "\"grades\":\"3.8 / 4.5\"}";
+        mvc.perform(post("/api/profile").with(user("first@example.com")).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(profile))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.certifications[0].name").value("정보처리기사"));
+        mvc.perform(get("/api/profile").with(user("first@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.degrees[0].major").value("컴퓨터공학"));
+        mvc.perform(post("/api/profile").with(user("first@example.com")).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"careers\":[{\"duties\":\"연락처 010-1234-5678\"}]}"))
+                .andExpect(status().isBadRequest());
     }
 }

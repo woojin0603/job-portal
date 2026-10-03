@@ -46,6 +46,7 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.csrfTokenRepository(tokens))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/postings/**").authenticated()
+                        .requestMatchers("/api/profile", "/api/profile/**").authenticated()
                         .requestMatchers("/h2-console/**").denyAll()
                         .anyRequest().permitAll())
                 .formLogin(form -> form.loginProcessingUrl("/api/auth/login")

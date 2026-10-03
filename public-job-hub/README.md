@@ -2,6 +2,8 @@
 
 Spring Boot 프로젝트를 `build.gradle`로 가져와 Java 21로 실행하세요. React는 `frontend` 폴더에서 `npm install` 후 `npm run dev`로 실행합니다. 화면 주소는 http://localhost:5173 이며 Vite가 `/api` 요청을 Spring Boot의 8080 포트로 전달합니다. PowerShell에서 npm 스크립트가 차단되면 `npm.cmd`를 사용하세요.
 
+한 주소에서 개발 화면을 확인하려면 프로젝트 루트에서 `gradlew.bat bootRun`을 실행하세요. 이 작업은 React를 먼저 빌드해 Spring Boot의 http://localhost:8080 에서 함께 제공합니다. Gradle 설정을 바꾼 뒤에는 실행 중인 서버를 종료하고 다시 시작해야 합니다.
+
 ## 휴대폰 앱처럼 설치하기 (PWA)
 
 `frontend`에서 `npm install`을 한 번 수행한 뒤 프로젝트 루트에서 `./gradlew bootJar`(Windows: `gradlew.bat bootJar`)를 실행하세요. Gradle이 React 화면, 설치 정보, 192·512px 아이콘과 서비스 워커를 빌드해 Spring Boot JAR 안에 넣습니다. 생성된 `build/libs/public-job-hub-0.1.0.jar`을 `java -jar`로 실행하면 앱 화면과 API가 함께 http://localhost:8080 에 제공됩니다.
@@ -16,7 +18,16 @@ React 화면에서 이메일·이름·비밀번호(8자 이상)로 회원가입�
 
 ## 수집과 원문 미니탭
 
-잡알리오 첫 페이지를 **매일 00:00 Asia/Seoul**에 한 번 수집합니다. 서버가 자정에 실행 중이어야 예약 작업이 수행됩니다. 서버 시작 시나 화면 새로고침 시 추가 수집하지 않습니다. 표 파싱이 실패하고 `OPENAI_API_KEY`가 있으면 OpenAI Responses API로 추출을 시도합니다. `OPENAI_MODEL`로 모델을 변경할 수 있습니다. 수집 상태는 화면과 `/api/crawl-status`에서 확인합니다.
+등록한 채용 목록을 **매일 00:00 Asia/Seoul**에 한 번 수집합니다. 서버가 자정에 실행 중이어야 예약 작업이 수행됩니다. 서버 시작 시나 화면 새로고침 시 추가 수집하지 않습니다. 잡알리오는 전용 표 파서를 사용하고, 허용된 다른 공개 사이트는 OpenAI Responses API의 Structured Outputs로 공고를 추출할 수 있습니다. `OPENAI_API_KEY`가 필요하며 `OPENAI_MODEL`로 모델을 변경할 수 있습니다. AI는 HTML에서 이미 공개된 내용을 구조화할 뿐 로그인·캡차·접근 차단을 우회하지 않습니다. 수집 상태는 화면과 `/api/crawl-status`에서 확인합니다.
+
+출처 설정은 `NAME|URL|PUBLIC/PRIVATE|TABLE/AI/AUTO|CENTRAL_PUBLIC/LOCAL_PUBLIC` 형식이고 여러 출처는 쉼표로 구분합니다. 마지막 값은 중앙 공공기관과 지방공기업의 카드 테두리를 구분합니다. 환경 변수 `JOBHUB_CRAWL_SOURCES`로 운영 설정을 덮어쓸 수 있습니다. `TABLE`은 잡알리오 표 파서, `AI`는 AI 전용, `AUTO`는 표 파싱 후 결과가 없을 때 AI를 사용합니다.
+
+```powershell
+$env:JOBHUB_CRAWL_SOURCES='JOB-ALIO|https://job.alio.go.kr/recruit.do?order=REG_DATE&pageNo=1|PUBLIC|TABLE|CENTRAL_PUBLIC,ALLOWED-LOCAL-JOBS|https://example.com/jobs?pageNo=1|PUBLIC|AI|LOCAL_PUBLIC'
+$env:OPENAI_API_KEY='서비스 전용 API 키'
+```
+
+각 URL을 등록하기 전에 해당 사이트의 이용약관과 robots.txt에서 자동 수집이 허용되는지 확인해야 합니다. 수집기는 매 요청 전에 robots.txt를 검사하며 파일을 읽을 수 없거나 대상 경로가 금지되면 안전하게 중단합니다. 잡플래닛은 현재 일반 크롤러의 `/search` 접근을 금지하므로 검색 결과 URL을 기본 출처로 등록하지 않았습니다. 공식 API·제휴 피드나 별도로 허가받은 공개 URL이 생겼을 때만 추가하세요.
 
 공고 제목 또는 '미니탭에서 보기'를 누르면 오른쪽 패널에 원문 텍스트가 표시됩니다. 서버가 해당 공고의 원문 페이지를 읽어 스크립트·스타일 등은 제거하고 텍스트만 반환합니다. 원문 사이트가 서버 접근을 차단하거나 JavaScript 렌더링에 의존하면 패널에 오류가 표시될 수 있습니다. 미니탭 조회는 예약 수집을 실행하지 않습니다.
 
@@ -25,7 +36,7 @@ React 화면에서 이메일·이름·비밀번호(8자 이상)로 회원가입�
 | 테이블 | 주요 필드 | 제약 |
 |---|---|---|
 | `app_users` | `email`, `password_hash`, `display_name`, `created_at` | 이메일 유일 |
-| `job_postings` | `source`, `source_id`, `title`, `organization`, `region`, `employment_type`, `posted_at`, `deadline`, `source_url`, `open`, `first_seen_at`, `updated_at` | 출처·원본 ID 유일 |
+| `job_postings` | `source`, `source_id`, `title`, `organization`, `organization_type`, `region`, `employment_type`, `posted_at`, `deadline`, `source_url`, `open`, `first_seen_at`, `updated_at` | 출처·원본 ID 유일 |
 | `scraps` | `user_id`, `posting_id`, `applied`, `scrapped_at`, `applied_at` | 사용자·공고 조합 유일 |
 
 H2 파일은 `./data/jobhub`에 저장됩니다. 운영 배포에는 PostgreSQL, Flyway 마이그레이션, HTTPS, 수집 출처별 파서와 실패 알림이 필요합니다. 잡알리오 외 사이트는 각 사이트의 표 구조와 이용 조건을 확인해 어댑터를 추가해야 합니다. 현재는 목록 첫 페이지만 수집합니다.

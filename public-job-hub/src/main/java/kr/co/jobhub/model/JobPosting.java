@@ -28,7 +28,7 @@ public class JobPosting {
     public String source;
 
     /** 출처 안에서 공고를 구별하는 원본 식별자. */
-    @Column(name = "source_id", nullable = false, length = 300)
+    @Column(name = "source_id", nullable = false, length = 1500)
     public String sourceId;
 
     /** 카드 제목과 검색에 사용하는 공고 제목. */
@@ -45,6 +45,18 @@ public class JobPosting {
 
     @Column(length = 100)
     public String employmentType;
+
+    /** AI 또는 출처 설정으로 분류한 공공기관·민간기업 구분. */
+    @Column(length = 20)
+    public String organizationType;
+
+    /** 중앙 공공기관과 지방공기업을 카드에서 구분하기 위한 유형. */
+    @Column(length = 30)
+    public String publicInstitutionType;
+
+    /** 공고문에 명시된 전국 순환·전보 가능 여부. */
+    @Column(length = 20)
+    public String mobilityType = "UNKNOWN";
 
     /** 공고 등록일과 지원 마감일. */
     public LocalDate postedAt;

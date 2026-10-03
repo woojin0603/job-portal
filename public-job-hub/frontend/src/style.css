@@ -140,10 +140,19 @@ h1 {
   box-shadow: 0 8px 22px #1e34501f;
 }
 .card.saved {
-  border-color: #3677ce;
+  box-shadow: inset 0 0 0 2px #3677ce;
 }
 .card.applied {
-  border-color: #22a06b;
+  box-shadow: inset 0 0 0 2px #22a06b;
+}
+.card.mobility-rotational {
+  border-color: #6d5bd0;
+}
+.card.mobility-fixed {
+  border-color: #d97706;
+}
+.card.mobility-unknown {
+  border-color: #9aa7b8;
 }
 .card-top {
   display: flex;
@@ -339,6 +348,164 @@ nav button.active {
 .error {
   color: #ad3440;
 }
+
+/* 마이페이지의 비공개 스펙 입력 영역. */
+.profile-editor {
+  background: #fff;
+  border: 1px solid #dce5f0;
+  border-radius: 14px;
+  margin: 0 0 28px;
+  padding: 24px;
+  box-shadow: 0 4px 14px #1e34500d;
+}
+.profile-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+.profile-heading h2 {
+  margin: 0;
+}
+.privacy-note {
+  max-width: 520px;
+  margin: 0;
+  border: 1px solid #efd7a6;
+  border-radius: 8px;
+  background: #fff9eb;
+  color: #77551b;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.profile-editor form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.profile-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #344963;
+  font-size: 12px;
+  font-weight: 700;
+}
+.profile-editor label small {
+  color: #8390a1;
+  font-weight: 400;
+}
+.profile-editor input,
+.profile-editor textarea,
+.profile-editor select {
+  width: 100%;
+  border: 1px solid #cfdbe9;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px 11px;
+  color: #132136;
+  font: inherit;
+  font-weight: 400;
+}
+.profile-editor input {
+  height: 42px;
+}
+.profile-editor select {
+  height: 42px;
+}
+.profile-editor input:disabled {
+  background: #f3f6fa;
+  color: #69788c;
+}
+.profile-editor textarea {
+  min-height: 105px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.profile-editor .wide {
+  grid-column: 1 / -1;
+}
+.spec-section {
+  border-top: 1px solid #e6ecf3;
+  padding-top: 18px;
+}
+.spec-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.spec-section-head h3 {
+  margin: 0 0 3px;
+  font-size: 16px;
+}
+.spec-section-head small {
+  color: #8b5e14;
+  font-size: 11px;
+}
+.spec-section-head button {
+  border: 1px solid #b9cbe0;
+  border-radius: 7px;
+  background: #f4f8fd;
+  color: #245d9e;
+  padding: 7px 11px;
+  font-weight: 700;
+}
+.spec-item {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  border: 1px solid #e1e8f0;
+  border-radius: 10px;
+  background: #fafcff;
+  margin-top: 10px;
+  padding: 16px 72px 16px 16px;
+}
+.spec-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.spec-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.spec-item .item-wide {
+  grid-column: 1 / -1;
+}
+.month-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.remove-spec {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  border: 0;
+  background: transparent;
+  color: #ad3440;
+  font-size: 12px;
+}
+.profile-submit {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  min-height: 42px;
+  color: #2867ad;
+  font-size: 13px;
+}
+.profile-submit button {
+  border: 0;
+  border-radius: 8px;
+  background: #173f76;
+  color: #fff;
+  padding: 11px 18px;
+  font-weight: 700;
+}
+.profile-submit button:disabled {
+  opacity: 0.55;
+}
 .error {
   background: #fff1f2;
   border-radius: 8px;
@@ -469,6 +636,18 @@ nav button.active {
   font-size: 28px;
   color: #738399;
 }
+.preview-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.preview-head-actions a {
+  background: #173f76;
+  border-radius: 7px;
+  color: white;
+  font-size: 12px;
+  padding: 8px 12px;
+}
 .preview-body {
   padding: 24px;
   overflow: auto;
@@ -506,5 +685,26 @@ nav button.active {
   }
   .user-name {
     display: none;
+  }
+  .profile-heading {
+    display: block;
+  }
+  .privacy-note {
+    margin-top: 14px;
+  }
+  .profile-editor form {
+    grid-template-columns: 1fr;
+  }
+  .profile-editor .wide {
+    grid-column: auto;
+  }
+  .spec-grid-2,
+  .spec-grid-3,
+  .month-range {
+    grid-template-columns: 1fr;
+  }
+  .spec-item {
+    padding-right: 16px;
+    padding-top: 46px;
   }
 }

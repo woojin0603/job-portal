@@ -50,3 +50,10 @@ tasks.named('bootJar') {
         into('BOOT-INF/classes/static')
     }
 }
+
+// 개발용 bootRun에서도 React를 먼저 빌드하고 dist를 정적 파일 루트로 제공한다.
+tasks.named('bootRun') {
+    dependsOn tasks.named('buildFrontend')
+    systemProperty 'spring.web.resources.static-locations',
+            "file:${file('frontend/dist').absolutePath.replace('\\', '/')}/,classpath:/META-INF/resources/,classpath:/resources/,classpath:/static/,classpath:/public/"
+}

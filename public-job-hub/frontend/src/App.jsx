@@ -9,20 +9,34 @@ async function getJson(url, options = {}) {
 }
 
 /** 공고 한 건의 정보와 개인별 스크랩·지원 완료 상태를 카드로 보여준다. */
-function JobCard({ job, busy, onPreview, onScrap, onApplied }) {
+function JobCard({ job, busy, onOpenSource, onScrap, onApplied }) {
+  const mobilityClass =
+    job.mobilityType === 'ROTATIONAL'
+      ? 'mobility-rotational'
+      : job.mobilityType === 'FIXED'
+        ? 'mobility-fixed'
+        : 'mobility-unknown'
   return (
-    <article className={`card ${job.applied ? 'applied' : job.scrapped ? 'saved' : ''}`}>
+    <article
+      className={`card ${mobilityClass} ${job.applied ? 'applied' : job.scrapped ? 'saved' : ''}`}
+    >
       <div className="card-top">
         <span className="tag">채용공고</span>
         <span className="source">{job.source}</span>
       </div>
-      <button className="title-button" onClick={() => onPreview(job.id)}>
+      <button className="title-button" onClick={onOpenSource}>
         <h2>{job.title}</h2>
       </button>
       <div className="details">
         <span>채용기관</span>
         <strong>{job.organization}</strong>
         <div className="pills">
+          {job.organizationType && (
+            <span>{job.organizationType === 'PUBLIC' ? '공공기관' : '민간기업'}</span>
+          )}
+          {job.mobilityType === 'ROTATIONAL' && <span>순환근무 가능</span>}
+          {job.mobilityType === 'FIXED' && <span>지역고정</span>}
+          {(!job.mobilityType || job.mobilityType === 'UNKNOWN') && <span>근무형태 확인 필요</span>}
           {job.region && <span>{job.region}</span>}
           {job.employmentType && <span>{job.employmentType}</span>}
         </div>
@@ -37,8 +51,8 @@ function JobCard({ job, busy, onPreview, onScrap, onApplied }) {
         </div>
       </div>
       <div className="actions">
-        <button className="preview-link" onClick={() => onPreview(job.id)}>
-          미니탭에서 보기 ↗
+        <button className="preview-link" onClick={onOpenSource}>
+          작은 창에서 원문 보기 ↗
         </button>
         <button disabled={busy} onClick={() => onScrap(job.id)}>
           {job.scrapped ? '스크랩 해제' : '＋ 스크랩'}
@@ -128,53 +142,305 @@ function AuthDialog({ mode, onClose, onSubmit, busy, error }) {
   )
 }
 
-/** 원문의 표·이미지·스타일을 스크립트 실행이 차단된 프레임에 표시한다. */
-function PreviewPanel({ job, preview, loading, error, onClose }) {
-  return (
-    <div
-      className="preview-backdrop"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <aside
-        className="preview-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-label="공고 원문 미리보기"
-      >
-        <div className="preview-head">
-          <span>공고 미니탭</span>
-          <button onClick={onClose} aria-label="닫기">
-            ×
-          </button>
-        </div>
-        <div className="preview-body">
-          <p className="eyebrow">{job.source}</p>
-          <h2>{job.title}</h2>
-          <p className="preview-org">{job.organization}</p>
-          {loading && <p>원문을 불러오는 중...</p>}
-          {error && (
-            <p className="error" role="alert">
-              {error}
-            </p>
-          )}
-          {preview?.html && (
-            <iframe
-              className="preview-frame"
-              title={`${job.title} 원문`}
-              srcDoc={preview.html}
-              sandbox="allow-popups"
-              referrerPolicy="no-referrer"
-            />
-          )}
-        </div>
-      </aside>
+/** 개인정보를 최소화한 회원 스펙 입력 폼. */
+function ProfileEditor({ profile, busy, message, onSave }) {
+  const blankCertification = () => ({ name: '', acquiredMonth: '' })
+  const blankActivity = () => ({ name: '', description: '', startMonth: '', endMonth: '' })
+  const blankCareer = () => ({
+    companyName: '',
+    position: '',
+    duties: '',
+    startMonth: '',
+    endMonth: '',
+  })
+  const blankDegree = () => ({
+    schoolName: '',
+    major: '',
+    degreeType: '',
+    startMonth: '',
+    endMonth: '',
+    status: '',
+  })
+  const prepare = (value) => ({
+    ...value,
+    certifications: value.certifications?.length ? value.certifications : [blankCertification()],
+    activities: value.activities?.length ? value.activities : [blankActivity()],
+    careers: value.careers?.length ? value.careers : [blankCareer()],
+    degrees: value.degrees?.length ? value.degrees : [blankDegree()],
+  })
+  const [form, setForm] = useState(() => prepare(profile))
+  useEffect(() => setForm(prepare(profile)), [profile])
+  const change = (field) => (event) => setForm({ ...form, [field]: event.target.value })
+  const itemChange = (group, index, field) => (event) => {
+    const items = [...form[group]]
+    items[index] = { ...items[index], [field]: event.target.value }
+    setForm({ ...form, [group]: items })
+  }
+  const add = (group, blank) => setForm({ ...form, [group]: [...form[group], blank()] })
+  const remove = (group, index, blank) => {
+    const items = form[group].filter((_, itemIndex) => itemIndex !== index)
+    setForm({ ...form, [group]: items.length ? items : [blank()] })
+  }
+  const sectionHead = (title, hint, group, blank) => (
+    <div className="spec-section-head">
+      <div>
+        <h3>{title}</h3>
+        {hint && <small>{hint}</small>}
+      </div>
+      <button type="button" onClick={() => add(group, blank)}>
+        ＋ 추가
+      </button>
     </div>
+  )
+  return (
+    <section className="profile-editor" aria-labelledby="profile-title">
+      <div className="profile-heading">
+        <div>
+          <p className="eyebrow">PRIVATE CAREER PROFILE</p>
+          <h2 id="profile-title">내 스펙</h2>
+        </div>
+        <p className="privacy-note">
+          전화번호·이메일·주민번호·자격증 번호·학위 번호·상세주소는 입력하지 마세요.
+        </p>
+      </div>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          onSave(form)
+        }}
+      >
+        <label>
+          이름
+          <input value={form.displayName || ''} disabled />
+        </label>
+        <label>
+          생년월일 <small>선택</small>
+          <input type="date" value={form.birthDate || ''} onChange={change('birthDate')} />
+        </label>
+        <div className="spec-section wide">
+          {sectionHead(
+            '자격증',
+            '자격증 번호는 입력하지 마세요.',
+            'certifications',
+            blankCertification,
+          )}
+          {form.certifications.map((item, index) => (
+            <div className="spec-item spec-grid-2" key={`certification-${index}`}>
+              <label>
+                자격증명
+                <input
+                  value={item.name || ''}
+                  onChange={itemChange('certifications', index, 'name')}
+                  maxLength={120}
+                />
+              </label>
+              <label>
+                취득연월
+                <input
+                  type="month"
+                  value={item.acquiredMonth || ''}
+                  onChange={itemChange('certifications', index, 'acquiredMonth')}
+                />
+              </label>
+              <button
+                className="remove-spec"
+                type="button"
+                onClick={() => remove('certifications', index, blankCertification)}
+              >
+                삭제
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="spec-section wide">
+          {sectionHead('대외활동', '', 'activities', blankActivity)}
+          {form.activities.map((item, index) => (
+            <div className="spec-item spec-grid-2" key={`activity-${index}`}>
+              <label>
+                활동명
+                <input
+                  value={item.name || ''}
+                  onChange={itemChange('activities', index, 'name')}
+                  maxLength={160}
+                />
+              </label>
+              <div className="month-range">
+                <label>
+                  시작연월
+                  <input
+                    type="month"
+                    value={item.startMonth || ''}
+                    onChange={itemChange('activities', index, 'startMonth')}
+                  />
+                </label>
+                <label>
+                  종료연월
+                  <input
+                    type="month"
+                    value={item.endMonth || ''}
+                    onChange={itemChange('activities', index, 'endMonth')}
+                  />
+                </label>
+              </div>
+              <label className="item-wide">
+                활동내용
+                <textarea
+                  value={item.description || ''}
+                  onChange={itemChange('activities', index, 'description')}
+                  maxLength={1500}
+                />
+              </label>
+              <button
+                className="remove-spec"
+                type="button"
+                onClick={() => remove('activities', index, blankActivity)}
+              >
+                삭제
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="spec-section wide">
+          {sectionHead('경력', '', 'careers', blankCareer)}
+          {form.careers.map((item, index) => (
+            <div className="spec-item spec-grid-2" key={`career-${index}`}>
+              <label>
+                회사명
+                <input
+                  value={item.companyName || ''}
+                  onChange={itemChange('careers', index, 'companyName')}
+                  maxLength={160}
+                />
+              </label>
+              <label>
+                직책
+                <input
+                  value={item.position || ''}
+                  onChange={itemChange('careers', index, 'position')}
+                  maxLength={120}
+                />
+              </label>
+              <div className="month-range item-wide">
+                <label>
+                  시작연월
+                  <input
+                    type="month"
+                    value={item.startMonth || ''}
+                    onChange={itemChange('careers', index, 'startMonth')}
+                  />
+                </label>
+                <label>
+                  종료연월
+                  <input
+                    type="month"
+                    value={item.endMonth || ''}
+                    onChange={itemChange('careers', index, 'endMonth')}
+                  />
+                </label>
+              </div>
+              <label className="item-wide">
+                담당업무
+                <textarea
+                  value={item.duties || ''}
+                  onChange={itemChange('careers', index, 'duties')}
+                  maxLength={2000}
+                />
+              </label>
+              <button
+                className="remove-spec"
+                type="button"
+                onClick={() => remove('careers', index, blankCareer)}
+              >
+                삭제
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="spec-section wide">
+          {sectionHead('학위', '학위 번호는 입력하지 마세요.', 'degrees', blankDegree)}
+          {form.degrees.map((item, index) => (
+            <div className="spec-item spec-grid-3" key={`degree-${index}`}>
+              <label>
+                학교명
+                <input
+                  value={item.schoolName || ''}
+                  onChange={itemChange('degrees', index, 'schoolName')}
+                  maxLength={160}
+                />
+              </label>
+              <label>
+                전공
+                <input
+                  value={item.major || ''}
+                  onChange={itemChange('degrees', index, 'major')}
+                  maxLength={160}
+                />
+              </label>
+              <label>
+                학위 종류
+                <input
+                  value={item.degreeType || ''}
+                  onChange={itemChange('degrees', index, 'degreeType')}
+                  maxLength={100}
+                  placeholder="예: 학사"
+                />
+              </label>
+              <label>
+                입학연월
+                <input
+                  type="month"
+                  value={item.startMonth || ''}
+                  onChange={itemChange('degrees', index, 'startMonth')}
+                />
+              </label>
+              <label>
+                졸업연월
+                <input
+                  type="month"
+                  value={item.endMonth || ''}
+                  onChange={itemChange('degrees', index, 'endMonth')}
+                />
+              </label>
+              <label>
+                졸업 상태
+                <select value={item.status || ''} onChange={itemChange('degrees', index, 'status')}>
+                  <option value="">선택</option>
+                  <option>재학</option>
+                  <option>졸업예정</option>
+                  <option>졸업</option>
+                  <option>수료</option>
+                  <option>중퇴</option>
+                </select>
+              </label>
+              <button
+                className="remove-spec"
+                type="button"
+                onClick={() => remove('degrees', index, blankDegree)}
+              >
+                삭제
+              </button>
+            </div>
+          ))}
+        </div>
+        <label>
+          성적
+          <textarea
+            value={form.grades || ''}
+            onChange={change('grades')}
+            maxLength={1000}
+            placeholder="예: 3.8 / 4.5"
+          />
+        </label>
+        <div className="profile-submit wide">
+          {message && <span role="status">{message}</span>}
+          <button disabled={busy}>{busy ? '저장 중...' : '내 스펙 저장'}</button>
+        </div>
+      </form>
+    </section>
   )
 }
 
-/** 검색·페이지 이동·인증·개인 상태와 원문 미리보기를 조합하는 메인 화면. */
+/** 검색·페이지 이동·인증·개인 상태와 원문 창을 조합하는 메인 화면. */
 export default function App() {
   // 현재 회원과 CSRF 토큰은 세션 변경 요청에 공통으로 사용한다.
   const [user, setUser] = useState(null)
@@ -191,11 +457,17 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
-  // 우측 미니탭의 선택 공고와 원문 조회 상태를 별도로 관리한다.
-  const [previewJob, setPreviewJob] = useState(null)
-  const [preview, setPreview] = useState(null)
-  const [previewError, setPreviewError] = useState('')
-  const [previewLoading, setPreviewLoading] = useState(false)
+  const [profile, setProfile] = useState({
+    displayName: '',
+    birthDate: '',
+    certifications: [],
+    activities: [],
+    careers: [],
+    degrees: [],
+    grades: '',
+  })
+  const [profileBusy, setProfileBusy] = useState(false)
+  const [profileMessage, setProfileMessage] = useState('')
   // 설치 가능 여부와 네트워크 상태는 PWA 경험을 안내하는 데만 사용한다.
   const [installPrompt, setInstallPrompt] = useState(null)
   const [online, setOnline] = useState(navigator.onLine)
@@ -261,6 +533,17 @@ export default function App() {
     return () => controller.abort()
   }, [load])
 
+  /** 마이페이지에 들어오면 현재 회원의 비공개 스펙을 읽는다. */
+  useEffect(() => {
+    if (!mine || !user) return
+    getJson('/api/profile')
+      .then((saved) => {
+        setProfile(saved)
+        setProfileMessage('')
+      })
+      .catch((e) => setProfileMessage(e.message))
+  }, [mine, user])
+
   /** 모든 변경 요청에 서버 세션의 CSRF 토큰을 헤더로 포함한다. */
   async function securePost(url, body, contentType) {
     const token = csrf || (await getJson('/api/auth/csrf'))
@@ -322,18 +605,55 @@ export default function App() {
       setBusyId(null)
     }
   }
-  /** 선택 공고의 상세 텍스트를 서버에서 가져와 미니탭을 연다. */
-  async function openPreview(job) {
-    setPreviewJob(job)
-    setPreview(null)
-    setPreviewError('')
-    setPreviewLoading(true)
+  /** 서버 검증을 거쳐 현재 회원의 스펙을 저장한다. */
+  async function saveProfile(nextProfile) {
+    setProfileBusy(true)
+    setProfileMessage('')
     try {
-      setPreview(await getJson(`/api/postings/${job.id}/preview`))
+      const saved = await securePost(
+        '/api/profile',
+        JSON.stringify({
+          birthDate: nextProfile.birthDate || null,
+          certifications: nextProfile.certifications,
+          activities: nextProfile.activities,
+          careers: nextProfile.careers,
+          degrees: nextProfile.degrees,
+          grades: nextProfile.grades,
+        }),
+        'application/json',
+      )
+      setProfile(saved)
+      setProfileMessage('저장되었습니다.')
     } catch (e) {
-      setPreviewError('원문을 미니탭에서 불러오지 못했습니다.')
+      setProfileMessage(e.message)
     } finally {
-      setPreviewLoading(false)
+      setProfileBusy(false)
+    }
+  }
+  /** 개별 채용 공고문 PDF를 우선해 작은 창으로 열고 통합 채용 홈페이지 이동을 피한다. */
+  async function openSource(job) {
+    const width = Math.min(1100, Math.max(720, window.screen.availWidth - 160))
+    const height = Math.min(820, Math.max(600, window.screen.availHeight - 120))
+    const left = Math.max(0, Math.round((window.screen.availWidth - width) / 2))
+    const top = Math.max(0, Math.round((window.screen.availHeight - height) / 2))
+    const popup = window.open(
+      'about:blank',
+      `job-posting-${job.id}`,
+      `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
+    )
+    if (!popup) {
+      setError('원문 창이 차단되었습니다. 브라우저에서 이 사이트의 팝업을 허용해 주세요.')
+      return
+    }
+    popup.document.title = '채용공고 원문 불러오는 중'
+    popup.document.body.innerHTML =
+      '<p style="font:16px sans-serif;padding:32px">채용공고 원문을 불러오는 중입니다...</p>'
+    popup.focus()
+    try {
+      const detail = await getJson(`/api/postings/${job.id}/preview`)
+      popup.location.replace(detail.originalUrl || job.sourceUrl)
+    } catch (e) {
+      popup.location.replace(job.sourceUrl)
     }
   }
   /** 마이페이지는 로그인한 회원에게만 열고 필터 변경 시 첫 페이지로 이동한다. */
@@ -388,7 +708,7 @@ export default function App() {
           <div>
             <p className="eyebrow">PUBLIC CAREERS · LIVE BOARD</p>
             <h1>{mine ? '스크랩한 채용공고' : '최신 채용공고 현황'}</h1>
-            <p className="sub">20개씩 · 5열 × 4행 · 매일 자정 수집</p>
+            <p className="sub">마감 임박순 · 20개씩 · 매일 자정 수집</p>
           </div>
           <form className="search" onSubmit={search}>
             <input
@@ -402,7 +722,7 @@ export default function App() {
         </div>
         <div className="meta">
           <span>검색 결과 {data.total}건</span>
-          <span>파란 외곽선: 스크랩 · 초록 외곽선: 지원 완료</span>
+          <span>보라색: 순환근무 가능 · 주황색: 지역고정 · 회색: 확인 필요</span>
         </div>
         {!online && (
           <p className="offline-notice" role="status">
@@ -423,6 +743,14 @@ export default function App() {
             {error}
           </p>
         )}
+        {mine && user && (
+          <ProfileEditor
+            profile={profile}
+            busy={profileBusy}
+            message={profileMessage}
+            onSave={saveProfile}
+          />
+        )}
         {loading ? (
           <p className="empty">불러오는 중...</p>
         ) : (
@@ -432,7 +760,7 @@ export default function App() {
                 key={job.id}
                 job={job}
                 busy={busyId === job.id}
-                onPreview={() => openPreview(job)}
+                onOpenSource={() => openSource(job)}
                 onScrap={(id) => mutate(id, 'scrap')}
                 onApplied={(id) => mutate(id, 'applied')}
               />
@@ -461,15 +789,6 @@ export default function App() {
           onSubmit={submitAuth}
           busy={authBusy}
           error={authError}
-        />
-      )}
-      {previewJob && (
-        <PreviewPanel
-          job={previewJob}
-          preview={preview}
-          loading={previewLoading}
-          error={previewError}
-          onClose={() => setPreviewJob(null)}
         />
       )}
     </>
