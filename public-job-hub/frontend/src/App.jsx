@@ -276,7 +276,7 @@ const STAGE_LABELS = {
   REJECTED: '전형 종료',
 }
 
-function JobCard({ job, busy, onOpenSource, onScrap, onTrack, onMatch, onShare, matchBusy }) {
+function JobCard({ job, busy, onOpenSource, onSalary, onScrap, onTrack, onMatch, onShare, matchBusy }) {
   const institutionClass =
     job.organizationType === 'PRIVATE'
       ? 'institution-private'
@@ -351,9 +351,10 @@ function JobCard({ job, busy, onOpenSource, onScrap, onTrack, onMatch, onShare, 
         </div>
       </div>
       <div className="actions">
-        <button className="preview-link" onClick={onOpenSource}>
-          원문보기 ↗
-        </button>
+        <div className="job-info-actions">
+          <button className="preview-link" onClick={onOpenSource}>원문보기 ↗</button>
+          <button className="preview-link" onClick={() => onSalary(job)}>연봉정보</button>
+        </div>
         <div className="career-actions">
           <button disabled={busy} onClick={() => onScrap(job.id)}>
             {job.scrapped ? '스크랩 해제' : '＋ 스크랩'}
@@ -397,6 +398,44 @@ function JobCard({ job, busy, onOpenSource, onScrap, onTrack, onMatch, onShare, 
         </div>
       )}
     </article>
+  )
+}
+
+function SalaryDialog({ value, onClose }) {
+  const money = (amount) => amount == null ? '—' : `${Number(amount).toLocaleString('ko-KR')}천원`
+  return (
+    <div className="match-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <section className="salary-dialog" role="dialog" aria-modal="true" aria-label="신입사원 초임">
+        <div className="match-dialog-head">
+          <div><p className="eyebrow">ALIO SALARY</p><h2>신입사원 초임</h2></div>
+          <button className="close" onClick={onClose} aria-label="닫기">×</button>
+        </div>
+        {value.loading ? <p>연봉정보를 불러오는 중입니다...</p> : !value.available ? (
+          <div className="salary-empty">
+            <strong>공시된 초임 정보를 연결하지 못했습니다.</strong>
+            <p>{value.alioInstitutionCode ? '이 기관의 보수 파일이 아직 적재되지 않았습니다.' : '공고에 알리오 기관코드가 없습니다.'}</p>
+          </div>
+        ) : (
+          <>
+            <p className="salary-organization">{value.organization}</p>
+            <div className="salary-total">
+              <span>{value.fiscalYear}년 {value.valueType === 'BUDGET' ? '예산' : '결산'} 기준</span>
+              <strong>{money(value.totalAmount)}</strong>
+            </div>
+            <dl className="salary-breakdown">
+              <div><dt>기본급</dt><dd>{money(value.baseSalary)}</dd></div>
+              <div><dt>고정수당</dt><dd>{money(value.fixedAllowance)}</dd></div>
+              <div><dt>실적수당</dt><dd>{money(value.variableAllowance)}</dd></div>
+              <div><dt>급여성 복리후생비</dt><dd>{money(value.welfareBenefit)}</dd></div>
+              <div><dt>성과상여금</dt><dd>{money(value.performanceBonus)}</dd></div>
+              <div><dt>경영평가 성과급</dt><dd>{money(value.managementEvaluationBonus)}</dd></div>
+              <div><dt>기타</dt><dd>{money(value.otherAmount)}</dd></div>
+            </dl>
+            <p className="salary-note">알리오 공시 기준 참고값이며 실제 채용 직무·직급의 보수와 다를 수 있습니다. 단위는 천원입니다.</p>
+          </>
+        )}
+      </section>
+    </div>
   )
 }
 
@@ -562,6 +601,26 @@ function CapabilityDialog({ profile, loading, onClose, onEdit }) {
 }
 
 function CareerToolsPanel({ preference, alerts, busy, message, onChange, onSave, onRead, onOpen }) {
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const today = new Date()
+    return new Date(today.getFullYear(), today.getMonth(), 1)
+  })
+  const [selectedDate, setSelectedDate] = useState('')
+  const year = calendarMonth.getFullYear()
+  const month = calendarMonth.getMonth()
+  const firstWeekday = new Date(year, month, 1).getDay()
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  const dateKey = (day) =>
+    `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  const eventsByDate = alerts.reduce((map, item) => {
+    if (item.deadline) map[item.deadline] = [...(map[item.deadline] || []), item]
+    return map
+  }, {})
+  const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : []
+  const changeMonth = (offset) => {
+    setCalendarMonth(new Date(year, month + offset, 1))
+    setSelectedDate('')
+  }
   return (
     <section className="career-tools">
       <div className="profile-heading">
@@ -616,6 +675,57 @@ function CareerToolsPanel({ preference, alerts, busy, message, onChange, onSave,
         <h3>조건에 맞는 공고 {alerts.length}건</h3>
         {alerts.some((item) => item.fresh) && <button onClick={onRead}>모두 확인</button>}
       </div>
+      <section className="alerts-calendar" aria-label="맞춤 공고 마감 달력">
+        <div className="calendar-head">
+          <button type="button" onClick={() => changeMonth(-1)} aria-label="이전 달">
+            ‹
+          </button>
+          <strong>
+            {year}년 {month + 1}월
+          </strong>
+          <button type="button" onClick={() => changeMonth(1)} aria-label="다음 달">
+            ›
+          </button>
+        </div>
+        <div className="calendar-grid calendar-weekdays">
+          {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+            <span key={day}>{day}</span>
+          ))}
+        </div>
+        <div className="calendar-grid calendar-days">
+          {Array.from({ length: firstWeekday }, (_, index) => (
+            <span key={`blank-${index}`} />
+          ))}
+          {Array.from({ length: lastDay }, (_, index) => {
+            const day = index + 1
+            const key = dateKey(day)
+            const events = eventsByDate[key] || []
+            return (
+              <button
+                type="button"
+                key={key}
+                className={`${events.length ? 'has-events' : ''} ${selectedDate === key ? 'selected' : ''}`}
+                onClick={() => events.length && setSelectedDate(key)}
+                aria-label={`${key}${events.length ? `, 마감 공고 ${events.length}건` : ''}`}
+              >
+                <span>{day}</span>
+                {events.length > 0 && <small>{events.length}건</small>}
+              </button>
+            )
+          })}
+        </div>
+        {selectedDate && (
+          <div className="calendar-events">
+            <strong>{selectedDate} 마감 공고</strong>
+            {selectedEvents.map((item) => (
+              <button type="button" key={item.id} onClick={() => onOpen(item)}>
+                <span>{item.organization}</span>
+                <b>{item.title}</b>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
       <div className="alerts-list">
         {alerts.slice(0, 8).map((item) => (
           <button key={item.id} className={item.fresh ? 'fresh' : ''} onClick={() => onOpen(item)}>
@@ -1187,6 +1297,7 @@ function AdminReviewPanel({ securePost }) {
   const [qualificationFile, setQualificationFile] = useState(null)
   const [qualificationType, setQualificationType] = useState('AUTO')
   const [qualificationEncoding, setQualificationEncoding] = useState('AUTO')
+  const [compensationFile, setCompensationFile] = useState(null)
   const loadReviews = useCallback(
     () =>
       getJson('/api/admin/reviews')
@@ -1236,6 +1347,21 @@ function AdminReviewPanel({ securePost }) {
     } catch (e) {
       setMessage(e.message)
     }
+  }
+  async function importCompensations(event) {
+    event.preventDefault()
+    if (!compensationFile) return
+    const formElement = event.currentTarget
+    const form = new FormData()
+    form.append('file', compensationFile)
+    setMessage('')
+    try {
+      const result = await securePost('/api/admin/compensations/upload', form)
+      const unmatched = result.unmatchedNames?.length ? ` 미매칭: ${result.unmatchedNames.join(', ')}` : ''
+      setMessage(`초임 ${result.savedRows}건, 기관 ${result.matchedInstitutions}곳을 저장했습니다.${unmatched}`)
+      setCompensationFile(null)
+      formElement.reset()
+    } catch (e) { setMessage(e.message) }
   }
   const change = (id, field, value) =>
     setItems((rows) => rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)))
@@ -1315,6 +1441,12 @@ function AdminReviewPanel({ securePost }) {
                 ? `마지막 수집 ${new Date(crawlInfo.status.lastSuccess).toLocaleString('ko-KR')}`
                 : '수집 기록 없음'}
           </span>
+          {crawlInfo?.apiStatus?.error && (
+            <span className="status-error">공식 API: {crawlInfo.apiStatus.error}</span>
+          )}
+          {crawlInfo?.apiStatus?.lastSuccess && (
+            <span>공식 API {crawlInfo.apiStatus.lastCount}건 반영</span>
+          )}
           <button type="button" disabled={crawlInfo?.running} onClick={startCrawl}>
             {crawlInfo?.running ? '수집 중…' : '공고 지금 수집'}
           </button>
@@ -1348,6 +1480,13 @@ function AdminReviewPanel({ securePost }) {
           onChange={(e) => setQualificationFile(e.target.files?.[0] || null)}
         />
         <button>DB에 불러오기</button>
+      </form>
+      <form className="qualification-import" onSubmit={importCompensations}>
+        <strong>알리오 직원평균보수 XLSX 적재</strong>
+        <span>신입사원초임 시트를 기관코드와 연결합니다.</span>
+        <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required
+          onChange={(e) => setCompensationFile(e.target.files?.[0] || null)} />
+        <button>초임 DB에 불러오기</button>
       </form>
       {items.map((item) => (
         <article className="admin-card" key={item.id}>
@@ -1505,6 +1644,7 @@ export default function App() {
   const [capabilityOpen, setCapabilityOpen] = useState(false)
   const [capabilityLoading, setCapabilityLoading] = useState(false)
   const [matchBusyId, setMatchBusyId] = useState(null)
+  const [salaryDialog, setSalaryDialog] = useState(null)
   // 설치 가능 여부와 네트워크 상태는 PWA 경험을 안내하는 데만 사용한다.
   const [installPrompt, setInstallPrompt] = useState(null)
   const [online, setOnline] = useState(navigator.onLine)
@@ -1776,6 +1916,11 @@ export default function App() {
       setMatchBusyId(null)
     }
   }
+  async function openSalary(job) {
+    setSalaryDialog({ loading: true, organization: job.organization })
+    try { setSalaryDialog(await getJson(`/api/postings/${job.id}/salary`)) }
+    catch (e) { setSalaryDialog(null); setError(e.message) }
+  }
   /** 개별 채용 공고문 PDF를 우선해 작은 창으로 열고 통합 채용 홈페이지 이동을 피한다. */
   async function openSource(job) {
     const width = Math.min(1100, Math.max(720, window.screen.availWidth - 160))
@@ -2020,7 +2165,7 @@ export default function App() {
               </p>
             )}
             {mine && user && (
-              <>
+              <div className="mypage-dashboard">
                 <CareerToolsPanel
                   preference={preference}
                   alerts={alerts}
@@ -2037,7 +2182,7 @@ export default function App() {
                   message={profileMessage}
                   onSave={saveProfile}
                 />
-              </>
+              </div>
             )}
             {loading ? (
               <p className="empty">불러오는 중...</p>
@@ -2049,6 +2194,7 @@ export default function App() {
                     job={job}
                     busy={busyId === job.id}
                     onOpenSource={() => openSource(job)}
+                    onSalary={openSalary}
                     onScrap={(id) => mutate(id, 'scrap')}
                     onTrack={saveTracking}
                     onMatch={analyzeMatch}
@@ -2084,6 +2230,7 @@ export default function App() {
           onOpenSource={openSource}
         />
       )}
+      {salaryDialog && <SalaryDialog value={salaryDialog} onClose={() => setSalaryDialog(null)} />}
       {capabilityOpen && (
         <CapabilityDialog
           profile={profile}

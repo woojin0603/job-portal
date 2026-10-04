@@ -18,6 +18,14 @@ spring:
 # 외부 공고 수집과 AI 보완 추출에 사용하는 서비스 전용 설정.
 # OpenAI 키는 파일에 넣지 않고 환경 변수 OPENAI_API_KEY에서 읽는다.
 jobhub:
+  public-data:
+    recruitment:
+      enabled: ${JOBHUB_PUBLIC_DATA_ENABLED:false}
+      base-url: https://apis.data.go.kr/1051000/recruitment
+      service-key: ${JOBHUB_PUBLIC_DATA_API_KEY:}
+      pages: ${JOBHUB_PUBLIC_DATA_PAGES:2}
+      rows: ${JOBHUB_PUBLIC_DATA_ROWS:100}
+      request-delay-millis: ${JOBHUB_PUBLIC_DATA_DELAY_MILLIS:250}
   # 쉼표로 구분한 이메일만 관리자 검수 API에 접근할 수 있다.
   admin:
     emails: ${JOBHUB_ADMIN_EMAILS:}

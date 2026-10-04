@@ -11,18 +11,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RestController
 @RequestMapping("/api/admin/crawl")
 public class AdminCrawlController {
-    public record CrawlView(boolean running, CrawlService.Status status) {}
+    public record CrawlView(boolean running, CrawlService.Status status,
+                            PublicRecruitmentApiService.Status apiStatus) {}
 
     private final CrawlService crawler;
+    private final PublicRecruitmentApiService publicApi;
     private final AtomicBoolean running = new AtomicBoolean(false);
 
-    public AdminCrawlController(CrawlService crawler) {
+    public AdminCrawlController(CrawlService crawler, PublicRecruitmentApiService publicApi) {
         this.crawler = crawler;
+        this.publicApi = publicApi;
     }
 
     @GetMapping
     public CrawlView status() {
-        return new CrawlView(running.get(), crawler.status());
+        return new CrawlView(running.get(), crawler.status(), publicApi.status());
     }
 
     @PostMapping
@@ -34,10 +37,11 @@ public class AdminCrawlController {
         CompletableFuture.runAsync(() -> {
             try {
                 crawler.crawl();
+                publicApi.sync();
             } finally {
                 running.set(false);
             }
         });
-        return new CrawlView(true, crawler.status());
+        return new CrawlView(true, crawler.status(), publicApi.status());
     }
 }

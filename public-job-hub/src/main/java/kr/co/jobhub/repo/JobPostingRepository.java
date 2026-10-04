@@ -13,6 +13,9 @@ import java.util.Optional;
 public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
     /** 수집 출처와 원본 ID 조합으로 이미 저장한 공고를 찾는다. */
     Optional<JobPosting> findBySourceAndSourceId(String source, String sourceId);
+    Optional<JobPosting> findFirstBySourceUrl(String sourceUrl);
+    Optional<JobPosting> findFirstByOrganizationAndTitleAndPostedAtAndDeadline(
+            String organization, String title, LocalDate postedAt, LocalDate deadline);
 
     /**
      * 공개 중인 공고를 제목·기관명으로 검색하고 20건씩 페이지로 나눈다.

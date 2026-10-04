@@ -11,6 +11,7 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "job_postings", uniqueConstraints = @UniqueConstraint(columnNames = {"source", "source_id"}), indexes = {
         @Index(name = "idx_posting_open", columnList = "open,deadline"),
+        @Index(name = "idx_posting_alio_code", columnList = "alio_institution_code"),
         @Index(name = "idx_posting_updated", columnList = "updated_at")})
 public class JobPosting {
     /** DB 내부 식별자. */
@@ -38,6 +39,14 @@ public class JobPosting {
     /** 채용을 진행하는 기관명. */
     @Column(nullable = false, length = 200)
     public String organization;
+
+    /** 채용 API가 제공하는 알리오 기관코드. 보수 공시와 연결하는 기준키다. */
+    @Column(name = "alio_institution_code", length = 40)
+    public String alioInstitutionCode;
+
+    /** 다른 공공데이터와의 교차 연결에 사용할 공공행정 표준기관코드. */
+    @Column(name = "public_admin_standard_institution_code", length = 40)
+    public String publicAdminStandardInstitutionCode;
 
     /** 근무지 및 고용 형태는 원문에 없을 수 있다. */
     @Column(length = 100)

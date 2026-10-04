@@ -24,6 +24,16 @@ React 화면에서 이메일·이름·비밀번호(영문·숫자 포함 10자 �
 
 ## 수집과 원문 미니탭
 
+재정경제부 공공기관 채용정보 API를 기본 수집원으로 사용할 수 있습니다. 인증키는 저장소에 넣지 않고 실행 환경변수에만 설정합니다. API 수집은 매일 00:15에 진행되며 화면 조회는 외부 API가 아닌 로컬 DB를 사용합니다.
+
+```powershell
+$env:JOBHUB_PUBLIC_DATA_API_KEY='공공데이터포털 일반 인증키(Decoding)'
+$env:JOBHUB_PUBLIC_DATA_ENABLED='true'
+.\gradlew.bat --gradle-user-home .gradle-user-home bootRun
+```
+
+관리자 로그인 후 `POST /api/admin/public-recruitment`를 호출하면 즉시 동기화할 수 있습니다. `pblntInstCd`는 알리오 기관코드로, `pbadmsStdInstCd`는 공공행정 표준기관코드로 각각 저장합니다. 기본 수집 범위는 진행 중 공고 2페이지, 페이지당 100건이며 환경변수 `JOBHUB_PUBLIC_DATA_PAGES`와 `JOBHUB_PUBLIC_DATA_ROWS`로 조정합니다.
+
 등록한 채용 목록을 **매일 00:00 Asia/Seoul**에 한 번 수집합니다. 서버가 자정에 실행 중이어야 예약 작업이 수행됩니다. 서버 시작 시나 화면 새로고침 시 추가 수집하지 않습니다. 잡알리오는 전용 표 파서를 사용하고, 허용된 다른 공개 사이트는 OpenAI Responses API의 Structured Outputs로 공고를 추출할 수 있습니다. `OPENAI_API_KEY`가 필요하며 `OPENAI_MODEL`로 모델을 변경할 수 있습니다. AI는 HTML에서 이미 공개된 내용을 구조화할 뿐 로그인·캡차·접근 차단을 우회하지 않습니다. 수집 상태는 화면과 `/api/crawl-status`에서 확인합니다.
 
 출처 설정은 `NAME|URL|PUBLIC/PRIVATE|TABLE/AI/AUTO|CENTRAL_PUBLIC/LOCAL_PUBLIC` 형식이고 여러 출처는 쉼표로 구분합니다. 마지막 값은 중앙 공공기관과 지방공기업의 카드 테두리를 구분합니다. 환경 변수 `JOBHUB_CRAWL_SOURCES`로 운영 설정을 덮어쓸 수 있습니다. `TABLE`은 잡알리오 표 파서, `AI`는 AI 전용, `AUTO`는 표 파싱 후 결과가 없을 때 AI를 사용합니다.

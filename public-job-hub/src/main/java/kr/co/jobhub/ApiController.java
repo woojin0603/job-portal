@@ -37,6 +37,7 @@ public class ApiController {
 
     /** 카드 한 장에 필요한 공고 정보와 현재 회원의 개인 상태. */
     public record PostingDto(Long id, String source, String title, String organization, String region,
+                             String alioInstitutionCode,
                              String employmentType, String organizationType, String publicInstitutionType,
                              String mobilityType, LocalDate postedAt, LocalDate deadline,
                              String sourceUrl, boolean scrapped, boolean applied,
@@ -57,22 +58,31 @@ public class ApiController {
     public record Preview(String title, String organization, String sourceUrl, String originalUrl, String html) {
     }
 
+    /** 알리오 공시 기준 신입사원 초임. 금액 단위는 천원이다. */
+    public record SalaryView(boolean available, String alioInstitutionCode, String organization,
+                             Integer fiscalYear, String valueType, Long totalAmount, Long baseSalary,
+                             Long fixedAllowance, Long variableAllowance, Long welfareBenefit,
+                             Long performanceBonus, Long managementEvaluationBonus, Long otherAmount) {}
+
     private final JobPostingRepository postings;
     private final ScrapRepository scraps;
     private final AppUserRepository users;
     private final RecruitmentPositionRepository positions;
     private final CrawlService crawler;
+    private final InstitutionCompensationRepository compensations;
     private final Set<String> sourceHosts;
 
     /** 공고·회원·스크랩 저장소와 수집 상태 제공자를 주입받는다. */
     public ApiController(JobPostingRepository postings, ScrapRepository scraps,
                          AppUserRepository users, RecruitmentPositionRepository positions, CrawlService crawler,
+                         InstitutionCompensationRepository compensations,
                          @Value("${jobhub.crawl.sources}") String configuredSources) {
         this.postings = postings;
         this.scraps = scraps;
         this.users = users;
         this.positions = positions;
         this.crawler = crawler;
+        this.compensations = compensations;
         this.sourceHosts = java.util.Arrays.stream(configuredSources.split(","))
                 .map(raw -> raw.split("\\|", -1))
                 .filter(parts -> parts.length >= 2)
@@ -124,6 +134,7 @@ public class ApiController {
                                 : "FIXED".equals(p.mobilityType) ? "LOCAL_PUBLIC" : null;
                     }
                     return new PostingDto(p.id, p.source, p.title, p.organization, p.region,
+                            p.alioInstitutionCode,
                             p.employmentType, p.organizationType, publicInstitutionType,
                             p.mobilityType == null ? "UNKNOWN" : p.mobilityType,
                             p.postedAt, p.deadline, p.sourceUrl,
@@ -136,6 +147,25 @@ public class ApiController {
                 })
                 .toList();
         return new PostingPage(items, result.getTotalElements(), safePage, result.hasNext(), crawler.status());
+    }
+
+    /** 공고의 알리오 기관코드로 가장 최근 신입사원 초임 공시를 조회한다. */
+    @GetMapping("/postings/{id}/salary")
+    public SalaryView salary(@PathVariable Long id) {
+        JobPosting posting = postings.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        String code = posting.alioInstitutionCode;
+        if (code == null || code.isBlank()) {
+            return new SalaryView(false, null, posting.organization, null, null,
+                    null, null, null, null, null, null, null, null);
+        }
+        return compensations.findFirstByAlioInstitutionCodeOrderByFiscalYearDesc(code)
+                .map(value -> new SalaryView(true, code, value.organization, value.fiscalYear, value.valueType,
+                        value.totalAmount, value.baseSalary, value.fixedAllowance, value.variableAllowance,
+                        value.welfareBenefit, value.performanceBonus, value.managementEvaluationBonus,
+                        value.otherAmount))
+                .orElseGet(() -> new SalaryView(false, code, posting.organization, null, null,
+                        null, null, null, null, null, null, null, null));
     }
 
     /** 공고 스크랩을 토글한다. 해제하면 개인 지원 완료 상태도 함께 제거된다. */

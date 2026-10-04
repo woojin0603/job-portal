@@ -1,8 +1,10 @@
 package kr.co.jobhub;
 
 import kr.co.jobhub.model.JobPosting;
+import kr.co.jobhub.model.InstitutionCompensation;
 import kr.co.jobhub.model.RecruitmentPosition;
 import kr.co.jobhub.repo.JobPostingRepository;
+import kr.co.jobhub.repo.InstitutionCompensationRepository;
 import kr.co.jobhub.repo.RecruitmentPositionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,7 @@ class CareerToolsIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JobPostingRepository postings;
     @Autowired RecruitmentPositionRepository positions;
+    @Autowired InstitutionCompensationRepository compensations;
 
     private long postingId;
 
@@ -41,6 +44,7 @@ class CareerToolsIntegrationTest {
             value.sourceId = "career-tools-1";
             value.title = "수원 전산직 채용";
             value.organization = "테스트 공공기관";
+            value.alioInstitutionCode = "TEST001";
             value.region = "경기도 수원시";
             value.employmentType = "정규직";
             value.organizationType = "PUBLIC";
@@ -51,6 +55,8 @@ class CareerToolsIntegrationTest {
             return postings.save(value);
         });
         postingId = posting.id;
+        posting.alioInstitutionCode = "TEST001";
+        postings.save(posting);
         if (positions.findByPostingIdOrderById(posting.id).isEmpty()) {
             RecruitmentPosition position = new RecruitmentPosition();
             position.posting = posting;
@@ -62,6 +68,25 @@ class CareerToolsIntegrationTest {
         }
         mvc.perform(post("/api/auth/register").with(csrf()).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"tools@example.com\",\"password\":\"password123\",\"displayName\":\"도구 사용자\"}"));
+    }
+
+    @Test
+    void resolvesLatestSalaryByAlioInstitutionCode() throws Exception {
+        InstitutionCompensation value = compensations
+                .findByAlioInstitutionCodeAndFiscalYear("TEST001", 2025)
+                .orElseGet(InstitutionCompensation::new);
+        value.alioInstitutionCode = "TEST001";
+        value.organization = "테스트 공공기관";
+        value.fiscalYear = 2025;
+        value.totalAmount = 42000L;
+        compensations.save(value);
+
+        mvc.perform(get("/api/postings/{id}/salary", postingId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(true))
+                .andExpect(jsonPath("$.alioInstitutionCode").value("TEST001"))
+                .andExpect(jsonPath("$.fiscalYear").value(2025))
+                .andExpect(jsonPath("$.totalAmount").value(42000));
     }
 
     @Test
