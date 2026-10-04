@@ -759,6 +759,10 @@ nav button.active {
 .qualification-search {
   position: relative;
 }
+.qualification-search > input[readonly] {
+  cursor: pointer;
+  background: #fff;
+}
 .qualification-selected {
   display: block;
   margin-top: 5px;
@@ -815,6 +819,94 @@ nav button.active {
   margin-top: 3px;
   color: #718197;
   font-size: 11px;
+}
+.qualification-overlay {
+  z-index: 80;
+}
+.qualification-dialog {
+  position: relative;
+  width: min(100%, 560px);
+  max-height: min(84vh, 720px);
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #fff;
+  padding: 26px;
+  box-shadow: 0 24px 70px #0b1c3666;
+}
+.qualification-dialog h2 {
+  margin: 0;
+  color: #173f76;
+}
+.qualification-dialog-input {
+  width: 100%;
+  height: 48px;
+  margin-top: 20px;
+  border: 2px solid #9eb6d2;
+  border-radius: 10px;
+  padding: 0 13px;
+  font: inherit;
+}
+.qualification-dialog-input:focus {
+  border-color: #175eb5;
+  outline: 3px solid #175eb520;
+}
+.qualification-dialog-results {
+  max-height: 380px;
+  overflow-y: auto;
+  margin-top: 12px;
+  border: 1px solid #d8e2ee;
+  border-radius: 10px;
+}
+.qualification-dialog-results > p {
+  margin: 0;
+  padding: 24px 16px;
+  color: #718197;
+  text-align: center;
+}
+.qualification-dialog-results button {
+  position: relative;
+  display: block;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #e8eef5;
+  padding: 13px 64px 13px 14px;
+  background: #fff;
+  text-align: left;
+}
+.qualification-dialog-results button:hover {
+  background: #eef5fd;
+}
+.qualification-dialog-results strong,
+.qualification-dialog-results span {
+  display: block;
+}
+.qualification-dialog-results span {
+  margin-top: 4px;
+  color: #718197;
+  font-size: 12px;
+}
+.qualification-dialog-results em {
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  translate: 0 -50%;
+  border-radius: 6px;
+  padding: 6px 9px;
+  background: #175eb5;
+  color: #fff;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+.qualification-manual {
+  width: 100%;
+  margin-top: 12px;
+  border: 1px solid #9eb6d2;
+  border-radius: 9px;
+  padding: 11px;
+  background: #f7faff;
+  color: #173f76;
+  font-weight: 800;
 }
 .spec-grid-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));

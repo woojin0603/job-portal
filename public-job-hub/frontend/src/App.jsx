@@ -728,21 +728,19 @@ const QUALIFICATION_TYPE_LABELS = {
 function QualificationSearchInput({ item, onChange }) {
   const [results, setResults] = useState([])
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
   useEffect(() => {
-    if (!item.name || item.name.trim().length < 2 || item.catalogId) {
+    if (!open || query.trim().length < 2) {
       setResults([])
       return
     }
     const controller = new AbortController()
     const timer = window.setTimeout(
       () =>
-        getJson(`/api/qualifications?q=${encodeURIComponent(item.name.trim())}`, {
+        getJson(`/api/qualifications?q=${encodeURIComponent(query.trim())}`, {
           signal: controller.signal,
         })
-          .then((rows) => {
-            setResults(rows)
-            setOpen(true)
-          })
+          .then(setResults)
           .catch(() => {}),
       250,
     )
@@ -750,17 +748,31 @@ function QualificationSearchInput({ item, onChange }) {
       window.clearTimeout(timer)
       controller.abort()
     }
-  }, [item.name, item.catalogId])
+  }, [open, query])
+  function showSearch() {
+    setQuery(item.name || '')
+    setResults([])
+    setOpen(true)
+  }
+  function select(result) {
+    onChange({
+      ...item,
+      catalogId: result.id,
+      name: result.name,
+      type: result.type,
+      issuer: result.issuer,
+    })
+    setOpen(false)
+  }
   return (
     <div className="qualification-search">
       <input
         value={item.name || ''}
-        maxLength={120}
-        autoComplete="off"
-        onChange={(e) =>
-          onChange({ ...item, catalogId: null, name: e.target.value, type: '', issuer: '' })
-        }
-        onFocus={() => results.length && setOpen(true)}
+        readOnly
+        placeholder="눌러서 자격증 검색"
+        onClick={showSearch}
+        onFocus={showSearch}
+        aria-haspopup="dialog"
       />
       {item.type && (
         <small className="qualification-selected">
@@ -768,32 +780,62 @@ function QualificationSearchInput({ item, onChange }) {
           {item.issuer && ` · ${item.issuer}`}
         </small>
       )}
-      {open && results.length > 0 && (
-        <div className="qualification-results">
-          {results.map((result) => (
-            <button
-              type="button"
-              key={result.id}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                onChange({
-                  ...item,
-                  catalogId: result.id,
-                  name: result.name,
-                  type: result.type,
-                  issuer: result.issuer,
-                })
-                setOpen(false)
-              }}
-            >
-              <strong>{result.name}</strong>
-              <span>
-                {QUALIFICATION_TYPE_LABELS[result.type]}
-                {result.issuer && ` · ${result.issuer}`}
-              </span>
-              <em>등록</em>
-            </button>
-          ))}
+      {open && (
+        <div
+          className="match-overlay qualification-overlay"
+          onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <section
+            className="qualification-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="자격증 검색 및 등록"
+          >
+            <div className="match-dialog-head">
+              <div>
+                <p className="eyebrow">QUALIFICATION SEARCH</p>
+                <h2>자격증 검색·등록</h2>
+              </div>
+              <button className="close" type="button" onClick={() => setOpen(false)}>
+                ×
+              </button>
+            </div>
+            <input
+              className="qualification-dialog-input"
+              value={query}
+              maxLength={120}
+              autoComplete="off"
+              autoFocus
+              placeholder="자격증명을 두 글자 이상 입력하세요"
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <div className="qualification-dialog-results">
+              {query.trim().length < 2 && <p>두 글자 이상 입력하면 공식 자격증을 검색합니다.</p>}
+              {query.trim().length >= 2 && results.length === 0 && (
+                <p>일치하는 공식 자격증이 없습니다.</p>
+              )}
+              {results.map((result) => (
+                <button type="button" key={result.id} onClick={() => select(result)}>
+                  <strong>{result.name}</strong>
+                  <span>
+                    {QUALIFICATION_TYPE_LABELS[result.type]}
+                    {result.issuer && ` · ${result.issuer}`}
+                  </span>
+                  <em>등록</em>
+                </button>
+              ))}
+            </div>
+            {query.trim().length >= 2 && (
+              <button
+                className="qualification-manual"
+                type="button"
+                onClick={() => select({ id: null, name: query.trim(), type: '', issuer: '' })}
+              >
+                목록에 없으면 “{query.trim()}” 직접 등록
+              </button>
+            )}
+          </section>
         </div>
       )}
     </div>
@@ -918,11 +960,12 @@ function ProfileEditor({ profile, busy, message, onSave }) {
                 3. 취득연월일
                 <input
                   type="date"
-                  value={
-                    item.acquiredDate || (item.acquiredMonth ? `${item.acquiredMonth}-01` : '')
-                  }
+                  value={item.acquiredDate || ''}
                   onChange={itemChange('certifications', index, 'acquiredDate')}
                 />
+                {!item.acquiredDate && item.acquiredMonth && (
+                  <small>기존 취득연월: {item.acquiredMonth} · 정확한 일자를 선택해 주세요.</small>
+                )}
               </label>
               <button
                 className="remove-spec"
