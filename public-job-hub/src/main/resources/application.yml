@@ -21,6 +21,8 @@ jobhub:
   # 쉼표로 구분한 이메일만 관리자 검수 API에 접근할 수 있다.
   admin:
     emails: ${JOBHUB_ADMIN_EMAILS:}
+    username: ${JOBHUB_ADMIN_USERNAME:admin}
+    password: ${JOBHUB_ADMIN_PASSWORD:admin1234!}
   security:
     login-max-failures: ${JOBHUB_LOGIN_MAX_FAILURES:5}
     login-window-minutes: ${JOBHUB_LOGIN_WINDOW_MINUTES:15}

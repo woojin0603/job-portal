@@ -39,6 +39,15 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+// Windows/OneDrive에서 javac가 의존성 JAR을 닫을 때 발생하는 파일 잠금이 Gradle 프로세스에 전파되지 않게 한다.
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.fork = true
+    options.forkOptions.executable = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }.get().executablePath.asFile.absolutePath
+}
+
 // 배포용 JAR에 설치 가능한 React 화면과 서비스 워커를 함께 담는다.
 // 처음 실행 전 frontend 폴더에서 npm install을 한 번 수행해야 한다.
 tasks.register('buildFrontend', Exec) {

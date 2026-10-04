@@ -15,6 +15,9 @@ const pwa = VitePWA({
     start_url: '/',
     scope: '/',
     display: 'standalone',
+    display_override: ['window-controls-overlay', 'standalone'],
+    orientation: 'portrait-primary',
+    categories: ['business', 'productivity'],
     theme_color: '#143d71',
     background_color: '#f5f8fc',
     icons: [
@@ -25,6 +28,14 @@ const pwa = VitePWA({
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',
+      },
+    ],
+    shortcuts: [
+      {
+        name: '채용정보 보기',
+        short_name: '채용정보',
+        url: '/',
+        icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }],
       },
     ],
   },

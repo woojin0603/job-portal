@@ -1,0 +1,37 @@
+package kr.co.jobhub;
+
+import kr.co.jobhub.model.AppUser;
+import kr.co.jobhub.repo.AppUserRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+/** 최초 실행 때만 기본 관리자 계정을 만들며 기존 계정의 비밀번호는 덮어쓰지 않는다. */
+@Component
+public class DefaultAdminInitializer implements ApplicationRunner {
+    private final AppUserRepository users;
+    private final PasswordEncoder passwords;
+    private final String username;
+    private final String password;
+
+    public DefaultAdminInitializer(AppUserRepository users, PasswordEncoder passwords,
+                                   @Value("${jobhub.admin.username:admin}") String username,
+                                   @Value("${jobhub.admin.password:admin1234!}") String password) {
+        this.users = users;
+        this.passwords = passwords;
+        this.username = username.trim().toLowerCase();
+        this.password = password;
+    }
+
+    @Override
+    public void run(ApplicationArguments args) {
+        if (username.isBlank() || users.existsByEmail(username)) return;
+        AppUser admin = new AppUser();
+        admin.email = username;
+        admin.passwordHash = passwords.encode(password);
+        admin.displayName = "관리자";
+        users.save(admin);
+    }
+}

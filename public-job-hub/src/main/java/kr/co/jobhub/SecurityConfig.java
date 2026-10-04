@@ -31,9 +31,11 @@ public class SecurityConfig {
     /** 이메일로 회원을 읽어 Spring Security가 이해하는 인증 사용자로 변환한다. */
     @Bean
     UserDetailsService userDetailsService(AppUserRepository users,
-                                          @org.springframework.beans.factory.annotation.Value("${jobhub.admin.emails:}") String adminEmails) {
+                                          @org.springframework.beans.factory.annotation.Value("${jobhub.admin.emails:}") String adminEmails,
+                                          @org.springframework.beans.factory.annotation.Value("${jobhub.admin.username:admin}") String adminUsername) {
         var admins = java.util.Arrays.stream(adminEmails.split(","))
                 .map(String::trim).map(String::toLowerCase).filter(value -> !value.isBlank()).collect(java.util.stream.Collectors.toSet());
+        admins.add(adminUsername.trim().toLowerCase());
         return email -> users.findByEmail(email)
                 .filter(u -> u.passwordHash != null)
                 .map(u -> User.withUsername(u.email).password(u.passwordHash)

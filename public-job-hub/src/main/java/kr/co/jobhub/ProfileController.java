@@ -33,8 +33,12 @@ public class ProfileController {
     private static final java.util.regex.Pattern FORBIDDEN_LABEL = java.util.regex.Pattern.compile(
             "(?i)(주민(?:등록)?번호|전화번호|휴대폰|연락처|자격증\\s*(?:번호|등록번호)|학위\\s*번호|여권번호|운전면허번호|계좌번호|상세주소)");
     private static final String MONTH = "^$|^\\d{4}-(0[1-9]|1[0-2])$";
+    private static final String DATE = "^$|^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$";
 
-    public record Certification(@Size(max = 120) String name,
+    public record Certification(Long catalogId, @Size(max = 120) String name,
+                                @Size(max = 30) String type, @Size(max = 200) String issuer,
+                                @Size(max = 50) String grade,
+                                @Pattern(regexp = DATE) String acquiredDate,
                                 @Pattern(regexp = MONTH) String acquiredMonth) {}
     public record Activity(@Size(max = 160) String name, @Size(max = 1500) String description,
                            @Pattern(regexp = MONTH) String startMonth,
@@ -86,7 +90,7 @@ public class ProfileController {
         List<Career> careers = request.careers() == null ? List.of() : request.careers();
         List<Degree> degrees = request.degrees() == null ? List.of() : request.degrees();
         List<String> values = new ArrayList<>();
-        certifications.forEach(item -> values.add(item.name()));
+        certifications.forEach(item -> { values.add(item.name()); values.add(item.grade()); });
         activities.forEach(item -> { values.add(item.name()); values.add(item.description()); });
         careers.forEach(item -> { values.add(item.companyName()); values.add(item.position()); values.add(item.duties()); });
         degrees.forEach(item -> { values.add(item.schoolName()); values.add(item.major()); values.add(item.degreeType()); });
@@ -139,7 +143,7 @@ public class ProfileController {
 
     private List<Certification> readCertifications(String raw) {
         try { return json.readValue(raw, new TypeReference<>() {}); }
-        catch (Exception e) { return clean(raw).isBlank() ? List.of() : List.of(new Certification(clean(raw), "")); }
+        catch (Exception e) { return clean(raw).isBlank() ? List.of() : List.of(new Certification(null, clean(raw), "", "", "", "", "")); }
     }
     private List<Activity> readActivities(String raw) {
         try { return json.readValue(raw, new TypeReference<>() {}); }

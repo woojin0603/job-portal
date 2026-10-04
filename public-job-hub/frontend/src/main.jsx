@@ -12,5 +12,11 @@ createRoot(document.getElementById('root')).render(
   </React.StrictMode>,
 )
 
-// 새 배포가 있으면 서비스 워커가 정적 화면 파일을 자동 갱신한다.
-registerSW({ immediate: true })
+// 새 배포를 발견하면 화면에 갱신 안내를 띄우고 사용자가 선택한 시점에 교체한다.
+const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    window.dispatchEvent(new CustomEvent('jobhub:update-available'))
+  },
+})
+window.addEventListener('jobhub:apply-update', () => updateSW(true))
