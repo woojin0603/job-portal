@@ -21,12 +21,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/reviews")
 public class AdminReviewController {
-    public record PositionInput(@NotBlank @Size(max = 40) String standardCategory,
-                                @NotBlank @Size(max = 150) String originalName,
-                                Integer headcount, @Size(max = 150) String workRegion,
-                                @Size(max = 1000) String requirements) {}
-    public record ReviewRequest(@Size(max = 100) String region,
-                                @Size(max = 100) String employmentType,
+    public record PositionInput(@NotBlank @Size(max = 500) String standardCategory,
+                                @NotBlank @Size(max = 500) String originalName,
+                                Integer headcount, @Size(max = 500) String workRegion,
+                                @Size(max = 20000) String requirements) {}
+    public record ReviewRequest(@Size(max = 500) String region,
+                                @Size(max = 500) String employmentType,
                                 String organizationType, String mobilityType,
                                 List<@Valid PositionInput> positions) {}
     public record PositionView(Long id, String standardCategory, String originalName, Integer headcount,

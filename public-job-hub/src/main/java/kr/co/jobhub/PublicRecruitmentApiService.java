@@ -10,9 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
 import java.net.URI;
 import java.net.http.*;
+import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -47,7 +49,7 @@ public class PublicRecruitmentApiService {
         this.positions = positions;
         this.json = json;
         this.baseUrl = baseUrl.replaceAll("/+$", "");
-        this.serviceKey = serviceKey.trim();
+        this.serviceKey = normalizeServiceKey(serviceKey);
         this.enabled = enabled;
         this.pages = Math.max(1, pages);
         this.rows = Math.max(1, Math.min(100, rows));
@@ -62,6 +64,9 @@ public class PublicRecruitmentApiService {
         Instant attempt = Instant.now();
         if (!enabled) return status = new Status(attempt, null, 0, "API 수집이 비활성화되어 있습니다.");
         if (serviceKey.isBlank()) return status = new Status(attempt, null, 0, "JOBHUB_PUBLIC_DATA_API_KEY가 없습니다.");
+        if (serviceKey.contains("JOBHUB_PUBLIC_DATA_"))
+            return status = new Status(attempt, null, 0,
+                    "인증키 값에 다른 환경변수가 함께 들어 있습니다. IntelliJ에서 환경변수를 별도 행으로 등록하세요.");
         int count = 0;
         try {
             for (int page = 1; page <= pages; page++) {
@@ -92,14 +97,66 @@ public class PublicRecruitmentApiService {
     }
 
     private JsonNode get(String path, Map<String, String> parameters) throws Exception {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + path).queryParam("serviceKey", serviceKey);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + path);
         parameters.forEach(builder::queryParam);
-        URI uri = builder.build().encode().toUri();
+        String parameterUrl = builder.build().encode().toUriString();
+        // Encoding 키는 브라우저에서 성공한 문자열을 그대로 사용하고, Decoding 키만 한 번 인코딩한다.
+        String encodedKey = serviceKey.contains("%")
+                ? serviceKey
+                : UriUtils.encodeQueryParam(serviceKey, StandardCharsets.UTF_8);
+        URI uri = URI.create(parameterUrl + (parameterUrl.contains("?") ? "&" : "?") + "serviceKey=" + encodedKey);
         HttpRequest request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(20))
                 .header("Accept", "application/json").GET().build();
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() / 100 != 2) throw new IllegalStateException("채용 API HTTP " + response.statusCode());
+        if (response.statusCode() / 100 != 2) {
+            throw new IllegalStateException("채용 API HTTP " + response.statusCode() + apiErrorMessage(response.body()));
+        }
         return json.readTree(response.body());
+    }
+
+    /** IntelliJ가 값 전체를 따옴표로 감싼 경우에도 실제 인증키만 사용한다. */
+    private String normalizeServiceKey(String value) {
+        String key = value == null ? "" : value.trim();
+        while (key.length() >= 2 && ((key.startsWith("\"") && key.endsWith("\""))
+                || (key.startsWith("'") && key.endsWith("'")))) {
+            key = key.substring(1, key.length() - 1).trim();
+        }
+        if (key.regionMatches(true, 0, "serviceKey=", 0, "serviceKey=".length()))
+            key = key.substring("serviceKey=".length()).trim();
+        return key;
+    }
+
+    /** 인증키를 노출하지 않고 게이트웨이가 보낸 오류 코드와 메시지만 상태 화면에 전달한다. */
+    private String apiErrorMessage(String body) {
+        if (body == null || body.isBlank()) return "";
+        try {
+            JsonNode response = json.readTree(body);
+            String code = firstText(response, "resultCode", "returnReasonCode", "errCd");
+            String message = firstText(response, "resultMsg", "returnAuthMsg", "errMsg");
+            if (code != null || message != null) {
+                return " (" + String.join(": ",
+                        java.util.stream.Stream.of(code, message).filter(Objects::nonNull).toList()) + ")";
+            }
+        } catch (Exception ignored) {
+            // XML/HTML 응답은 아래의 알려진 오류명만 추출한다.
+        }
+        for (String known : List.of("SERVICE_ACCESS_DENIED_ERROR", "SERVICE_KEY_IS_NOT_REGISTERED_ERROR",
+                "DEADLINE_HAS_EXPIRED_ERROR", "LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR",
+                "PERMISSION_DENIED", "SERVICE_KEY_IS_NULL")) {
+            if (body.contains(known)) return " (" + known + ")";
+        }
+        return "";
+    }
+
+    private String firstText(JsonNode node, String... fields) {
+        for (String field : fields) {
+            JsonNode found = node.findValue(field);
+            if (found != null) {
+                String value = found.asText("").trim();
+                if (!value.isBlank()) return value;
+            }
+        }
+        return null;
     }
 
     private void requireSuccess(JsonNode response) {

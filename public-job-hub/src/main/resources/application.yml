@@ -1,5 +1,9 @@
 # H2 파일 DB와 JPA 설정. 데이터 파일은 프로젝트의 data 폴더에 유지한다.
 spring:
+  # IntelliJ에서 JobHubApplication을 직접 실행해도 최신 React 빌드 결과를 제공한다.
+  web:
+    resources:
+      static-locations: file:./frontend/dist/,classpath:/META-INF/resources/,classpath:/resources/,classpath:/static/,classpath:/public/
   # 서비스 재시작 후에도 공고·회원·스크랩을 유지할 로컬 H2 파일 DB.
   datasource:
     url: jdbc:h2:file:./data/jobhub;DB_CLOSE_ON_EXIT=FALSE

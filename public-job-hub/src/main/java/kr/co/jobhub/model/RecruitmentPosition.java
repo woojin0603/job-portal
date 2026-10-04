@@ -16,17 +16,20 @@ public class RecruitmentPosition {
     @JoinColumn(name = "posting_id", nullable = false)
     public JobPosting posting;
 
-    @Column(name = "standard_category", nullable = false, length = 40)
+    /** 공식 API는 여러 NCS 대분류를 쉼표로 묶어 제공할 수 있다. */
+    @Column(name = "standard_category", nullable = false, length = 500)
     public String standardCategory;
 
-    @Column(name = "original_name", nullable = false, length = 150)
+    @Column(name = "original_name", nullable = false, length = 500)
     public String originalName;
 
     public Integer headcount;
 
-    @Column(length = 150)
+    @Column(length = 500)
     public String workRegion;
 
-    @Column(length = 1000)
+    /** 공고 API의 지원자격 원문은 1,000자를 넘을 수 있으므로 축약하지 않고 대용량 텍스트로 저장한다. */
+    @Lob
+    @Column
     public String requirements;
 }

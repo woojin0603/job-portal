@@ -276,7 +276,32 @@ const STAGE_LABELS = {
   REJECTED: '전형 종료',
 }
 
-function JobCard({ job, busy, onOpenSource, onSalary, onScrap, onTrack, onMatch, onShare, matchBusy }) {
+/** API가 쉼표로 전달한 여러 항목을 카드 크기에 맞게 핵심 항목과 나머지 개수로 요약한다. */
+function summarizeList(value, limit = 2) {
+  if (!value) return ''
+  const items = [
+    ...new Set(
+      String(value)
+        .split(/[,，]/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ]
+  if (items.length <= limit) return items.join(' · ')
+  return `${items.slice(0, limit).join(' · ')} 외 ${items.length - limit}개`
+}
+
+function JobCard({
+  job,
+  busy,
+  onOpenSource,
+  onSalary,
+  onScrap,
+  onTrack,
+  onMatch,
+  onShare,
+  matchBusy,
+}) {
   const institutionClass =
     job.organizationType === 'PRIVATE'
       ? 'institution-private'
@@ -292,6 +317,8 @@ function JobCard({ job, busy, onOpenSource, onSalary, onScrap, onTrack, onMatch,
     ? Math.ceil((deadlineDate.getTime() - today.getTime()) / 86400000)
     : null
   const urgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7
+  const visiblePositions = (job.positions || []).slice(0, 2)
+  const hiddenPositionCount = Math.max(0, (job.positions?.length || 0) - visiblePositions.length)
   const [tracking, setTracking] = useState({
     stage: job.applicationStage || 'SAVED',
     nextStepDate: job.nextStepDate || '',
@@ -314,29 +341,46 @@ function JobCard({ job, busy, onOpenSource, onSalary, onScrap, onTrack, onMatch,
           {urgent && <span className="urgent-tag">마감임박</span>}
         </div>
         <div className="card-tools">
-          <span className="source">{job.source}</span>
           <button type="button" onClick={() => onShare(job)} aria-label="공고 공유">
             공유
           </button>
         </div>
       </div>
-      <button className="title-button" onClick={onOpenSource}>
+      <button className="title-button" onClick={onOpenSource} title={job.title}>
         <h2>{job.title}</h2>
       </button>
       <div className="details">
         <span>채용기관</span>
-        <strong>{job.organization}</strong>
-        <div className="pills">{job.employmentType && <span>{job.employmentType}</span>}</div>
+        <strong className="organization-name" title={job.organization}>
+          {job.organization}
+        </strong>
+        <div className="pills">
+          {job.employmentType && (
+            <span title={job.employmentType}>{summarizeList(job.employmentType)}</span>
+          )}
+        </div>
         {job.positions?.length > 0 && (
           <div className="position-list">
-            {job.positions.map((position) => (
-              <span key={`${position.standardCategory}-${position.originalName}`}>
-                <strong>{position.standardCategory}</strong>
+            {visiblePositions.map((position) => (
+              <span
+                key={`${position.standardCategory}-${position.originalName}`}
+                title={[
+                  position.standardCategory,
+                  position.originalName,
+                  position.headcount && `${position.headcount}명`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              >
+                <strong>{summarizeList(position.standardCategory)}</strong>
                 {position.originalName !== position.standardCategory &&
-                  ` · ${position.originalName}`}
+                  ` · ${summarizeList(position.originalName, 1)}`}
                 {position.headcount && ` · ${position.headcount}명`}
               </span>
             ))}
+            {hiddenPositionCount > 0 && (
+              <span className="position-more">외 {hiddenPositionCount}개 직렬</span>
+            )}
           </div>
         )}
       </div>
@@ -352,8 +396,12 @@ function JobCard({ job, busy, onOpenSource, onSalary, onScrap, onTrack, onMatch,
       </div>
       <div className="actions">
         <div className="job-info-actions">
-          <button className="preview-link" onClick={onOpenSource}>원문보기 ↗</button>
-          <button className="preview-link" onClick={() => onSalary(job)}>연봉정보</button>
+          <button className="preview-link" onClick={onOpenSource}>
+            원문보기 ↗
+          </button>
+          <button className="preview-link" onClick={() => onSalary(job)}>
+            연봉정보
+          </button>
         </div>
         <div className="career-actions">
           <button disabled={busy} onClick={() => onScrap(job.id)}>
@@ -402,36 +450,73 @@ function JobCard({ job, busy, onOpenSource, onSalary, onScrap, onTrack, onMatch,
 }
 
 function SalaryDialog({ value, onClose }) {
-  const money = (amount) => amount == null ? '—' : `${Number(amount).toLocaleString('ko-KR')}천원`
+  const money = (amount) => (amount == null ? '—' : `${Number(amount).toLocaleString('ko-KR')}천원`)
   return (
     <div className="match-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <section className="salary-dialog" role="dialog" aria-modal="true" aria-label="신입사원 초임">
         <div className="match-dialog-head">
-          <div><p className="eyebrow">ALIO SALARY</p><h2>신입사원 초임</h2></div>
-          <button className="close" onClick={onClose} aria-label="닫기">×</button>
+          <div>
+            <p className="eyebrow">ALIO SALARY</p>
+            <h2>신입사원 초임</h2>
+          </div>
+          <button className="close" onClick={onClose} aria-label="닫기">
+            ×
+          </button>
         </div>
-        {value.loading ? <p>연봉정보를 불러오는 중입니다...</p> : !value.available ? (
+        {value.loading ? (
+          <p>연봉정보를 불러오는 중입니다...</p>
+        ) : !value.available ? (
           <div className="salary-empty">
             <strong>공시된 초임 정보를 연결하지 못했습니다.</strong>
-            <p>{value.alioInstitutionCode ? '이 기관의 보수 파일이 아직 적재되지 않았습니다.' : '공고에 알리오 기관코드가 없습니다.'}</p>
+            <p>
+              {value.alioInstitutionCode
+                ? '이 기관의 보수 파일이 아직 적재되지 않았습니다.'
+                : '공고에 알리오 기관코드가 없습니다.'}
+            </p>
           </div>
         ) : (
           <>
             <p className="salary-organization">{value.organization}</p>
             <div className="salary-total">
-              <span>{value.fiscalYear}년 {value.valueType === 'BUDGET' ? '예산' : '결산'} 기준</span>
+              <span>
+                {value.fiscalYear}년 {value.valueType === 'BUDGET' ? '예산' : '결산'} 기준
+              </span>
               <strong>{money(value.totalAmount)}</strong>
             </div>
             <dl className="salary-breakdown">
-              <div><dt>기본급</dt><dd>{money(value.baseSalary)}</dd></div>
-              <div><dt>고정수당</dt><dd>{money(value.fixedAllowance)}</dd></div>
-              <div><dt>실적수당</dt><dd>{money(value.variableAllowance)}</dd></div>
-              <div><dt>급여성 복리후생비</dt><dd>{money(value.welfareBenefit)}</dd></div>
-              <div><dt>성과상여금</dt><dd>{money(value.performanceBonus)}</dd></div>
-              <div><dt>경영평가 성과급</dt><dd>{money(value.managementEvaluationBonus)}</dd></div>
-              <div><dt>기타</dt><dd>{money(value.otherAmount)}</dd></div>
+              <div>
+                <dt>기본급</dt>
+                <dd>{money(value.baseSalary)}</dd>
+              </div>
+              <div>
+                <dt>고정수당</dt>
+                <dd>{money(value.fixedAllowance)}</dd>
+              </div>
+              <div>
+                <dt>실적수당</dt>
+                <dd>{money(value.variableAllowance)}</dd>
+              </div>
+              <div>
+                <dt>급여성 복리후생비</dt>
+                <dd>{money(value.welfareBenefit)}</dd>
+              </div>
+              <div>
+                <dt>성과상여금</dt>
+                <dd>{money(value.performanceBonus)}</dd>
+              </div>
+              <div>
+                <dt>경영평가 성과급</dt>
+                <dd>{money(value.managementEvaluationBonus)}</dd>
+              </div>
+              <div>
+                <dt>기타</dt>
+                <dd>{money(value.otherAmount)}</dd>
+              </div>
             </dl>
-            <p className="salary-note">알리오 공시 기준 참고값이며 실제 채용 직무·직급의 보수와 다를 수 있습니다. 단위는 천원입니다.</p>
+            <p className="salary-note">
+              알리오 공시 기준 참고값이며 실제 채용 직무·직급의 보수와 다를 수 있습니다. 단위는
+              천원입니다.
+            </p>
           </>
         )}
       </section>
@@ -1357,11 +1442,17 @@ function AdminReviewPanel({ securePost }) {
     setMessage('')
     try {
       const result = await securePost('/api/admin/compensations/upload', form)
-      const unmatched = result.unmatchedNames?.length ? ` 미매칭: ${result.unmatchedNames.join(', ')}` : ''
-      setMessage(`초임 ${result.savedRows}건, 기관 ${result.matchedInstitutions}곳을 저장했습니다.${unmatched}`)
+      const unmatched = result.unmatchedNames?.length
+        ? ` 미매칭: ${result.unmatchedNames.join(', ')}`
+        : ''
+      setMessage(
+        `초임 ${result.savedRows}건, 기관 ${result.matchedInstitutions}곳을 저장했습니다.${unmatched}`,
+      )
       setCompensationFile(null)
       formElement.reset()
-    } catch (e) { setMessage(e.message) }
+    } catch (e) {
+      setMessage(e.message)
+    }
   }
   const change = (id, field, value) =>
     setItems((rows) => rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)))
@@ -1484,8 +1575,12 @@ function AdminReviewPanel({ securePost }) {
       <form className="qualification-import" onSubmit={importCompensations}>
         <strong>알리오 직원평균보수 XLSX 적재</strong>
         <span>신입사원초임 시트를 기관코드와 연결합니다.</span>
-        <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required
-          onChange={(e) => setCompensationFile(e.target.files?.[0] || null)} />
+        <input
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          required
+          onChange={(e) => setCompensationFile(e.target.files?.[0] || null)}
+        />
         <button>초임 DB에 불러오기</button>
       </form>
       {items.map((item) => (
@@ -1918,8 +2013,12 @@ export default function App() {
   }
   async function openSalary(job) {
     setSalaryDialog({ loading: true, organization: job.organization })
-    try { setSalaryDialog(await getJson(`/api/postings/${job.id}/salary`)) }
-    catch (e) { setSalaryDialog(null); setError(e.message) }
+    try {
+      setSalaryDialog(await getJson(`/api/postings/${job.id}/salary`))
+    } catch (e) {
+      setSalaryDialog(null)
+      setError(e.message)
+    }
   }
   /** 개별 채용 공고문 PDF를 우선해 작은 창으로 열고 통합 채용 홈페이지 이동을 피한다. */
   async function openSource(job) {

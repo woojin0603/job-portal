@@ -26,6 +26,7 @@ header {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
 }
 .card-tools button {
   border: 0;
@@ -35,6 +36,7 @@ header {
   color: #245b9a;
   font-size: 11px;
   font-weight: 800;
+  white-space: nowrap;
 }
 .update-banner {
   position: sticky;
@@ -201,7 +203,10 @@ h1 {
 }
 /* 공고 카드와 스크랩·지원 완료 상태별 외곽선 색상. */
 .card {
-  min-height: 330px;
+  height: 430px;
+  min-height: 430px;
+  overflow-y: auto;
+  scrollbar-width: thin;
   background: #fff;
   border: 4px solid #94a3b8;
   border-radius: 13px;
@@ -250,9 +255,6 @@ h1 {
   background: #b91c1c;
   padding: 12px 13px;
   color: white;
-}
-.card.deadline-urgent .source {
-  color: #ffe4e6;
 }
 .card.deadline-urgent h2 {
   color: #991b1b;
@@ -321,11 +323,15 @@ h1 {
   justify-content: space-between;
   align-items: center;
   gap: 5px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 .card-labels {
   display: flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 .tag {
   font-size: 12px;
@@ -340,13 +346,6 @@ h1 {
   font-size: 10px;
   font-weight: 900;
 }
-.source {
-  font-size: 12px;
-  color: #8490a0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .card h2 {
   font-size: 18px;
   line-height: 1.3;
@@ -354,6 +353,10 @@ h1 {
   color: #12315e;
   margin: 12px 0 18px;
   min-height: 40px;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .details {
   font-size: 14px;
@@ -368,6 +371,11 @@ h1 {
 .details strong {
   font-size: 15px;
 }
+.organization-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .pills {
   display: flex;
   gap: 5px;
@@ -378,10 +386,13 @@ h1 {
   border-radius: 15px;
   padding: 3px 8px;
   font-size: 12px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .position-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 5px;
   margin-top: 8px;
 }
@@ -392,6 +403,15 @@ h1 {
   color: #365b82;
   padding: 4px 6px;
   font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.position-list .position-more {
+  border-style: dashed;
+  background: #fff;
+  color: #64748b;
+  text-align: center;
 }
 .date {
   border-top: 1px solid #edf0f4;
@@ -1133,10 +1153,17 @@ nav button.active {
   background: #eff6ff;
 }
 
-.salary-total span { color: #475569; }
-.salary-total strong { color: #1d4ed8; font-size: 1.7rem; }
+.salary-total span {
+  color: #475569;
+}
+.salary-total strong {
+  color: #1d4ed8;
+  font-size: 1.7rem;
+}
 
-.salary-breakdown { margin: 18px 0; }
+.salary-breakdown {
+  margin: 18px 0;
+}
 .salary-breakdown div {
   display: flex;
   justify-content: space-between;
@@ -1144,9 +1171,18 @@ nav button.active {
   padding: 11px 4px;
   border-bottom: 1px solid #e2e8f0;
 }
-.salary-breakdown dt { color: #475569; }
-.salary-breakdown dd { margin: 0; font-weight: 700; }
-.salary-note, .salary-empty p { color: #64748b; line-height: 1.6; }
+.salary-breakdown dt {
+  color: #475569;
+}
+.salary-breakdown dd {
+  margin: 0;
+  font-weight: 700;
+}
+.salary-note,
+.salary-empty p {
+  color: #64748b;
+  line-height: 1.6;
+}
 .user-name {
   font-size: 12px;
   color: #65768d;

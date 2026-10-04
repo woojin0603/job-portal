@@ -49,10 +49,10 @@ public class JobPosting {
     public String publicAdminStandardInstitutionCode;
 
     /** 근무지 및 고용 형태는 원문에 없을 수 있다. */
-    @Column(length = 100)
+    @Column(length = 500)
     public String region;
 
-    @Column(length = 100)
+    @Column(length = 500)
     public String employmentType;
 
     /** AI 또는 출처 설정으로 분류한 공공기관·민간기업 구분. */
