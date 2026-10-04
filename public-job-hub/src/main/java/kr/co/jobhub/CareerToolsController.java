@@ -139,7 +139,10 @@ public class CareerToolsController {
         List<String> regions = postings.findAll().stream().map(p -> p.region)
                 .filter(Objects::nonNull).filter(value -> !value.isBlank()).distinct().sorted().toList();
         List<String> categories = positions.findAll().stream().map(p -> p.standardCategory)
-                .filter(Objects::nonNull).distinct().sorted().toList();
+                .filter(Objects::nonNull)
+                .flatMap(value -> Arrays.stream(value.split("[,，]")))
+                .map(String::trim).filter(value -> !value.isBlank())
+                .distinct().sorted().toList();
         return new FilterOptions(regions, List.of("ROTATIONAL", "FIXED", "UNKNOWN"), categories);
     }
 
