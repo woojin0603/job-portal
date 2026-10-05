@@ -17,6 +17,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -64,18 +66,26 @@ public class ApiController {
                              Long fixedAllowance, Long variableAllowance, Long welfareBenefit,
                              Long performanceBonus, Long managementEvaluationBonus, Long otherAmount) {}
 
+    public record CompetitionStage(String name, Integer applicants, Integer selected, BigDecimal ratio) {}
+    public record CompetitionItem(Long postingId, String title, LocalDate postedAt, LocalDate deadline,
+                                  String sourceUrl, boolean similarCategory, List<CompetitionStage> stages) {}
+    public record CompetitionView(boolean available, String organization, String note,
+                                  List<CompetitionItem> items) {}
+
     private final JobPostingRepository postings;
     private final ScrapRepository scraps;
     private final AppUserRepository users;
     private final RecruitmentPositionRepository positions;
     private final CrawlService crawler;
     private final InstitutionCompensationRepository compensations;
+    private final RecruitmentCompetitionRepository competitions;
     private final Set<String> sourceHosts;
 
     /** 공고·회원·스크랩 저장소와 수집 상태 제공자를 주입받는다. */
     public ApiController(JobPostingRepository postings, ScrapRepository scraps,
                          AppUserRepository users, RecruitmentPositionRepository positions, CrawlService crawler,
                          InstitutionCompensationRepository compensations,
+                         RecruitmentCompetitionRepository competitions,
                          @Value("${jobhub.crawl.sources}") String configuredSources) {
         this.postings = postings;
         this.scraps = scraps;
@@ -83,6 +93,7 @@ public class ApiController {
         this.positions = positions;
         this.crawler = crawler;
         this.compensations = compensations;
+        this.competitions = competitions;
         this.sourceHosts = java.util.Arrays.stream(configuredSources.split(","))
                 .map(raw -> raw.split("\\|", -1))
                 .filter(parts -> parts.length >= 2)
@@ -166,6 +177,55 @@ public class ApiController {
                         value.otherAmount))
                 .orElseGet(() -> new SalaryView(false, code, posting.organization, null, null,
                         null, null, null, null, null, null, null, null));
+    }
+
+    /** 같은 기관의 최근 2년 공고 중 직렬이 겹치는 자료를 우선해 공개된 경쟁률을 반환한다. */
+    @GetMapping("/postings/{id}/competition")
+    public CompetitionView competition(@PathVariable Long id) {
+        JobPosting current = postings.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (current.alioInstitutionCode == null || current.alioInstitutionCode.isBlank()) {
+            return new CompetitionView(false, current.organization, "알리오 기관코드가 없는 공고입니다.", List.of());
+        }
+        Set<String> currentCategories = categorySet(positions.findByPostingIdOrderById(id));
+        LocalDate cutoff = LocalDate.now(ZoneId.of("Asia/Seoul")).minusYears(2);
+        List<CompetitionItem> similar = new ArrayList<>();
+        List<CompetitionItem> regular = new ArrayList<>();
+        for (JobPosting candidate : postings.findByAlioInstitutionCodeOrderByPostedAtDesc(current.alioInstitutionCode)) {
+            if (candidate.id.equals(id) || candidate.postedAt == null || candidate.postedAt.isBefore(cutoff)) continue;
+            List<RecruitmentCompetition> rows = competitions.findByPostingIdOrderById(candidate.id);
+            if (rows.isEmpty()) continue;
+            boolean categoryMatch = !java.util.Collections.disjoint(
+                    currentCategories, categorySet(positions.findByPostingIdOrderById(candidate.id)));
+            CompetitionItem item = new CompetitionItem(candidate.id, candidate.title, candidate.postedAt,
+                    candidate.deadline, candidate.sourceUrl, categoryMatch,
+                    rows.stream().map(row -> new CompetitionStage(row.stageName, row.applicants,
+                            row.selected, row.ratio)).toList());
+            if (categoryMatch) similar.add(item);
+            else if (isRegularEmployment(candidate.employmentType)) regular.add(item);
+        }
+        // 동일 직렬 자료가 하나라도 있으면 다른 직렬을 섞지 않는다. 없을 때만 기관 정규직 자료로 대체한다.
+        List<CompetitionItem> selected = new ArrayList<>(similar.isEmpty() ? regular : similar);
+        if (selected.size() > 8) selected = new ArrayList<>(selected.subList(0, 8));
+        String note = !similar.isEmpty()
+                ? "같은 기관·유사 직렬의 최근 2년 공개자료를 우선 표시합니다."
+                : !regular.isEmpty()
+                ? "동일 직렬 자료가 없어 같은 기관의 정규직 경쟁률을 참고자료로 표시합니다."
+                : "최근 2년 동안 공개된 동일 직렬 또는 정규직 경쟁률 자료가 없습니다.";
+        return new CompetitionView(!selected.isEmpty(), current.organization, note, selected);
+    }
+
+    private Set<String> categorySet(List<RecruitmentPosition> rows) {
+        return rows.stream().map(row -> row.standardCategory).filter(java.util.Objects::nonNull)
+                .flatMap(value -> java.util.Arrays.stream(value.split("[,，]")))
+                .map(String::trim).filter(value -> !value.isBlank()).collect(Collectors.toSet());
+    }
+
+    private boolean isRegularEmployment(String employmentType) {
+        if (employmentType == null) return false;
+        return java.util.Arrays.stream(employmentType.split("[,，]"))
+                .map(String::trim)
+                .anyMatch(value -> value.equals("정규직") || value.startsWith("정규직("));
     }
 
     /** 공고 스크랩을 토글한다. 해제하면 개인 지원 완료 상태도 함께 제거된다. */

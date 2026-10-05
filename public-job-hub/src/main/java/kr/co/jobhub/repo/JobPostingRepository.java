@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 /** 채용공고 검색과 수집 시 중복 확인을 담당하는 JPA 저장소. */
@@ -16,6 +17,7 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
     Optional<JobPosting> findFirstBySourceUrl(String sourceUrl);
     Optional<JobPosting> findFirstByOrganizationAndTitleAndPostedAtAndDeadline(
             String organization, String title, LocalDate postedAt, LocalDate deadline);
+    List<JobPosting> findByAlioInstitutionCodeOrderByPostedAtDesc(String alioInstitutionCode);
 
     /**
      * 공개 중인 공고를 제목·기관명으로 검색하고 20건씩 페이지로 나눈다.

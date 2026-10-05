@@ -296,6 +296,7 @@ function JobCard({
   busy,
   onOpenSource,
   onSalary,
+  onCompetition,
   onScrap,
   onTrack,
   onMatch,
@@ -401,6 +402,9 @@ function JobCard({
           </button>
           <button className="preview-link" onClick={() => onSalary(job)}>
             연봉정보
+          </button>
+          <button className="preview-link" onClick={() => onCompetition(job)}>
+            이전 경쟁률 확인
           </button>
         </div>
         <div className="career-actions">
@@ -517,6 +521,74 @@ function SalaryDialog({ value, onClose }) {
               알리오 공시 기준 참고값이며 실제 채용 직무·직급의 보수와 다를 수 있습니다. 단위는
               천원입니다.
             </p>
+          </>
+        )}
+      </section>
+    </div>
+  )
+}
+
+function CompetitionDialog({ value, onClose }) {
+  const ratio = (stage) => {
+    if (stage.ratio != null && Number(stage.ratio) > 0)
+      return `${Number(stage.ratio).toFixed(2)} : 1`
+    if (stage.applicants != null && stage.selected)
+      return `${(Number(stage.applicants) / Number(stage.selected)).toFixed(2)} : 1`
+    return '공개되지 않음'
+  }
+  return (
+    <div className="match-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <section
+        className="salary-dialog competition-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="이전 경쟁률"
+      >
+        <div className="match-dialog-head">
+          <div>
+            <p className="eyebrow">ALIO COMPETITION</p>
+            <h2>이전 2개년 경쟁률</h2>
+          </div>
+          <button className="close" onClick={onClose} aria-label="닫기">
+            ×
+          </button>
+        </div>
+        {value.loading ? (
+          <p>경쟁률 자료를 불러오는 중입니다...</p>
+        ) : !value.available ? (
+          <div className="salary-empty">
+            <strong>비교 가능한 경쟁률 자료가 없습니다.</strong>
+            <p>{value.note}</p>
+          </div>
+        ) : (
+          <>
+            <p className="salary-organization">{value.organization}</p>
+            <p className="salary-note">{value.note}</p>
+            <div className="competition-list">
+              {value.items.map((item) => (
+                <article key={item.postingId}>
+                  <div className="competition-title">
+                    <strong>{item.title}</strong>
+                    <span>
+                      {item.postedAt?.slice(0, 4) || '연도 미확인'} ·{' '}
+                      {item.similarCategory ? '유사 직렬' : '기관 정규직 참고'}
+                    </span>
+                  </div>
+                  {item.stages.map((stage, index) => (
+                    <div className="competition-stage" key={`${stage.name}-${index}`}>
+                      <span>{stage.name}</span>
+                      <small>
+                        지원 {stage.applicants ?? '—'}명 · 선발 {stage.selected ?? '—'}명
+                      </small>
+                      <strong>{ratio(stage)}</strong>
+                    </div>
+                  ))}
+                  <a href={item.sourceUrl} target="_blank" rel="noreferrer">
+                    과거 공고 원문 ↗
+                  </a>
+                </article>
+              ))}
+            </div>
           </>
         )}
       </section>
@@ -1740,6 +1812,7 @@ export default function App() {
   const [capabilityLoading, setCapabilityLoading] = useState(false)
   const [matchBusyId, setMatchBusyId] = useState(null)
   const [salaryDialog, setSalaryDialog] = useState(null)
+  const [competitionDialog, setCompetitionDialog] = useState(null)
   // 설치 가능 여부와 네트워크 상태는 PWA 경험을 안내하는 데만 사용한다.
   const [installPrompt, setInstallPrompt] = useState(null)
   const [online, setOnline] = useState(navigator.onLine)
@@ -2020,6 +2093,15 @@ export default function App() {
       setError(e.message)
     }
   }
+  async function openCompetition(job) {
+    setCompetitionDialog({ loading: true, organization: job.organization })
+    try {
+      setCompetitionDialog(await getJson(`/api/postings/${job.id}/competition`))
+    } catch (e) {
+      setCompetitionDialog(null)
+      setError(e.message)
+    }
+  }
   /** 개별 채용 공고문 PDF를 우선해 작은 창으로 열고 통합 채용 홈페이지 이동을 피한다. */
   async function openSource(job) {
     const width = Math.min(1100, Math.max(720, window.screen.availWidth - 160))
@@ -2294,6 +2376,7 @@ export default function App() {
                     busy={busyId === job.id}
                     onOpenSource={() => openSource(job)}
                     onSalary={openSalary}
+                    onCompetition={openCompetition}
                     onScrap={(id) => mutate(id, 'scrap')}
                     onTrack={saveTracking}
                     onMatch={analyzeMatch}
@@ -2330,6 +2413,9 @@ export default function App() {
         />
       )}
       {salaryDialog && <SalaryDialog value={salaryDialog} onClose={() => setSalaryDialog(null)} />}
+      {competitionDialog && (
+        <CompetitionDialog value={competitionDialog} onClose={() => setCompetitionDialog(null)} />
+      )}
       {capabilityOpen && (
         <CapabilityDialog
           profile={profile}

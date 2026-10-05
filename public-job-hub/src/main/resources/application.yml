@@ -28,6 +28,8 @@ jobhub:
       base-url: https://apis.data.go.kr/1051000/recruitment
       service-key: ${JOBHUB_PUBLIC_DATA_API_KEY:}
       pages: ${JOBHUB_PUBLIC_DATA_PAGES:2}
+      # 최근 종료 공고를 캐시해 이전 2개년 경쟁률 비교에 사용한다. 최초 수집 뒤에는 저장된 공고를 재호출하지 않는다.
+      history-pages: ${JOBHUB_PUBLIC_DATA_HISTORY_PAGES:2}
       rows: ${JOBHUB_PUBLIC_DATA_ROWS:100}
       request-delay-millis: ${JOBHUB_PUBLIC_DATA_DELAY_MILLIS:250}
   # 쉼표로 구분한 이메일만 관리자 검수 API에 접근할 수 있다.

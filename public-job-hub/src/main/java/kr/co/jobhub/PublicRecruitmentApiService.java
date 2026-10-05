@@ -3,8 +3,10 @@ package kr.co.jobhub;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.jobhub.model.JobPosting;
+import kr.co.jobhub.model.RecruitmentCompetition;
 import kr.co.jobhub.model.RecruitmentPosition;
 import kr.co.jobhub.repo.JobPostingRepository;
+import kr.co.jobhub.repo.RecruitmentCompetitionRepository;
 import kr.co.jobhub.repo.RecruitmentPositionRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -27,31 +29,37 @@ public class PublicRecruitmentApiService {
     private static final String SOURCE = "MOEF-RECRUITMENT-API";
     private final JobPostingRepository postings;
     private final RecruitmentPositionRepository positions;
+    private final RecruitmentCompetitionRepository competitions;
     private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     private final String baseUrl;
     private final String serviceKey;
     private final boolean enabled;
     private final int pages;
+    private final int historyPages;
     private final int rows;
     private final long delayMillis;
     private volatile Status status = new Status(null, null, 0, null);
 
     public PublicRecruitmentApiService(JobPostingRepository postings, RecruitmentPositionRepository positions,
+                                       RecruitmentCompetitionRepository competitions,
                                        ObjectMapper json,
                                        @Value("${jobhub.public-data.recruitment.base-url}") String baseUrl,
                                        @Value("${jobhub.public-data.recruitment.service-key:}") String serviceKey,
                                        @Value("${jobhub.public-data.recruitment.enabled:false}") boolean enabled,
                                        @Value("${jobhub.public-data.recruitment.pages:2}") int pages,
+                                       @Value("${jobhub.public-data.recruitment.history-pages:2}") int historyPages,
                                        @Value("${jobhub.public-data.recruitment.rows:100}") int rows,
                                        @Value("${jobhub.public-data.recruitment.request-delay-millis:250}") long delayMillis) {
         this.postings = postings;
         this.positions = positions;
+        this.competitions = competitions;
         this.json = json;
         this.baseUrl = baseUrl.replaceAll("/+$", "");
         this.serviceKey = normalizeServiceKey(serviceKey);
         this.enabled = enabled;
         this.pages = Math.max(1, pages);
+        this.historyPages = Math.max(0, historyPages);
         this.rows = Math.max(1, Math.min(100, rows));
         this.delayMillis = Math.max(100, delayMillis);
     }
@@ -69,22 +77,13 @@ public class PublicRecruitmentApiService {
                     "인증키 값에 다른 환경변수가 함께 들어 있습니다. IntelliJ에서 환경변수를 별도 행으로 등록하세요.");
         int count = 0;
         try {
-            for (int page = 1; page <= pages; page++) {
-                JsonNode response = get("/list", Map.of("resultType", "json", "ongoingYn", "Y",
-                        "pageNo", Integer.toString(page), "numOfRows", Integer.toString(rows)));
-                requireSuccess(response);
-                JsonNode result = response.path("result");
-                if (!result.isArray() || result.isEmpty()) break;
-                for (JsonNode summary : result) {
-                    long sn = summary.path("recrutPblntSn").asLong(0);
-                    if (sn == 0) continue;
-                    JsonNode detailResponse = get("/detail", Map.of("resultType", "json", "sn", Long.toString(sn)));
-                    requireSuccess(detailResponse);
-                    save(detailResponse.path("result"));
-                    count++;
-                    Thread.sleep(delayMillis);
-                }
-                if (result.size() < rows) break;
+            count += syncListing(Map.of("ongoingYn", "Y"), pages, false);
+            if (historyPages > 0) {
+                LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+                count += syncListing(Map.of(
+                        "ongoingYn", "N",
+                        "pbancBgngYmd", today.minusYears(2).format(DateTimeFormatter.ISO_LOCAL_DATE),
+                        "pbancEndYmd", today.format(DateTimeFormatter.ISO_LOCAL_DATE)), historyPages, true);
             }
             status = new Status(attempt, Instant.now(), count, null);
         } catch (InterruptedException e) {
@@ -94,6 +93,40 @@ public class PublicRecruitmentApiService {
             status = new Status(attempt, null, count, e.getMessage());
         }
         return status;
+    }
+
+    private int syncListing(Map<String, String> filters, int pageLimit, boolean skipCached) throws Exception {
+        int count = 0;
+        for (int page = 1; page <= pageLimit; page++) {
+            Map<String, String> parameters = new LinkedHashMap<>(filters);
+            parameters.put("resultType", "json");
+            parameters.put("pageNo", Integer.toString(page));
+            parameters.put("numOfRows", Integer.toString(rows));
+            JsonNode response = get("/list", parameters);
+            requireSuccess(response);
+            JsonNode result = response.path("result");
+            if (!result.isArray() || result.isEmpty()) break;
+            for (JsonNode summary : result) {
+                long sn = summary.path("recrutPblntSn").asLong(0);
+                if (sn == 0 || (skipCached && hasCachedCompetition(sn))) continue;
+                JsonNode detailResponse = get("/detail", Map.of("resultType", "json", "sn", Long.toString(sn)));
+                requireSuccess(detailResponse);
+                save(detailResponse.path("result"));
+                count++;
+                Thread.sleep(delayMillis);
+            }
+            if (result.size() < rows) break;
+        }
+        return count;
+    }
+
+    private boolean hasCachedCompetition(long sn) {
+        String sourceId = Long.toString(sn);
+        String detailUrl = "https://job.alio.go.kr/mobile2021/recruit/recruitView.do?idx=" + sourceId;
+        return postings.findBySourceAndSourceId(SOURCE, sourceId)
+                .or(() -> postings.findFirstBySourceUrl(detailUrl))
+                .map(posting -> competitions.existsByPostingId(posting.id))
+                .orElse(false);
     }
 
     private JsonNode get(String path, Map<String, String> parameters) throws Exception {
@@ -214,6 +247,25 @@ public class PublicRecruitmentApiService {
             position.requirements = text(item, "aplyQlfcCn");
             positions.save(position);
         }
+
+        competitions.deleteByPostingId(posting.id);
+        int sequence = 1;
+        for (JsonNode step : item.path("steps")) {
+            Integer applicants = nullableInt(step, "aplyNope");
+            Integer selected = Optional.ofNullable(nullableInt(step, "recrutNope"))
+                    .orElse(nullableInt(step, "slctNope"));
+            java.math.BigDecimal ratio = decimal(step, "cmpttRt");
+            if (applicants == null && selected == null && (ratio == null || ratio.signum() == 0)) continue;
+            RecruitmentCompetition competition = new RecruitmentCompetition();
+            competition.posting = posting;
+            competition.stageName = Optional.ofNullable(text(step, "recrutPbancTtl"))
+                    .orElse(Optional.ofNullable(text(step, "recrutStepNm")).orElse("전형 " + sequence));
+            competition.applicants = applicants;
+            competition.selected = selected;
+            competition.ratio = ratio != null && ratio.signum() > 0 ? ratio : null;
+            competitions.save(competition);
+            sequence++;
+        }
     }
 
     private String text(JsonNode node, String field) {
@@ -224,6 +276,14 @@ public class PublicRecruitmentApiService {
     private Integer nullableInt(JsonNode node, String field) {
         JsonNode value = node.path(field);
         return value.isNumber() ? value.asInt() : null;
+    }
+
+    private java.math.BigDecimal decimal(JsonNode node, String field) {
+        JsonNode value = node.path(field);
+        if (value.isNumber()) return value.decimalValue();
+        String text = value.asText("").replace(":1", "").trim();
+        try { return text.isBlank() ? null : new java.math.BigDecimal(text); }
+        catch (NumberFormatException ignored) { return null; }
     }
 
     private LocalDate date(String value) {
