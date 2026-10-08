@@ -24,4 +24,18 @@ public class RecruitmentCompetition {
 
     @Column(precision = 12, scale = 2)
     public BigDecimal ratio;
+
+    /** API, 공식 HTML, 공식 PDF 또는 인원 기반 계산값인지 구분한다. */
+    @Column(name = "source_type", nullable = false, length = 30,
+            columnDefinition = "varchar(30) default 'API'")
+    public String sourceType = "API";
+
+    @Column(name = "source_url", length = 1500)
+    public String sourceUrl;
+
+    @Column(name = "evidence_text", length = 2000)
+    public String evidenceText;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    public boolean calculated;
 }

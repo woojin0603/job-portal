@@ -66,7 +66,9 @@ public class ApiController {
                              Long fixedAllowance, Long variableAllowance, Long welfareBenefit,
                              Long performanceBonus, Long managementEvaluationBonus, Long otherAmount) {}
 
-    public record CompetitionStage(String name, Integer applicants, Integer selected, BigDecimal ratio) {}
+    public record CompetitionStage(String name, Integer applicants, Integer selected, BigDecimal ratio,
+                                   String sourceType, String sourceUrl, String evidenceText,
+                                   boolean calculated) {}
     public record CompetitionItem(Long postingId, String title, LocalDate postedAt, LocalDate deadline,
                                   String sourceUrl, boolean similarCategory, List<CompetitionStage> stages) {}
     public record CompetitionView(boolean available, String organization, String note,
@@ -200,7 +202,8 @@ public class ApiController {
             CompetitionItem item = new CompetitionItem(candidate.id, candidate.title, candidate.postedAt,
                     candidate.deadline, candidate.sourceUrl, categoryMatch,
                     rows.stream().map(row -> new CompetitionStage(row.stageName, row.applicants,
-                            row.selected, row.ratio)).toList());
+                            row.selected, row.ratio, row.sourceType, row.sourceUrl,
+                            row.evidenceText, row.calculated)).toList());
             if (categoryMatch) similar.add(item);
             else if (isRegularEmployment(candidate.employmentType)) regular.add(item);
         }

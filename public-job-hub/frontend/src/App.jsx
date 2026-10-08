@@ -546,7 +546,7 @@ function CompetitionDialog({ value, onClose }) {
       >
         <div className="match-dialog-head">
           <div>
-            <p className="eyebrow">ALIO COMPETITION</p>
+            <p className="eyebrow">채용 경쟁률</p>
             <h2>이전 2개년 경쟁률</h2>
           </div>
           <button className="close" onClick={onClose} aria-label="닫기">
@@ -576,11 +576,27 @@ function CompetitionDialog({ value, onClose }) {
                   </div>
                   {item.stages.map((stage, index) => (
                     <div className="competition-stage" key={`${stage.name}-${index}`}>
-                      <span>{stage.name}</span>
+                      <div className="competition-stage-main">
+                        <span>{stage.name}</span>
+                        <small>
+                          {stage.sourceType === 'API'
+                            ? '공공데이터 자료'
+                            : stage.sourceType === 'OFFICIAL_PDF'
+                              ? '첨부 공고문'
+                              : '채용 페이지'}
+                          {stage.calculated && ' · 인원 기준 계산'}
+                        </small>
+                        {stage.evidenceText && <em>{stage.evidenceText}</em>}
+                      </div>
                       <small>
                         지원 {stage.applicants ?? '—'}명 · 선발 {stage.selected ?? '—'}명
                       </small>
                       <strong>{ratio(stage)}</strong>
+                      {stage.sourceUrl && (
+                        <a href={stage.sourceUrl} target="_blank" rel="noreferrer">
+                          근거 보기 ↗
+                        </a>
+                      )}
                     </div>
                   ))}
                   <a href={item.sourceUrl} target="_blank" rel="noreferrer">
@@ -1593,7 +1609,7 @@ function AdminReviewPanel({ securePost }) {
     <section className="admin-review">
       <div className="admin-title">
         <div>
-          <p className="eyebrow">ADMIN REVIEW</p>
+          <p className="eyebrow">운영 관리</p>
           <h1>공고 분류 검수</h1>
         </div>
         <div className="admin-crawl-actions">
@@ -1605,10 +1621,10 @@ function AdminReviewPanel({ securePost }) {
                 : '수집 기록 없음'}
           </span>
           {crawlInfo?.apiStatus?.error && (
-            <span className="status-error">공식 API: {crawlInfo.apiStatus.error}</span>
+            <span className="status-error">확인 필요: {crawlInfo.apiStatus.error}</span>
           )}
           {crawlInfo?.apiStatus?.lastSuccess && (
-            <span>공식 API {crawlInfo.apiStatus.lastCount}건 반영</span>
+            <span>채용정보 {crawlInfo.apiStatus.lastCount}건 업데이트</span>
           )}
           <button type="button" disabled={crawlInfo?.running} onClick={startCrawl}>
             {crawlInfo?.running ? '수집 중…' : '공고 지금 수집'}
@@ -1621,7 +1637,7 @@ function AdminReviewPanel({ securePost }) {
         </p>
       )}
       <form className="qualification-import" onSubmit={importQualifications}>
-        <strong>공식 자격증 CSV 적재</strong>
+        <strong>자격증 목록 관리</strong>
         <select value={qualificationType} onChange={(e) => setQualificationType(e.target.value)}>
           <option value="AUTO">파일 내용으로 자동 구분</option>
           <option value="NATIONAL_TECHNICAL">국가기술자격</option>
@@ -1634,7 +1650,7 @@ function AdminReviewPanel({ securePost }) {
         >
           <option value="AUTO">인코딩 자동 감지</option>
           <option value="UTF-8">UTF-8</option>
-          <option value="MS949">한글 CSV(MS949)</option>
+          <option value="MS949">한글 파일</option>
         </select>
         <input
           type="file"
@@ -1642,18 +1658,18 @@ function AdminReviewPanel({ securePost }) {
           required
           onChange={(e) => setQualificationFile(e.target.files?.[0] || null)}
         />
-        <button>DB에 불러오기</button>
+        <button>자격증 목록 등록</button>
       </form>
       <form className="qualification-import" onSubmit={importCompensations}>
-        <strong>알리오 직원평균보수 XLSX 적재</strong>
-        <span>신입사원초임 시트를 기관코드와 연결합니다.</span>
+        <strong>기관 초임 자료 관리</strong>
+        <span>직원 평균보수 파일에서 신입사원 초임을 가져옵니다.</span>
         <input
           type="file"
           accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           required
           onChange={(e) => setCompensationFile(e.target.files?.[0] || null)}
         />
-        <button>초임 DB에 불러오기</button>
+        <button>초임 자료 등록</button>
       </form>
       {items.map((item) => (
         <article className="admin-card" key={item.id}>
@@ -2224,7 +2240,7 @@ export default function App() {
           <>
             <div className="heading">
               <div>
-                <p className="eyebrow">PUBLIC CAREERS · LIVE BOARD</p>
+                <p className="eyebrow">공공기관 채용정보</p>
                 <h1>{mine ? '스크랩한 채용공고' : '최신 채용공고 현황'}</h1>
                 <p className="sub">마감 임박순 · 20개씩 · 매일 자정 수집</p>
               </div>

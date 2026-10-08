@@ -52,6 +52,8 @@ jobhub:
   ai:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-4.1-mini}
+    # API 키가 컴퓨터에 남아 있어도 이 값을 true로 바꾸기 전에는 유료 AI 요청을 보내지 않는다.
+    paid-features-enabled: ${JOBHUB_PAID_AI_ENABLED:false}
     # 이미지형 PDF OCR은 API 비용이 발생하므로 환경 변수로 명시적으로 켠다.
     ocr-enabled: ${JOBHUB_OCR_ENABLED:false}
     ocr-max-pages: ${JOBHUB_OCR_MAX_PAGES:3}

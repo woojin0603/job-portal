@@ -1210,7 +1210,7 @@ nav button.active {
 }
 .competition-stage {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 12px;
   padding: 9px 0;
@@ -1218,6 +1218,20 @@ nav button.active {
 }
 .competition-stage small {
   color: #64748b;
+}
+.competition-stage-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.competition-stage-main em {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .competition-stage > strong {
   color: #1d4ed8;
@@ -1569,6 +1583,7 @@ nav button.active {
   color: #63758b;
   font-size: 13px;
 }
+
 .admin-crawl-actions button {
   border: 0;
   border-radius: 8px;

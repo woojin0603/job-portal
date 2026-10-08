@@ -34,13 +34,16 @@ $env:JOBHUB_PUBLIC_DATA_ENABLED='true'
 
 관리자 로그인 후 `POST /api/admin/public-recruitment`를 호출하면 즉시 동기화할 수 있습니다. `pblntInstCd`는 알리오 기관코드로, `pbadmsStdInstCd`는 공공행정 표준기관코드로 각각 저장합니다. 기본 수집 범위는 진행 중 공고 2페이지, 페이지당 100건이며 환경변수 `JOBHUB_PUBLIC_DATA_PAGES`와 `JOBHUB_PUBLIC_DATA_ROWS`로 조정합니다.
 
-등록한 채용 목록을 **매일 00:00 Asia/Seoul**에 한 번 수집합니다. 서버가 자정에 실행 중이어야 예약 작업이 수행됩니다. 서버 시작 시나 화면 새로고침 시 추가 수집하지 않습니다. 잡알리오는 전용 표 파서를 사용하고, 허용된 다른 공개 사이트는 OpenAI Responses API의 Structured Outputs로 공고를 추출할 수 있습니다. `OPENAI_API_KEY`가 필요하며 `OPENAI_MODEL`로 모델을 변경할 수 있습니다. AI는 HTML에서 이미 공개된 내용을 구조화할 뿐 로그인·캡차·접근 차단을 우회하지 않습니다. 수집 상태는 화면과 `/api/crawl-status`에서 확인합니다.
+등록한 채용 목록을 **매일 00:00 Asia/Seoul**에 한 번 수집합니다. 서버가 자정에 실행 중이어야 예약 작업이 수행됩니다. 서버 시작 시나 화면 새로고침 시 추가 수집하지 않습니다. 기본값은 비용이 들지 않는 무료 모드이며 잡알리오 전용 표 파서, 공개 HTML, 텍스트가 포함된 PDF만 분석합니다. 컴퓨터에 `OPENAI_API_KEY`가 남아 있어도 유료 API는 호출하지 않습니다. 수집 상태는 화면과 `/api/crawl-status`에서 확인합니다.
+
+AI 보완 추출과 이미지형 PDF OCR은 비용이 발생할 수 있으므로 기본적으로 모두 잠겨 있습니다. 나중에 유료 기능을 사용하기로 한 경우에만 `JOBHUB_PAID_AI_ENABLED=true`를 지정해야 하며, OCR은 여기에 더해 `JOBHUB_OCR_ENABLED=true`도 필요합니다. AI는 HTML에서 이미 공개된 내용을 구조화할 뿐 로그인·캡차·접근 차단을 우회하지 않습니다.
 
 출처 설정은 `NAME|URL|PUBLIC/PRIVATE|TABLE/AI/AUTO|CENTRAL_PUBLIC/LOCAL_PUBLIC` 형식이고 여러 출처는 쉼표로 구분합니다. 마지막 값은 중앙 공공기관과 지방공기업의 카드 테두리를 구분합니다. 환경 변수 `JOBHUB_CRAWL_SOURCES`로 운영 설정을 덮어쓸 수 있습니다. `TABLE`은 잡알리오 표 파서, `AI`는 AI 전용, `AUTO`는 표 파싱 후 결과가 없을 때 AI를 사용합니다.
 
 ```powershell
 $env:JOBHUB_CRAWL_SOURCES='JOB-ALIO|https://job.alio.go.kr/recruit.do?order=REG_DATE&pageNo=1|PUBLIC|TABLE|CENTRAL_PUBLIC,ALLOWED-LOCAL-JOBS|https://example.com/jobs?pageNo=1|PUBLIC|AI|LOCAL_PUBLIC'
 $env:OPENAI_API_KEY='서비스 전용 API 키'
+$env:JOBHUB_PAID_AI_ENABLED='true'
 ```
 
 각 URL을 등록하기 전에 해당 사이트의 이용약관과 robots.txt에서 자동 수집이 허용되는지 확인해야 합니다. 수집기는 매 요청 전에 robots.txt를 검사하며 파일을 읽을 수 없거나 대상 경로가 금지되면 안전하게 중단합니다. 잡플래닛은 현재 일반 크롤러의 `/search` 접근을 금지하므로 검색 결과 URL을 기본 출처로 등록하지 않았습니다. 공식 API·제휴 피드나 별도로 허가받은 공개 URL이 생겼을 때만 추가하세요.

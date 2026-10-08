@@ -8,6 +8,9 @@ import kr.co.jobhub.model.RecruitmentPosition;
 import kr.co.jobhub.repo.JobPostingRepository;
 import kr.co.jobhub.repo.RecruitmentCompetitionRepository;
 import kr.co.jobhub.repo.RecruitmentPositionRepository;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** 재정경제부 공공기관 채용정보 API를 DB 캐시로 동기화한다. */
 @Service
@@ -27,9 +32,14 @@ public class PublicRecruitmentApiService {
     public record Status(Instant lastAttempt, Instant lastSuccess, int lastCount, String error) {}
 
     private static final String SOURCE = "MOEF-RECRUITMENT-API";
+    private static final Pattern DIRECT_RATIO = Pattern.compile(
+            "([^\\r\\n]{0,80}?)(?:최종\\s*)?경쟁률\\s*[:：]?\\s*(\\d{1,5}(?:\\.\\d{1,2})?)\\s*(?::|대)\\s*1");
+    private static final Pattern COUNTS = Pattern.compile(
+            "([^\\r\\n]{0,80}?)(?:지원자|응시자|접수인원|지원인원)\\s*[:：]?\\s*([0-9,]+)\\s*명?[^\\r\\n]{0,80}?(?:선발|채용|합격)(?:인원|자)?\\s*[:：]?\\s*([0-9,]+)\\s*명?");
     private final JobPostingRepository postings;
     private final RecruitmentPositionRepository positions;
     private final RecruitmentCompetitionRepository competitions;
+    private final CrawlService crawler;
     private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     private final String baseUrl;
@@ -43,6 +53,7 @@ public class PublicRecruitmentApiService {
 
     public PublicRecruitmentApiService(JobPostingRepository postings, RecruitmentPositionRepository positions,
                                        RecruitmentCompetitionRepository competitions,
+                                       CrawlService crawler,
                                        ObjectMapper json,
                                        @Value("${jobhub.public-data.recruitment.base-url}") String baseUrl,
                                        @Value("${jobhub.public-data.recruitment.service-key:}") String serviceKey,
@@ -54,6 +65,7 @@ public class PublicRecruitmentApiService {
         this.postings = postings;
         this.positions = positions;
         this.competitions = competitions;
+        this.crawler = crawler;
         this.json = json;
         this.baseUrl = baseUrl.replaceAll("/+$", "");
         this.serviceKey = normalizeServiceKey(serviceKey);
@@ -70,8 +82,8 @@ public class PublicRecruitmentApiService {
     @Scheduled(cron = "0 15 0 * * *", zone = "Asia/Seoul")
     public synchronized Status sync() {
         Instant attempt = Instant.now();
-        if (!enabled) return status = new Status(attempt, null, 0, "API 수집이 비활성화되어 있습니다.");
-        if (serviceKey.isBlank()) return status = new Status(attempt, null, 0, "JOBHUB_PUBLIC_DATA_API_KEY가 없습니다.");
+        if (!enabled) return status = new Status(attempt, null, 0, "채용정보 자동 갱신이 꺼져 있습니다.");
+        if (serviceKey.isBlank()) return status = new Status(attempt, null, 0, "채용정보 인증 설정을 확인해 주세요.");
         if (serviceKey.contains("JOBHUB_PUBLIC_DATA_"))
             return status = new Status(attempt, null, 0,
                     "인증키 값에 다른 환경변수가 함께 들어 있습니다. IntelliJ에서 환경변수를 별도 행으로 등록하세요.");
@@ -88,7 +100,7 @@ public class PublicRecruitmentApiService {
             status = new Status(attempt, Instant.now(), count, null);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            status = new Status(attempt, null, count, "API 수집이 중단되었습니다.");
+            status = new Status(attempt, null, count, "채용정보 갱신이 중단되었습니다.");
         } catch (Exception e) {
             status = new Status(attempt, null, count, e.getMessage());
         }
@@ -125,7 +137,9 @@ public class PublicRecruitmentApiService {
         String detailUrl = "https://job.alio.go.kr/mobile2021/recruit/recruitView.do?idx=" + sourceId;
         return postings.findBySourceAndSourceId(SOURCE, sourceId)
                 .or(() -> postings.findFirstBySourceUrl(detailUrl))
-                .map(posting -> competitions.existsByPostingId(posting.id))
+                .map(posting -> competitions.existsByPostingId(posting.id)
+                        || posting.competitionCheckedAt != null
+                        && posting.competitionCheckedAt.isAfter(Instant.now().minus(Duration.ofDays(30))))
                 .orElse(false);
     }
 
@@ -142,7 +156,8 @@ public class PublicRecruitmentApiService {
                 .header("Accept", "application/json").GET().build();
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() / 100 != 2) {
-            throw new IllegalStateException("채용 API HTTP " + response.statusCode() + apiErrorMessage(response.body()));
+            throw new IllegalStateException("채용정보 제공처 응답 오류 (HTTP " + response.statusCode() + ")"
+                    + apiErrorMessage(response.body()));
         }
         return json.readTree(response.body());
     }
@@ -194,7 +209,8 @@ public class PublicRecruitmentApiService {
 
     private void requireSuccess(JsonNode response) {
         if (response.path("resultCode").asInt(-1) != 200)
-            throw new IllegalStateException("채용 API 오류: " + response.path("resultMsg").asText("알 수 없는 오류"));
+            throw new IllegalStateException("채용정보 제공처 오류: "
+                    + response.path("resultMsg").asText("알 수 없는 오류"));
     }
 
     private void save(JsonNode item) {
@@ -250,6 +266,7 @@ public class PublicRecruitmentApiService {
 
         competitions.deleteByPostingId(posting.id);
         int sequence = 1;
+        int competitionCount = 0;
         for (JsonNode step : item.path("steps")) {
             Integer applicants = nullableInt(step, "aplyNope");
             Integer selected = Optional.ofNullable(nullableInt(step, "recrutNope"))
@@ -263,8 +280,127 @@ public class PublicRecruitmentApiService {
             competition.applicants = applicants;
             competition.selected = selected;
             competition.ratio = ratio != null && ratio.signum() > 0 ? ratio : null;
+            competition.sourceType = "API";
+            competition.sourceUrl = posting.sourceUrl;
+            competition.evidenceText = "공공기관 채용정보 제공 자료";
+            competition.calculated = competition.ratio == null && applicants != null && selected != null && selected > 0;
+            if (competition.ratio == null && competition.calculated) {
+                competition.ratio = java.math.BigDecimal.valueOf(applicants)
+                        .divide(java.math.BigDecimal.valueOf(selected), 2, java.math.RoundingMode.HALF_UP);
+            }
             competitions.save(competition);
+            competitionCount++;
             sequence++;
+        }
+        if (competitionCount == 0 && !posting.open) collectOfficialCompetition(posting);
+        posting.competitionCheckedAt = Instant.now();
+        postings.save(posting);
+    }
+
+    /** API에 수치가 없을 때만 잡알리오 공식 HTML과 결과 관련 PDF에서 명시된 값만 보완한다. */
+    private void collectOfficialCompetition(JobPosting posting) {
+        try {
+            Document detail = Jsoup.connect(posting.sourceUrl).userAgent("PublicJobHub/0.5")
+                    .timeout(15000).maxBodySize(4_000_000).get();
+            if (saveExtractedCompetitions(posting, detail.text(), "OFFICIAL_HTML", posting.sourceUrl) > 0) return;
+            int checked = 0;
+            for (Element link : detail.select("a[href]")) {
+                String label = link.text().replaceAll("\\s+", " ").trim();
+                String url = link.absUrl("href");
+                if (!isResultPdf(label, url) || !safeAttachment(posting.sourceUrl, url)) continue;
+                String text = pdfText(url);
+                if (!text.isBlank() && saveExtractedCompetitions(posting, text, "OFFICIAL_PDF", url) > 0) return;
+                if (++checked >= 5) break;
+            }
+        } catch (Exception ignored) {
+            // 보완자료를 읽지 못해도 API 수집 전체를 실패시키지 않는다.
+        }
+    }
+
+    private int saveExtractedCompetitions(JobPosting posting, String raw, String sourceType, String sourceUrl) {
+        if (raw == null || raw.isBlank()) return 0;
+        String text = raw.replace('\u00a0', ' ');
+        List<ExtractedCompetition> extracted = new ArrayList<>();
+        Matcher ratioMatcher = DIRECT_RATIO.matcher(text);
+        while (ratioMatcher.find() && extracted.size() < 20) {
+            String evidence = snippet(ratioMatcher.group(0));
+            extracted.add(new ExtractedCompetition(stageName(ratioMatcher.group(1)), null, null,
+                    new java.math.BigDecimal(ratioMatcher.group(2)), evidence, false));
+        }
+        if (extracted.isEmpty()) {
+            Matcher countMatcher = COUNTS.matcher(text);
+            while (countMatcher.find() && extracted.size() < 20) {
+                int applicants = Integer.parseInt(countMatcher.group(2).replace(",", ""));
+                int selected = Integer.parseInt(countMatcher.group(3).replace(",", ""));
+                if (selected <= 0 || applicants < selected) continue;
+                java.math.BigDecimal ratio = java.math.BigDecimal.valueOf(applicants)
+                        .divide(java.math.BigDecimal.valueOf(selected), 2, java.math.RoundingMode.HALF_UP);
+                extracted.add(new ExtractedCompetition(stageName(countMatcher.group(1)), applicants, selected,
+                        ratio, snippet(countMatcher.group(0)), true));
+            }
+        }
+        int saved = 0;
+        Set<String> seen = new HashSet<>();
+        for (ExtractedCompetition value : extracted) {
+            String key = value.stageName + "|" + value.ratio;
+            if (!seen.add(key)) continue;
+            RecruitmentCompetition competition = new RecruitmentCompetition();
+            competition.posting = posting;
+            competition.stageName = value.stageName;
+            competition.applicants = value.applicants;
+            competition.selected = value.selected;
+            competition.ratio = value.ratio;
+            competition.sourceType = sourceType;
+            competition.sourceUrl = sourceUrl;
+            competition.evidenceText = value.evidence;
+            competition.calculated = value.calculated;
+            competitions.save(competition);
+            saved++;
+        }
+        return saved;
+    }
+
+    private record ExtractedCompetition(String stageName, Integer applicants, Integer selected,
+                                        java.math.BigDecimal ratio, String evidence, boolean calculated) {}
+
+    private String stageName(String prefix) {
+        String value = prefix == null ? "" : prefix.replaceAll("\\s+", " ").trim();
+        value = value.replaceAll("^[·ㅇ○※*\\-\\s]+", "");
+        return value.isBlank() ? "공식 공시 경쟁률" : value.substring(Math.max(0, value.length() - 80));
+    }
+
+    private String snippet(String value) {
+        String clean = value.replaceAll("\\s+", " ").trim();
+        return clean.substring(0, Math.min(clean.length(), 500));
+    }
+
+    private boolean isResultPdf(String label, String url) {
+        String value = (label + " " + url).toLowerCase(Locale.ROOT);
+        return value.contains("pdf") && Pattern.compile("경쟁률|전형.{0,5}결과|합격|지원.{0,5}현황")
+                .matcher(value).find();
+    }
+
+    private boolean safeAttachment(String pageUrl, String attachmentUrl) {
+        try {
+            URI page = URI.create(pageUrl);
+            URI attachment = URI.create(attachmentUrl);
+            if (!Set.of("http", "https").contains(attachment.getScheme()) || attachment.getHost() == null) return false;
+            String host = attachment.getHost().toLowerCase(Locale.ROOT);
+            String pageHost = page.getHost().toLowerCase(Locale.ROOT);
+            return host.equals(pageHost) || host.endsWith(".alio.go.kr") || host.equals("alio.go.kr");
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private String pdfText(String url) {
+        try {
+            byte[] bytes = Jsoup.connect(url).userAgent("PublicJobHub/0.5").ignoreContentType(true)
+                    .timeout(20000).maxBodySize(20_000_000).execute().bodyAsBytes();
+            if (bytes.length < 5 || bytes.length > 20_000_000) return "";
+            return crawler.extractPdfDocument(bytes);
+        } catch (Exception ignored) {
+            return "";
         }
     }
 

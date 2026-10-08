@@ -62,6 +62,7 @@ public class CrawlService {
     private final long requestDelayMillis;
     private final String apiKey;
     private final String model;
+    private final boolean paidFeaturesEnabled;
     private final boolean ocrEnabled;
     private final int ocrMaxPages;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
@@ -76,6 +77,7 @@ public class CrawlService {
                         @Value("${jobhub.crawl.request-delay-millis:1500}") long requestDelayMillis,
                         @Value("${jobhub.ai.api-key:}") String apiKey,
                         @Value("${jobhub.ai.model:gpt-4.1-mini}") String model,
+                        @Value("${jobhub.ai.paid-features-enabled:false}") boolean paidFeaturesEnabled,
                         @Value("${jobhub.ai.ocr-enabled:false}") boolean ocrEnabled,
                         @Value("${jobhub.ai.ocr-max-pages:3}") int ocrMaxPages) {
         this.postings = postings;
@@ -88,6 +90,7 @@ public class CrawlService {
         this.requestDelayMillis = Math.max(500, requestDelayMillis);
         this.apiKey = apiKey;
         this.model = model;
+        this.paidFeaturesEnabled = paidFeaturesEnabled;
         this.ocrEnabled = ocrEnabled;
         this.ocrMaxPages = Math.max(1, Math.min(5, ocrMaxPages));
     }
@@ -148,11 +151,13 @@ public class CrawlService {
                     Document doc = Jsoup.connect(pageUrl).userAgent("PublicJobHub/0.2").timeout(15000).get();
                     List<Candidate> jobs = source.mode() == Mode.AI ? List.of()
                             : parseTable(doc, source.organizationType(), source.publicInstitutionType());
-                    if ((source.mode() == Mode.AI || jobs.isEmpty()) && !apiKey.isBlank()) {
+                    if ((source.mode() == Mode.AI || jobs.isEmpty()) && canUsePaidAi()) {
                         jobs = parseWithAi(doc, pageUri, source.organizationType(), source.publicInstitutionType());
                     }
                     if (jobs.isEmpty()) {
-                        String reason = apiKey.isBlank() && source.mode() == Mode.AI
+                        String reason = source.mode() == Mode.AI && !paidFeaturesEnabled
+                                ? "Paid AI features are disabled; use TABLE mode or enable them explicitly"
+                                : apiKey.isBlank() && source.mode() == Mode.AI
                                 ? "OPENAI_API_KEY is required for AI source"
                                 : "No valid rows on page " + pageNumber;
                         throw new IllegalStateException(reason);
@@ -401,19 +406,31 @@ public class CrawlService {
                     .ignoreContentType(true).maxBodySize(20_000_000).timeout(20000).execute();
             byte[] bytes = response.bodyAsBytes();
             if (bytes.length < 5 || bytes.length > 20_000_000) return "";
-            try (var document = Loader.loadPDF(bytes)) {
-                PDFTextStripper stripper = new PDFTextStripper();
-                stripper.setEndPage(Math.min(30, document.getNumberOfPages()));
-                String text = stripper.getText(document).replaceAll("\\s+", " ").trim();
-                if (text.length() < 300 && ocrEnabled && !apiKey.isBlank()) {
-                    String ocr = ocrPdf(document);
-                    if (!ocr.isBlank()) return ocr;
-                }
-                return text;
-            }
+            return extractPdfDocument(bytes);
         } catch (Exception ignored) {
             return "";
         }
+    }
+
+    /** 다른 공식 수집기도 동일한 PDF 텍스트·선택적 OCR 정책을 재사용한다. */
+    String extractPdfDocument(byte[] bytes) {
+        try (var document = Loader.loadPDF(bytes)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            stripper.setEndPage(Math.min(30, document.getNumberOfPages()));
+            String text = stripper.getText(document).replaceAll("\\s+", " ").trim();
+            if (text.length() < 300 && ocrEnabled && canUsePaidAi()) {
+                String ocr = ocrPdf(document);
+                if (!ocr.isBlank()) return ocr;
+            }
+            return text;
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    /** 비용이 발생할 수 있는 외부 AI 호출은 사용자가 두 설정을 모두 명시한 경우에만 허용한다. */
+    private boolean canUsePaidAi() {
+        return paidFeaturesEnabled && !apiKey.isBlank();
     }
 
     /** 이미지형 PDF의 앞쪽 페이지만 전송해 보이는 채용 문구를 그대로 전사한다. */

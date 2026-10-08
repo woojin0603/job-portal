@@ -85,4 +85,8 @@ public class JobPosting {
 
     @Column(name = "updated_at", nullable = false)
     public Instant updatedAt = Instant.now();
+
+    /** 경쟁률 API·공식 문서 보완 확인 시각. 자료가 없어도 재호출 폭증을 막기 위해 기록한다. */
+    @Column(name = "competition_checked_at")
+    public Instant competitionCheckedAt;
 }
