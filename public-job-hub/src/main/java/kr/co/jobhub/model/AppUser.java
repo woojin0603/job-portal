@@ -27,6 +27,10 @@ public class AppUser {
     @Column(nullable = false, length = 80)
     public String displayName;
 
+    /** 기본 관리자 비밀번호를 계속 사용하는 계정은 변경 화면을 우선 노출한다. */
+    @Column(name = "must_change_password", nullable = false, columnDefinition = "boolean default false")
+    public boolean mustChangePassword;
+
     /** 회원 레코드가 처음 생성된 시각. */
     @Column(nullable = false)
     public Instant createdAt = Instant.now();

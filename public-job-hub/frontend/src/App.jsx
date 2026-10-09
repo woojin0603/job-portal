@@ -270,6 +270,7 @@ const STAGE_LABELS = {
   SAVED: '관심 공고',
   PREPARING: '지원 준비',
   SUBMITTED: '지원 완료',
+  DOCUMENT_PASSED: '서류 합격',
   WRITTEN_TEST: '필기 예정',
   INTERVIEW: '면접 예정',
   PASSED: '최종 합격',
@@ -628,7 +629,31 @@ function MatchDialog({ value, onClose, onOpenSource }) {
         </div>
         <h3>{job.title}</h3>
         <p className="match-organization">{job.organization}</p>
+        <div className="match-score">
+          <strong>{result.score ?? 0}점</strong>
+          <span>등록한 역량과 공고문을 비교한 참고 점수</span>
+        </div>
         <div className="match-summary">{result.summary}</div>
+        {result.strengths?.length > 0 && (
+          <div className="match-points strengths">
+            <strong>확인된 강점</strong>
+            <ul>
+              {result.strengths.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {result.gaps?.length > 0 && (
+          <div className="match-points gaps">
+            <strong>추가 확인할 요건</strong>
+            <ul>
+              {result.gaps.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         {result.matchedCertifications?.length > 0 && (
           <div className="matched-certificates">
             <strong>일치 자격증</strong>
@@ -773,6 +798,424 @@ function CapabilityDialog({ profile, loading, onClose, onEdit }) {
   )
 }
 
+function CommunityBoard({ user, securePost, onLogin }) {
+  const [tab, setTab] = useState('notices')
+  const [notices, setNotices] = useState([])
+  const [inquiries, setInquiries] = useState([])
+  const [noticeForm, setNoticeForm] = useState({ title: '', content: '', pinned: false })
+  const [questionForm, setQuestionForm] = useState({ category: 'SERVICE', title: '', content: '' })
+  const [answers, setAnswers] = useState({})
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const loadCommunity = async () => {
+    const savedNotices = await getJson('/api/community/notices')
+    setNotices(savedNotices)
+    if (user) setInquiries(await getJson('/api/community/inquiries'))
+    else setInquiries([])
+  }
+  useEffect(() => {
+    loadCommunity().catch((e) => setMessage(e.message))
+    // 로그인 상태가 바뀌면 열람 가능한 문의 범위를 다시 읽는다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  const submitNotice = async (event) => {
+    event.preventDefault()
+    setBusy(true)
+    try {
+      await securePost(
+        '/api/admin/community/notices',
+        JSON.stringify(noticeForm),
+        'application/json',
+      )
+      setNoticeForm({ title: '', content: '', pinned: false })
+      await loadCommunity()
+      setMessage('공지사항을 등록했습니다.')
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const submitQuestion = async (event) => {
+    event.preventDefault()
+    setBusy(true)
+    try {
+      await securePost('/api/community/inquiries', JSON.stringify(questionForm), 'application/json')
+      setQuestionForm({ category: 'SERVICE', title: '', content: '' })
+      await loadCommunity()
+      setMessage('문의가 접수되었습니다.')
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const submitAnswer = async (id) => {
+    if (!answers[id]?.trim()) return
+    setBusy(true)
+    try {
+      await securePost(
+        `/api/admin/community/inquiries/${id}/answer`,
+        JSON.stringify({ answer: answers[id] }),
+        'application/json',
+      )
+      setAnswers((values) => ({ ...values, [id]: '' }))
+      await loadCommunity()
+      setMessage('답변을 등록했습니다.')
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const formatDateTime = (value) =>
+    value
+      ? new Date(value).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })
+      : ''
+
+  return (
+    <section className="community-page">
+      <div className="heading community-heading">
+        <div>
+          <p className="eyebrow">CUSTOMER SUPPORT</p>
+          <h1>공지사항 · Q&amp;A</h1>
+          <p className="sub">서비스 안내를 확인하고 관리자에게 비공개로 문의할 수 있습니다.</p>
+        </div>
+      </div>
+      <div className="community-tabs" role="tablist">
+        <button className={tab === 'notices' ? 'active' : ''} onClick={() => setTab('notices')}>
+          공지사항
+        </button>
+        <button className={tab === 'questions' ? 'active' : ''} onClick={() => setTab('questions')}>
+          Q&amp;A{' '}
+          {user?.admin &&
+            inquiries.filter((item) => item.status === 'WAITING').length > 0 &&
+            `(${inquiries.filter((item) => item.status === 'WAITING').length})`}
+        </button>
+      </div>
+      {message && <p className="community-message">{message}</p>}
+
+      {tab === 'notices' && (
+        <div className="community-content">
+          {user?.admin && (
+            <form className="community-form" onSubmit={submitNotice}>
+              <h2>공지 등록</h2>
+              <input
+                value={noticeForm.title}
+                onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
+                placeholder="공지 제목"
+                maxLength={200}
+                required
+              />
+              <textarea
+                value={noticeForm.content}
+                onChange={(e) => setNoticeForm({ ...noticeForm, content: e.target.value })}
+                placeholder="공지 내용"
+                maxLength={10000}
+                required
+              />
+              <label className="community-check">
+                <input
+                  type="checkbox"
+                  checked={noticeForm.pinned}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, pinned: e.target.checked })}
+                />
+                상단 고정
+              </label>
+              <button disabled={busy}>공지 등록</button>
+            </form>
+          )}
+          <div className="board-list">
+            {notices.map((item) => (
+              <details key={item.id} className={item.pinned ? 'pinned' : ''}>
+                <summary>
+                  <span>{item.pinned ? '필독' : '공지'}</span>
+                  <strong>{item.title}</strong>
+                  <time>{formatDateTime(item.createdAt)}</time>
+                </summary>
+                <p>{item.content}</p>
+              </details>
+            ))}
+            {!notices.length && <p className="empty">등록된 공지사항이 없습니다.</p>}
+          </div>
+        </div>
+      )}
+
+      {tab === 'questions' && !user && (
+        <div className="community-login-guide">
+          <p>문의 작성과 답변 확인은 로그인 후 이용할 수 있습니다.</p>
+          <button onClick={onLogin}>로그인</button>
+        </div>
+      )}
+      {tab === 'questions' && user && (
+        <div className="community-content qna-layout">
+          {!user.admin && (
+            <form className="community-form" onSubmit={submitQuestion}>
+              <h2>문의 등록</h2>
+              <select
+                value={questionForm.category}
+                onChange={(e) => setQuestionForm({ ...questionForm, category: e.target.value })}
+              >
+                <option value="SERVICE">서비스 이용</option>
+                <option value="POSTING">채용공고 오류</option>
+                <option value="ACCOUNT">계정</option>
+                <option value="SUGGESTION">기능 제안</option>
+                <option value="OTHER">기타</option>
+              </select>
+              <input
+                value={questionForm.title}
+                onChange={(e) => setQuestionForm({ ...questionForm, title: e.target.value })}
+                placeholder="문의 제목"
+                maxLength={200}
+                required
+              />
+              <textarea
+                value={questionForm.content}
+                onChange={(e) => setQuestionForm({ ...questionForm, content: e.target.value })}
+                placeholder="개인정보를 제외하고 문의 내용을 작성해 주세요."
+                maxLength={10000}
+                required
+              />
+              <button disabled={busy}>문의 접수</button>
+            </form>
+          )}
+          <div className="board-list inquiry-list">
+            <h2>{user.admin ? '전체 문의 관리' : '내 문의'}</h2>
+            {inquiries.map((item) => (
+              <details key={item.id}>
+                <summary>
+                  <span className={item.status === 'ANSWERED' ? 'answered' : 'waiting'}>
+                    {item.status === 'ANSWERED' ? '답변완료' : '답변대기'}
+                  </span>
+                  <strong>{item.title}</strong>
+                  <time>{formatDateTime(item.createdAt)}</time>
+                </summary>
+                {user.admin && (
+                  <small className="requester">
+                    문의자: {item.requesterName} · {item.requesterEmail}
+                  </small>
+                )}
+                <p>{item.content}</p>
+                {item.answer && (
+                  <div className="admin-answer">
+                    <strong>관리자 답변</strong>
+                    <p>{item.answer}</p>
+                    <time>{formatDateTime(item.answeredAt)}</time>
+                  </div>
+                )}
+                {user.admin && (
+                  <div className="answer-form">
+                    <textarea
+                      value={answers[item.id] ?? item.answer ?? ''}
+                      onChange={(e) => setAnswers({ ...answers, [item.id]: e.target.value })}
+                      placeholder="답변을 입력하세요."
+                      maxLength={10000}
+                    />
+                    <button disabled={busy} onClick={() => submitAnswer(item.id)}>
+                      {item.answer ? '답변 수정' : '답변 등록'}
+                    </button>
+                  </div>
+                )}
+              </details>
+            ))}
+            {!inquiries.length && <p className="empty">등록된 문의가 없습니다.</p>}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function ApplicationDashboard({ applications, onOpen }) {
+  const [stageFilter, setStageFilter] = useState('')
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const today = new Date()
+    return new Date(today.getFullYear(), today.getMonth(), 1)
+  })
+  const [selectedDate, setSelectedDate] = useState('')
+  const year = calendarMonth.getFullYear()
+  const month = calendarMonth.getMonth()
+  const firstWeekday = new Date(year, month, 1).getDay()
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  const visible = stageFilter
+    ? applications.filter((item) => item.stage === stageFilter)
+    : applications
+  const eventsByDate = {}
+  applications.forEach((item) => {
+    if (item.deadline) {
+      eventsByDate[item.deadline] = [
+        ...(eventsByDate[item.deadline] || []),
+        { ...item, eventType: '마감' },
+      ]
+    }
+    if (item.nextStepDate) {
+      eventsByDate[item.nextStepDate] = [
+        ...(eventsByDate[item.nextStepDate] || []),
+        { ...item, eventType: STAGE_LABELS[item.stage] || '전형 일정' },
+      ]
+    }
+  })
+  const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : []
+  const dateKey = (day) =>
+    `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  const changeMonth = (offset) => {
+    setCalendarMonth(new Date(year, month + offset, 1))
+    setSelectedDate('')
+  }
+  const exportCalendar = () => {
+    const escapeIcs = (value) =>
+      String(value || '')
+        .replaceAll('\\', '\\\\')
+        .replaceAll(';', '\\;')
+        .replaceAll(',', '\\,')
+        .replaceAll('\n', '\\n')
+    const events = applications.flatMap((item) => {
+      const values = []
+      if (item.deadline) values.push({ date: item.deadline, label: '지원 마감' })
+      if (item.nextStepDate)
+        values.push({ date: item.nextStepDate, label: STAGE_LABELS[item.stage] || '채용 전형' })
+      return values.map((event) => ({ ...event, item }))
+    })
+    if (!events.length) return
+    const body = events.flatMap(({ date, label, item }, index) => [
+      'BEGIN:VEVENT',
+      `UID:jobhub-${item.id}-${date}-${index}@public-job-hub`,
+      `DTSTART;VALUE=DATE:${date.replaceAll('-', '')}`,
+      `SUMMARY:${escapeIcs(`[${label}] ${item.organization} ${item.title}`)}`,
+      `DESCRIPTION:${escapeIcs(item.memo || 'JOB HUB KOREA 지원 일정')}`,
+      `URL:${escapeIcs(item.sourceUrl)}`,
+      'END:VEVENT',
+    ])
+    const blob = new Blob(
+      [
+        [
+          'BEGIN:VCALENDAR',
+          'VERSION:2.0',
+          'PRODID:-//JOB HUB KOREA//KO',
+          ...body,
+          'END:VCALENDAR',
+        ].join('\r\n'),
+      ],
+      { type: 'text/calendar;charset=utf-8' },
+    )
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'job-hub-calendar.ics'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <section className="application-dashboard">
+      <div className="profile-heading application-dashboard-head">
+        <div>
+          <p className="eyebrow">APPLICATION TRACKER</p>
+          <h2>지원 현황과 일정</h2>
+          <p>스크랩한 공고의 지원 단계와 다음 전형일을 한곳에서 관리하세요.</p>
+        </div>
+        <div className="application-dashboard-actions">
+          <strong>{applications.length}건 관리 중</strong>
+          <button type="button" disabled={!applications.length} onClick={exportCalendar}>
+            캘린더 파일 받기
+          </button>
+        </div>
+      </div>
+      <div className="application-stage-summary">
+        <button className={!stageFilter ? 'active' : ''} onClick={() => setStageFilter('')}>
+          <span>전체</span>
+          <b>{applications.length}</b>
+        </button>
+        {Object.entries(STAGE_LABELS).map(([stage, label]) => (
+          <button
+            key={stage}
+            className={stageFilter === stage ? 'active' : ''}
+            onClick={() => setStageFilter(stage)}
+          >
+            <span>{label}</span>
+            <b>{applications.filter((item) => item.stage === stage).length}</b>
+          </button>
+        ))}
+      </div>
+      <div className="application-dashboard-grid">
+        <div className="application-list">
+          <h3>{stageFilter ? STAGE_LABELS[stageFilter] : '전체 지원 현황'}</h3>
+          {visible.map((item) => (
+            <button type="button" key={item.id} onClick={() => onOpen(item)}>
+              <span>{item.organization}</span>
+              <strong>{item.title}</strong>
+              <small>
+                {STAGE_LABELS[item.stage] || '관심 공고'} · 다음 일정 {item.nextStepDate || '미정'}{' '}
+                · 마감 {item.deadline || '미정'}
+              </small>
+              {item.memo && <em>{item.memo}</em>}
+            </button>
+          ))}
+          {visible.length === 0 && <p className="empty">해당 단계의 공고가 없습니다.</p>}
+        </div>
+        <section className="alerts-calendar application-calendar" aria-label="지원 일정 달력">
+          <div className="calendar-head">
+            <button type="button" onClick={() => changeMonth(-1)} aria-label="이전 달">
+              ‹
+            </button>
+            <strong>
+              {year}년 {month + 1}월
+            </strong>
+            <button type="button" onClick={() => changeMonth(1)} aria-label="다음 달">
+              ›
+            </button>
+          </div>
+          <div className="calendar-grid calendar-weekdays">
+            {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+              <span key={day}>{day}</span>
+            ))}
+          </div>
+          <div className="calendar-grid calendar-days">
+            {Array.from({ length: firstWeekday }, (_, index) => (
+              <span key={`application-blank-${index}`} />
+            ))}
+            {Array.from({ length: lastDay }, (_, index) => {
+              const day = index + 1
+              const key = dateKey(day)
+              const events = eventsByDate[key] || []
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  className={`${events.length ? 'has-events' : ''} ${selectedDate === key ? 'selected' : ''}`}
+                  onClick={() => events.length && setSelectedDate(key)}
+                >
+                  <span>{day}</span>
+                  {events.length > 0 && <small>{events.length}건</small>}
+                </button>
+              )
+            })}
+          </div>
+          {selectedDate && (
+            <div className="calendar-events">
+              <strong>{selectedDate} 일정</strong>
+              {selectedEvents.map((item, index) => (
+                <button
+                  type="button"
+                  key={`${item.id}-${item.eventType}-${index}`}
+                  onClick={() => onOpen(item)}
+                >
+                  <span>
+                    {item.eventType} · {item.organization}
+                  </span>
+                  <b>{item.title}</b>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </section>
+  )
+}
+
 function CareerToolsPanel({ preference, alerts, busy, message, onChange, onSave, onRead, onOpen }) {
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const today = new Date()
@@ -843,6 +1286,34 @@ function CareerToolsPanel({ preference, alerts, busy, message, onChange, onSave,
           {busy ? '저장 중...' : '알림 조건 저장'}
         </button>
       </div>
+      <div className="notification-options">
+        <label>
+          <input
+            type="checkbox"
+            checked={preference.newPostingAlerts ?? true}
+            onChange={(e) => onChange({ ...preference, newPostingAlerts: e.target.checked })}
+          />
+          새로운 맞춤 공고
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={preference.deadlineAlerts ?? true}
+            onChange={(e) => onChange({ ...preference, deadlineAlerts: e.target.checked })}
+          />
+          마감 알림
+        </label>
+        <label>
+          알림 시점
+          <input
+            value={preference.deadlineDays || '7,3,1'}
+            onChange={(e) => onChange({ ...preference, deadlineDays: e.target.value })}
+            placeholder="7,3,1"
+            aria-label="마감 알림 일수"
+          />
+          <small>일 전 · 쉼표로 구분</small>
+        </label>
+      </div>
       {message && <p role="status">{message}</p>}
       <div className="alerts-head">
         <h3>조건에 맞는 공고 {alerts.length}건</h3>
@@ -903,7 +1374,7 @@ function CareerToolsPanel({ preference, alerts, busy, message, onChange, onSave,
         {alerts.slice(0, 8).map((item) => (
           <button key={item.id} className={item.fresh ? 'fresh' : ''} onClick={() => onOpen(item)}>
             <span>
-              {item.fresh && 'NEW · '}
+              {item.reason} · {item.fresh && 'NEW · '}
               {item.organization}
             </span>
             <strong>{item.title}</strong>
@@ -997,6 +1468,78 @@ function AuthDialog({ mode, onClose, onSubmit, onSwitch, busy, error }) {
             </button>
           </div>
         )}
+      </section>
+    </div>
+  )
+}
+
+function PasswordDialog({ required, busy, error, onClose, onSubmit }) {
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  return (
+    <div className="overlay">
+      <section className="auth-dialog" role="dialog" aria-modal="true" aria-label="비밀번호 변경">
+        {!required && (
+          <button className="close" onClick={onClose} aria-label="닫기">
+            ×
+          </button>
+        )}
+        <p className="eyebrow">계정 보안</p>
+        <h2>비밀번호 변경</h2>
+        {required && <p>안전한 이용을 위해 기본 관리자 비밀번호를 먼저 변경해 주세요.</p>}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (newPassword !== confirmPassword) return
+            onSubmit({ currentPassword, newPassword })
+          }}
+        >
+          <label>
+            현재 비밀번호
+            <input
+              type="password"
+              required
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              autoComplete="current-password"
+            />
+          </label>
+          <label>
+            새 비밀번호
+            <input
+              type="password"
+              required
+              minLength={10}
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              autoComplete="new-password"
+            />
+            <small>영문과 숫자를 포함해 10자 이상 입력해 주세요.</small>
+          </label>
+          <label>
+            새 비밀번호 확인
+            <input
+              type="password"
+              required
+              minLength={10}
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              autoComplete="new-password"
+            />
+          </label>
+          {confirmPassword && newPassword !== confirmPassword && (
+            <p className="error">새 비밀번호가 서로 다릅니다.</p>
+          )}
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
+          <button className="primary" disabled={busy || newPassword !== confirmPassword}>
+            {busy ? '변경 중...' : '비밀번호 변경'}
+          </button>
+        </form>
       </section>
     </div>
   )
@@ -1464,6 +2007,7 @@ const ADMIN_CATEGORIES = [
 /** 관리자가 자동 추출 결과를 원문과 대조하고 공고별 분류를 바로 정정하는 화면. */
 function AdminReviewPanel({ securePost }) {
   const [items, setItems] = useState([])
+  const [quality, setQuality] = useState(null)
   const [busy, setBusy] = useState(null)
   const [message, setMessage] = useState('')
   const [crawlInfo, setCrawlInfo] = useState(null)
@@ -1473,8 +2017,11 @@ function AdminReviewPanel({ securePost }) {
   const [compensationFile, setCompensationFile] = useState(null)
   const loadReviews = useCallback(
     () =>
-      getJson('/api/admin/reviews')
-        .then(setItems)
+      Promise.all([getJson('/api/admin/reviews'), getJson('/api/admin/reviews/quality')])
+        .then(([reviews, report]) => {
+          setItems(reviews)
+          setQuality(report)
+        })
         .catch((e) => setMessage(e.message)),
     [],
   )
@@ -1636,6 +2183,75 @@ function AdminReviewPanel({ securePost }) {
           {message}
         </p>
       )}
+      {crawlInfo?.apiStatus?.validation?.pagesScanned > 0 && (
+        <section className="collection-audit" aria-label="최근 공고 수집 검증 결과">
+          <div className="collection-audit-head">
+            <div>
+              <strong>최근 수집 검증</strong>
+              <span>{crawlInfo.apiStatus.validation.pagesScanned}페이지 확인</span>
+            </div>
+            <b className={crawlInfo.apiStatus.validation.complete ? 'audit-ok' : 'audit-warning'}>
+              {crawlInfo.apiStatus.validation.complete ? '전체 확인 완료' : '추가 확인 필요'}
+            </b>
+          </div>
+          <div className="collection-audit-counts">
+            <span>
+              원천 공고 <strong>{crawlInfo.apiStatus.validation.sourceCount}</strong>
+            </span>
+            <span>
+              확인 <strong>{crawlInfo.apiStatus.validation.inspectedCount}</strong>
+            </span>
+            <span>
+              저장 <strong>{crawlInfo.apiStatus.validation.savedCount}</strong>
+            </span>
+            <span>
+              누락·실패 <strong>{crawlInfo.apiStatus.validation.missingCount}</strong>
+            </span>
+          </div>
+          {crawlInfo.apiStatus.validation.failures?.length > 0 && (
+            <details>
+              <summary>확인이 필요한 공고 {crawlInfo.apiStatus.validation.failedCount}건</summary>
+              <ul>
+                {crawlInfo.apiStatus.validation.failures.map((failure, index) => (
+                  <li key={`${failure}-${index}`}>{failure}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </section>
+      )}
+      {quality && (
+        <section className="quality-overview" aria-label="채용정보 품질 현황">
+          <div>
+            <strong>{quality.total}</strong>
+            <span>전체 공고</span>
+          </div>
+          <div>
+            <strong>{quality.missingDeadline}</strong>
+            <span>마감일 미확인</span>
+          </div>
+          <div>
+            <strong>{quality.missingRegion}</strong>
+            <span>지역 미확인</span>
+          </div>
+          <div>
+            <strong>{quality.missingPositions}</strong>
+            <span>직렬 미분류</span>
+          </div>
+          <div>
+            <strong>{quality.unknownMobility}</strong>
+            <span>근무형태 확인 필요</span>
+          </div>
+          <div>
+            <strong>{quality.invalidSourceUrl}</strong>
+            <span>원문 연결 확인</span>
+          </div>
+          <div>
+            <strong>{quality.duplicateSourceUrls}</strong>
+            <span>중복 의심</span>
+          </div>
+        </section>
+      )}
       <form className="qualification-import" onSubmit={importQualifications}>
         <strong>자격증 목록 관리</strong>
         <select value={qualificationType} onChange={(e) => setQualificationType(e.target.value)}>
@@ -1784,9 +2400,14 @@ export default function App() {
   const [authMode, setAuthMode] = useState(null)
   const [authError, setAuthError] = useState('')
   const [authBusy, setAuthBusy] = useState(false)
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordBusy, setPasswordBusy] = useState(false)
   // 공고 검색, 마이페이지 필터, 페이지 번호 및 API 결과를 보관한다.
   const [mine, setMine] = useState(false)
+  const [scrapsOpen, setScrapsOpen] = useState(false)
   const [adminView, setAdminView] = useState(false)
+  const [communityView, setCommunityView] = useState(false)
   const [queryInput, setQueryInput] = useState('')
   const [query, setQuery] = useState('')
   const [regionProvince, setRegionProvince] = useState('')
@@ -1819,8 +2440,12 @@ export default function App() {
     regions: '',
     mobilityTypes: '',
     enabled: true,
+    newPostingAlerts: true,
+    deadlineAlerts: true,
+    deadlineDays: '7,3,1',
   })
   const [alerts, setAlerts] = useState([])
+  const [applications, setApplications] = useState([])
   const [toolsBusy, setToolsBusy] = useState(false)
   const [toolsMessage, setToolsMessage] = useState('')
   const [matchDialog, setMatchDialog] = useState(null)
@@ -1882,6 +2507,7 @@ export default function App() {
   const refreshAuth = useCallback(async () => {
     const [session, token] = await Promise.all([getJson('/api/auth/me'), getJson('/api/auth/csrf')])
     setUser(session.user)
+    if (session.user?.mustChangePassword) setPasswordOpen(true)
     setCsrf(token)
   }, [])
   useEffect(() => {
@@ -1898,14 +2524,16 @@ export default function App() {
     async (signal) => {
       try {
         const params = new URLSearchParams({
-          q: query,
+          q: mine ? '' : query,
           page: String(page),
-          mine: String(mine),
-          region: regionProvince,
-          regionFull: REGION_LEVELS.find((item) => item.code === regionProvince)?.label || '',
-          district: regionDistrict,
-          mobility,
-          jobCategory,
+          mine: String(mine && scrapsOpen),
+          region: mine ? '' : regionProvince,
+          regionFull: mine
+            ? ''
+            : REGION_LEVELS.find((item) => item.code === regionProvince)?.label || '',
+          district: mine ? '' : regionDistrict,
+          mobility: mine ? '' : mobility,
+          jobCategory: mine ? '' : jobCategory,
         })
         setData(await getJson(`/api/postings?${params}`, { signal }))
         setError('')
@@ -1916,7 +2544,7 @@ export default function App() {
         setLoading(false)
       }
     },
-    [query, page, mine, regionProvince, regionDistrict, mobility, jobCategory],
+    [query, page, mine, scrapsOpen, regionProvince, regionDistrict, mobility, jobCategory],
   )
   useEffect(() => {
     const controller = new AbortController()
@@ -1932,11 +2560,13 @@ export default function App() {
       getJson('/api/profile'),
       getJson('/api/tools/preferences'),
       getJson('/api/tools/alerts'),
+      getJson('/api/tools/applications'),
     ])
-      .then(([saved, savedPreference, savedAlerts]) => {
+      .then(([saved, savedPreference, savedAlerts, savedApplications]) => {
         setProfile(saved)
         setPreference(savedPreference)
         setAlerts(savedAlerts)
+        setApplications(savedApplications)
         setProfileMessage('')
       })
       .catch((e) => setProfileMessage(e.message))
@@ -1985,6 +2615,24 @@ export default function App() {
       await load()
     } catch (e) {
       setError(e.message)
+    }
+  }
+  async function changePassword(form) {
+    setPasswordBusy(true)
+    setPasswordError('')
+    try {
+      const updated = await securePost(
+        '/api/auth/password',
+        JSON.stringify(form),
+        'application/json',
+      )
+      setUser(updated)
+      setPasswordOpen(false)
+      setError('비밀번호를 변경했습니다.')
+    } catch (e) {
+      setPasswordError(e.message)
+    } finally {
+      setPasswordBusy(false)
     }
   }
   /** 스크랩·지원 완료 상태를 토글한 뒤 최신 목록을 다시 읽는다. */
@@ -2078,7 +2726,8 @@ export default function App() {
         JSON.stringify({ ...tracking, nextStepDate: tracking.nextStepDate || null }),
         'application/json',
       )
-      await load()
+      const [savedApplications] = await Promise.all([getJson('/api/tools/applications'), load()])
+      setApplications(savedApplications)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -2151,13 +2800,17 @@ export default function App() {
       return
     }
     setMine(nextMine)
+    setScrapsOpen(false)
     setAdminView(false)
+    setCommunityView(false)
     setPage(0)
   }
   /** 서비스 배너를 누르면 검색·필터·개인 화면 상태를 모두 지우고 첫 화면으로 돌아간다. */
   function resetHome() {
     setMine(false)
+    setScrapsOpen(false)
     setAdminView(false)
+    setCommunityView(false)
     setQueryInput('')
     setQuery('')
     setRegionProvince('')
@@ -2200,12 +2853,23 @@ export default function App() {
             <button className={capabilityOpen ? 'active' : ''} onClick={openCapabilities}>
               내 역량
             </button>
+            <button
+              className={communityView ? 'active' : ''}
+              onClick={() => {
+                setCommunityView(true)
+                setMine(false)
+                setAdminView(false)
+              }}
+            >
+              공지·Q&amp;A
+            </button>
             {user?.admin && (
               <button
                 className={adminView ? 'active' : ''}
                 onClick={() => {
                   setAdminView(true)
                   setMine(false)
+                  setCommunityView(false)
                 }}
               >
                 관리자 검수
@@ -2214,6 +2878,7 @@ export default function App() {
             {user ? (
               <>
                 <span className="user-name">{user.displayName}님</span>
+                <button onClick={() => setPasswordOpen(true)}>비밀번호 변경</button>
                 <button onClick={logout}>로그아웃</button>
               </>
             ) : (
@@ -2236,119 +2901,147 @@ export default function App() {
         )}
         {adminView ? (
           <AdminReviewPanel securePost={securePost} />
+        ) : communityView ? (
+          <CommunityBoard
+            user={user}
+            securePost={securePost}
+            onLogin={() => setAuthMode('login')}
+          />
         ) : (
           <>
             <div className="heading">
               <div>
                 <p className="eyebrow">공공기관 채용정보</p>
-                <h1>{mine ? '스크랩한 채용공고' : '최신 채용공고 현황'}</h1>
-                <p className="sub">마감 임박순 · 20개씩 · 매일 자정 수집</p>
+                <h1>{mine ? '마이페이지' : '최신 채용공고 현황'}</h1>
+                <p className="sub">
+                  {mine
+                    ? '내 스펙과 맞춤 알림을 관리하세요.'
+                    : '마감 임박순 · 20개씩 · 매일 자정 수집'}
+                </p>
+                {mine && (
+                  <button
+                    type="button"
+                    className={`scrap-list-toggle ${scrapsOpen ? 'active' : ''}`}
+                    onClick={() => {
+                      setScrapsOpen((open) => !open)
+                      setPage(0)
+                    }}
+                  >
+                    {scrapsOpen ? '스크랩 공고 닫기' : '스크랩 공고 확인'}
+                  </button>
+                )}
               </div>
-              <form className="search" onSubmit={search}>
-                <input
-                  value={queryInput}
-                  onChange={(e) => setQueryInput(e.target.value)}
-                  placeholder="직무, 기관 검색..."
-                  aria-label="공고 검색"
-                />
-                <button>검색</button>
-              </form>
-            </div>
-            <div className="filter-row">
-              <label>
-                도·광역시·특별시
-                <select
-                  value={regionProvince}
-                  onChange={(e) => {
-                    setRegionProvince(e.target.value)
-                    setRegionDistrict('')
-                    setPage(0)
-                  }}
-                >
-                  <option value="">전국</option>
-                  {REGION_LEVELS.map((item) => (
-                    <option key={item.code} value={item.code}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                시·군·구
-                <select
-                  value={regionDistrict}
-                  disabled={!regionProvince}
-                  onChange={(e) => {
-                    setRegionDistrict(e.target.value)
-                    setPage(0)
-                  }}
-                >
-                  <option value="">
-                    {regionProvince ? '전체 시·군·구' : '상위 지역을 먼저 선택'}
-                  </option>
-                  {districtOptions.map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                근무 범위
-                <select
-                  value={mobility}
-                  onChange={(e) => {
-                    setMobility(e.target.value)
-                    setPage(0)
-                  }}
-                >
-                  <option value="">전체</option>
-                  <option value="ROTATIONAL">순환근무 가능</option>
-                  <option value="FIXED">지역고정</option>
-                  <option value="UNKNOWN">확인 필요</option>
-                </select>
-              </label>
-              <label>
-                채용 직렬
-                <select
-                  value={jobCategory}
-                  onChange={(e) => {
-                    setJobCategory(e.target.value)
-                    setPage(0)
-                  }}
-                >
-                  <option value="">전체 직렬</option>
-                  {filterOptions.jobCategories?.map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </select>
-              </label>
-              {(regionProvince || regionDistrict || mobility || jobCategory) && (
-                <button
-                  onClick={() => {
-                    setRegionProvince('')
-                    setRegionDistrict('')
-                    setMobility('')
-                    setJobCategory('')
-                    setPage(0)
-                  }}
-                >
-                  필터 초기화
-                </button>
+              {!mine && (
+                <form className="search" onSubmit={search}>
+                  <input
+                    value={queryInput}
+                    onChange={(e) => setQueryInput(e.target.value)}
+                    placeholder="직무, 기관 검색..."
+                    aria-label="공고 검색"
+                  />
+                  <button>검색</button>
+                </form>
               )}
             </div>
-            <div className="meta">
-              <span>검색 결과 {data.total}건</span>
-              <span>
-                파란색: 중앙 공공기관 · 주황색: 지방공기업 · 청록색: 민간기업 · 빨간 강조: 마감 7일
-                이내
-              </span>
-            </div>
-            {!online && (
+            {!mine && (
+              <>
+                <div className="filter-row">
+                  <label>
+                    도·광역시·특별시
+                    <select
+                      value={regionProvince}
+                      onChange={(e) => {
+                        setRegionProvince(e.target.value)
+                        setRegionDistrict('')
+                        setPage(0)
+                      }}
+                    >
+                      <option value="">전국</option>
+                      {REGION_LEVELS.map((item) => (
+                        <option key={item.code} value={item.code}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    시·군·구
+                    <select
+                      value={regionDistrict}
+                      disabled={!regionProvince}
+                      onChange={(e) => {
+                        setRegionDistrict(e.target.value)
+                        setPage(0)
+                      }}
+                    >
+                      <option value="">
+                        {regionProvince ? '전체 시·군·구' : '상위 지역을 먼저 선택'}
+                      </option>
+                      {districtOptions.map((value) => (
+                        <option key={value}>{value}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    근무 범위
+                    <select
+                      value={mobility}
+                      onChange={(e) => {
+                        setMobility(e.target.value)
+                        setPage(0)
+                      }}
+                    >
+                      <option value="">전체</option>
+                      <option value="ROTATIONAL">순환근무 가능</option>
+                      <option value="FIXED">지역고정</option>
+                      <option value="UNKNOWN">확인 필요</option>
+                    </select>
+                  </label>
+                  <label>
+                    채용 직렬
+                    <select
+                      value={jobCategory}
+                      onChange={(e) => {
+                        setJobCategory(e.target.value)
+                        setPage(0)
+                      }}
+                    >
+                      <option value="">전체 직렬</option>
+                      {filterOptions.jobCategories?.map((value) => (
+                        <option key={value}>{value}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {(regionProvince || regionDistrict || mobility || jobCategory) && (
+                    <button
+                      onClick={() => {
+                        setRegionProvince('')
+                        setRegionDistrict('')
+                        setMobility('')
+                        setJobCategory('')
+                        setPage(0)
+                      }}
+                    >
+                      필터 초기화
+                    </button>
+                  )}
+                </div>
+                <div className="meta">
+                  <span>검색 결과 {data.total}건</span>
+                  <span>
+                    파란색: 중앙 공공기관 · 주황색: 지방공기업 · 청록색: 민간기업 · 빨간 강조: 마감
+                    7일 이내
+                  </span>
+                </div>
+              </>
+            )}
+            {!mine && !online && (
               <p className="offline-notice" role="status">
                 오프라인 상태입니다. 앱 화면은 열리지만 공고 조회·로그인·스크랩에는 인터넷 연결이
                 필요합니다.
               </p>
             )}
-            {status && (
+            {!mine && status && (
               <p className="status">
                 {status.lastSuccess
                   ? `마지막 수집: ${new Date(status.lastSuccess).toLocaleString('ko-KR')} · 처리 ${status.lastCount}건`
@@ -2361,8 +3054,46 @@ export default function App() {
                 {error}
               </p>
             )}
+            {mine &&
+              scrapsOpen &&
+              (loading ? (
+                <p className="empty">불러오는 중...</p>
+              ) : (
+                <section className="grid scrap-list-grid" aria-label="스크랩한 채용공고 목록">
+                  {data.items.map((job) => (
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      busy={busyId === job.id}
+                      onOpenSource={() => openSource(job)}
+                      onSalary={openSalary}
+                      onCompetition={openCompetition}
+                      onScrap={(id) => mutate(id, 'scrap')}
+                      onTrack={saveTracking}
+                      onMatch={analyzeMatch}
+                      onShare={shareJob}
+                      matchBusy={matchBusyId === job.id}
+                    />
+                  ))}
+                </section>
+              ))}
+            {mine && scrapsOpen && !loading && data.items.length === 0 && (
+              <p className="empty">스크랩한 공고가 없습니다.</p>
+            )}
+            {mine && scrapsOpen && (
+              <div className="pagination">
+                <button disabled={page === 0} onClick={() => setPage(page - 1)}>
+                  ← 이전
+                </button>
+                <span>{page + 1} 페이지</span>
+                <button disabled={!data.hasNext} onClick={() => setPage(page + 1)}>
+                  다음 →
+                </button>
+              </div>
+            )}
             {mine && user && (
               <div className="mypage-dashboard">
+                <ApplicationDashboard applications={applications} onOpen={openSource} />
                 <CareerToolsPanel
                   preference={preference}
                   alerts={alerts}
@@ -2381,43 +3112,46 @@ export default function App() {
                 />
               </div>
             )}
-            {loading ? (
-              <p className="empty">불러오는 중...</p>
-            ) : (
-              <section className="grid" aria-label="채용공고 목록">
-                {data.items.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    busy={busyId === job.id}
-                    onOpenSource={() => openSource(job)}
-                    onSalary={openSalary}
-                    onCompetition={openCompetition}
-                    onScrap={(id) => mutate(id, 'scrap')}
-                    onTrack={saveTracking}
-                    onMatch={analyzeMatch}
-                    onShare={shareJob}
-                    matchBusy={matchBusyId === job.id}
-                  />
-                ))}
-              </section>
-            )}
-            {!loading && data.items.length === 0 && (
+            {!mine &&
+              (loading ? (
+                <p className="empty">불러오는 중...</p>
+              ) : (
+                <section className="grid" aria-label="채용공고 목록">
+                  {data.items.map((job) => (
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      busy={busyId === job.id}
+                      onOpenSource={() => openSource(job)}
+                      onSalary={openSalary}
+                      onCompetition={openCompetition}
+                      onScrap={(id) => mutate(id, 'scrap')}
+                      onTrack={saveTracking}
+                      onMatch={analyzeMatch}
+                      onShare={shareJob}
+                      matchBusy={matchBusyId === job.id}
+                    />
+                  ))}
+                </section>
+              ))}
+            {!mine && !loading && data.items.length === 0 && (
               <p className="empty">
                 {regionProvince || regionDistrict
                   ? '선택한 지역에는 공고가 없습니다.'
                   : '공고가 없습니다.'}
               </p>
             )}
-            <div className="pagination">
-              <button disabled={page === 0} onClick={() => setPage(page - 1)}>
-                ← 이전
-              </button>
-              <span>{page + 1} 페이지</span>
-              <button disabled={!data.hasNext} onClick={() => setPage(page + 1)}>
-                다음 →
-              </button>
-            </div>
+            {!mine && (
+              <div className="pagination">
+                <button disabled={page === 0} onClick={() => setPage(page - 1)}>
+                  ← 이전
+                </button>
+                <span>{page + 1} 페이지</span>
+                <button disabled={!data.hasNext} onClick={() => setPage(page + 1)}>
+                  다음 →
+                </button>
+              </div>
+            )}
           </>
         )}
       </main>
@@ -2458,6 +3192,18 @@ export default function App() {
           }}
           busy={authBusy}
           error={authError}
+        />
+      )}
+      {passwordOpen && user && (
+        <PasswordDialog
+          required={Boolean(user.mustChangePassword)}
+          busy={passwordBusy}
+          error={passwordError}
+          onClose={() => {
+            setPasswordOpen(false)
+            setPasswordError('')
+          }}
+          onSubmit={changePassword}
         />
       )}
     </>

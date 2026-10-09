@@ -77,6 +77,8 @@ public class SecurityConfig {
                                         "img-src 'self' data: https:; connect-src 'self'; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/community/notices").permitAll()
+                        .requestMatchers("/api/community/inquiries", "/api/community/inquiries/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/postings/**").authenticated()
                         .requestMatchers("/api/profile", "/api/profile/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/tools/filters").permitAll()

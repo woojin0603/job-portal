@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.List;
 
 /** AI와 크롤러가 추출한 공고 분류를 관리자가 검수하고 정정하는 API다. */
@@ -34,6 +38,9 @@ public class AdminReviewController {
     public record ReviewView(Long id, String title, String organization, String sourceUrl, String region,
                              String employmentType, String organizationType, String publicInstitutionType,
                              String mobilityType, List<PositionView> positions, Instant updatedAt) {}
+    public record QualityView(long total, long missingDeadline, long missingRegion, long missingPositions,
+                              long unknownMobility, long invalidSourceUrl, long duplicateSourceUrls,
+                              Instant checkedAt) {}
 
     private final JobPostingRepository postings;
     private final RecruitmentPositionRepository positions;
@@ -47,6 +54,29 @@ public class AdminReviewController {
     public List<ReviewView> list(@RequestParam(defaultValue = "0") int page) {
         return postings.findAll(PageRequest.of(Math.max(0, page), 30, Sort.by(Sort.Direction.DESC, "updatedAt")))
                 .stream().map(this::view).toList();
+    }
+
+    /** 운영자가 수집 결과의 주요 누락과 중복을 한눈에 확인할 품질 지표를 계산한다. */
+    @GetMapping("/quality")
+    public QualityView quality() {
+        List<JobPosting> all = postings.findAll();
+        Set<Long> postingIdsWithPositions = positions.findAll().stream()
+                .map(position -> position.posting.id).collect(Collectors.toCollection(HashSet::new));
+        Map<String, Long> sourceUrlCounts = all.stream()
+                .map(posting -> posting.sourceUrl)
+                .filter(value -> value != null && !value.isBlank())
+                .collect(Collectors.groupingBy(value -> value, Collectors.counting()));
+        long duplicateUrls = sourceUrlCounts.values().stream().filter(count -> count > 1)
+                .mapToLong(count -> count - 1).sum();
+        return new QualityView(all.size(),
+                all.stream().filter(posting -> posting.deadline == null).count(),
+                all.stream().filter(posting -> posting.region == null || posting.region.isBlank()).count(),
+                all.stream().filter(posting -> !postingIdsWithPositions.contains(posting.id)).count(),
+                all.stream().filter(posting -> posting.mobilityType == null
+                        || "UNKNOWN".equals(posting.mobilityType)).count(),
+                all.stream().filter(posting -> posting.sourceUrl == null
+                        || !posting.sourceUrl.startsWith("https://")).count(),
+                duplicateUrls, Instant.now());
     }
 
     @PostMapping("/{id}")

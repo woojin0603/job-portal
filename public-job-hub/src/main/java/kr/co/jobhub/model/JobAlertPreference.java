@@ -27,6 +27,16 @@ public class JobAlertPreference {
     @Column(nullable = false)
     public boolean enabled = true;
 
+    @Column(name = "new_posting_alerts", nullable = false, columnDefinition = "boolean default true")
+    public boolean newPostingAlerts = true;
+
+    @Column(name = "deadline_alerts", nullable = false, columnDefinition = "boolean default true")
+    public boolean deadlineAlerts = true;
+
+    @Column(name = "deadline_days", nullable = false, length = 30,
+            columnDefinition = "varchar(30) default '7,3,1'")
+    public String deadlineDays = "7,3,1";
+
     public Instant lastViewedAt;
     public Instant updatedAt = Instant.now();
 }

@@ -27,11 +27,22 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (username.isBlank() || users.existsByEmail(username)) return;
+        if (username.isBlank()) return;
+        var existing = users.findByEmail(username);
+        if (existing.isPresent()) {
+            AppUser admin = existing.get();
+            if ("admin1234!".equals(password) && passwords.matches(password, admin.passwordHash)
+                    && !admin.mustChangePassword) {
+                admin.mustChangePassword = true;
+                users.save(admin);
+            }
+            return;
+        }
         AppUser admin = new AppUser();
         admin.email = username;
         admin.passwordHash = passwords.encode(password);
         admin.displayName = "관리자";
+        admin.mustChangePassword = true;
         users.save(admin);
     }
 }

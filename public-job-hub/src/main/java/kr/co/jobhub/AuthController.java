@@ -26,8 +26,11 @@ public class AuthController {
                                   @NotBlank @Size(max = 80) String displayName) {
     }
 
+    public record PasswordChangeRequest(@NotBlank String currentPassword,
+                                        @NotBlank @Size(min = 10, max = 100) String newPassword) {}
+
     /** 비밀번호 해시를 제외하고 화면에 공개할 회원 정보. */
-    public record Profile(Long id, String email, String displayName, boolean admin) {
+    public record Profile(Long id, String email, String displayName, boolean admin, boolean mustChangePassword) {
     }
 
     /** 로그인 여부를 동일한 JSON 구조로 반환하기 위한 응답. */
@@ -85,8 +88,30 @@ public class AuthController {
         }
     }
 
+    /** 로그인한 회원이 현재 비밀번호를 확인한 뒤 새 비밀번호로 안전하게 교체한다. */
+    @PostMapping("/password")
+    public Profile changePassword(@Valid @RequestBody PasswordChangeRequest request, Authentication auth) {
+        if (auth == null || !auth.isAuthenticated()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        if (!request.newPassword().matches("^(?=.*[A-Za-z])(?=.*\\d).+$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "새 비밀번호는 영문과 숫자를 모두 포함해야 합니다.");
+        }
+        if (request.currentPassword().equals(request.newPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 비밀번호와 다른 비밀번호를 사용해 주세요.");
+        }
+        AppUser user = users.findByEmail(auth.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        if (!passwords.matches(request.currentPassword(), user.passwordHash)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다.");
+        }
+        user.passwordHash = passwords.encode(request.newPassword());
+        user.mustChangePassword = false;
+        users.save(user);
+        boolean admin = auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        return profile(user, admin);
+    }
+
     /** DB 엔티티에서 클라이언트에 필요한 안전한 필드만 골라 반환한다. */
     private Profile profile(AppUser user, boolean admin) {
-        return new Profile(user.id, user.email, user.displayName, admin);
+        return new Profile(user.id, user.email, user.displayName, admin, user.mustChangePassword);
     }
 }

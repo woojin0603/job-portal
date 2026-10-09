@@ -29,7 +29,29 @@ import java.util.regex.Pattern;
 /** 재정경제부 공공기관 채용정보 API를 DB 캐시로 동기화한다. */
 @Service
 public class PublicRecruitmentApiService {
-    public record Status(Instant lastAttempt, Instant lastSuccess, int lastCount, String error) {}
+    public record Validation(int sourceCount, int inspectedCount, int savedCount, int failedCount,
+                             int missingCount, int pagesScanned, boolean complete, List<String> failures) {}
+    public record Status(Instant lastAttempt, Instant lastSuccess, int lastCount, String error,
+                         Validation validation) {}
+
+    private static final Validation EMPTY_VALIDATION = new Validation(0, 0, 0, 0, 0, 0, false, List.of());
+
+    private static class ListingReport {
+        int sourceCount;
+        int inspectedCount;
+        int savedCount;
+        int failedCount;
+        int pagesScanned;
+        boolean reachedEnd;
+        final List<String> failures = new ArrayList<>();
+
+        Validation validation() {
+            int missing = Math.max(0, sourceCount - inspectedCount) + failedCount;
+            boolean complete = reachedEnd && failedCount == 0 && (sourceCount == 0 || inspectedCount >= sourceCount);
+            return new Validation(sourceCount, inspectedCount, savedCount, failedCount, missing,
+                    pagesScanned, complete, List.copyOf(failures));
+        }
+    }
 
     private static final String SOURCE = "MOEF-RECRUITMENT-API";
     private static final Pattern DIRECT_RATIO = Pattern.compile(
@@ -45,11 +67,11 @@ public class PublicRecruitmentApiService {
     private final String baseUrl;
     private final String serviceKey;
     private final boolean enabled;
-    private final int pages;
+    private final int maxPages;
     private final int historyPages;
     private final int rows;
     private final long delayMillis;
-    private volatile Status status = new Status(null, null, 0, null);
+    private volatile Status status = new Status(null, null, 0, null, EMPTY_VALIDATION);
 
     public PublicRecruitmentApiService(JobPostingRepository postings, RecruitmentPositionRepository positions,
                                        RecruitmentCompetitionRepository competitions,
@@ -58,7 +80,7 @@ public class PublicRecruitmentApiService {
                                        @Value("${jobhub.public-data.recruitment.base-url}") String baseUrl,
                                        @Value("${jobhub.public-data.recruitment.service-key:}") String serviceKey,
                                        @Value("${jobhub.public-data.recruitment.enabled:false}") boolean enabled,
-                                       @Value("${jobhub.public-data.recruitment.pages:2}") int pages,
+                                       @Value("${jobhub.public-data.recruitment.max-pages:7}") int maxPages,
                                        @Value("${jobhub.public-data.recruitment.history-pages:2}") int historyPages,
                                        @Value("${jobhub.public-data.recruitment.rows:100}") int rows,
                                        @Value("${jobhub.public-data.recruitment.request-delay-millis:250}") long delayMillis) {
@@ -70,7 +92,7 @@ public class PublicRecruitmentApiService {
         this.baseUrl = baseUrl.replaceAll("/+$", "");
         this.serviceKey = normalizeServiceKey(serviceKey);
         this.enabled = enabled;
-        this.pages = Math.max(1, pages);
+        this.maxPages = Math.max(1, Math.min(20, maxPages));
         this.historyPages = Math.max(0, historyPages);
         this.rows = Math.max(1, Math.min(100, rows));
         this.delayMillis = Math.max(100, delayMillis);
@@ -82,33 +104,39 @@ public class PublicRecruitmentApiService {
     @Scheduled(cron = "0 15 0 * * *", zone = "Asia/Seoul")
     public synchronized Status sync() {
         Instant attempt = Instant.now();
-        if (!enabled) return status = new Status(attempt, null, 0, "채용정보 자동 갱신이 꺼져 있습니다.");
-        if (serviceKey.isBlank()) return status = new Status(attempt, null, 0, "채용정보 인증 설정을 확인해 주세요.");
+        if (!enabled) return status = new Status(attempt, null, 0,
+                "채용정보 자동 갱신이 꺼져 있습니다.", EMPTY_VALIDATION);
+        if (serviceKey.isBlank()) return status = new Status(attempt, null, 0,
+                "채용정보 인증 설정을 확인해 주세요.", EMPTY_VALIDATION);
         if (serviceKey.contains("JOBHUB_PUBLIC_DATA_"))
             return status = new Status(attempt, null, 0,
-                    "인증키 값에 다른 환경변수가 함께 들어 있습니다. IntelliJ에서 환경변수를 별도 행으로 등록하세요.");
+                    "인증키 값에 다른 환경변수가 함께 들어 있습니다. IntelliJ에서 환경변수를 별도 행으로 등록하세요.",
+                    EMPTY_VALIDATION);
         int count = 0;
+        Validation validation = EMPTY_VALIDATION;
         try {
-            count += syncListing(Map.of("ongoingYn", "Y"), pages, false);
+            ListingReport current = syncListing(Map.of("ongoingYn", "Y"), maxPages, false);
+            validation = current.validation();
+            count += current.savedCount;
             if (historyPages > 0) {
                 LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
                 count += syncListing(Map.of(
                         "ongoingYn", "N",
                         "pbancBgngYmd", today.minusYears(2).format(DateTimeFormatter.ISO_LOCAL_DATE),
-                        "pbancEndYmd", today.format(DateTimeFormatter.ISO_LOCAL_DATE)), historyPages, true);
+                        "pbancEndYmd", today.format(DateTimeFormatter.ISO_LOCAL_DATE)), historyPages, true).savedCount;
             }
-            status = new Status(attempt, Instant.now(), count, null);
+            status = new Status(attempt, Instant.now(), count, null, validation);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            status = new Status(attempt, null, count, "채용정보 갱신이 중단되었습니다.");
+            status = new Status(attempt, null, count, "채용정보 갱신이 중단되었습니다.", validation);
         } catch (Exception e) {
-            status = new Status(attempt, null, count, e.getMessage());
+            status = new Status(attempt, null, count, e.getMessage(), validation);
         }
         return status;
     }
 
-    private int syncListing(Map<String, String> filters, int pageLimit, boolean skipCached) throws Exception {
-        int count = 0;
+    private ListingReport syncListing(Map<String, String> filters, int pageLimit, boolean skipCached) throws Exception {
+        ListingReport report = new ListingReport();
         for (int page = 1; page <= pageLimit; page++) {
             Map<String, String> parameters = new LinkedHashMap<>(filters);
             parameters.put("resultType", "json");
@@ -116,20 +144,53 @@ public class PublicRecruitmentApiService {
             parameters.put("numOfRows", Integer.toString(rows));
             JsonNode response = get("/list", parameters);
             requireSuccess(response);
+            report.pagesScanned = page;
+            JsonNode totalCount = response.findValue("totalCount");
+            if (totalCount != null) {
+                report.sourceCount = Math.max(report.sourceCount, totalCount.asInt(0));
+            }
             JsonNode result = response.path("result");
-            if (!result.isArray() || result.isEmpty()) break;
+            if (!result.isArray() || result.isEmpty()) {
+                report.reachedEnd = true;
+                break;
+            }
             for (JsonNode summary : result) {
                 long sn = summary.path("recrutPblntSn").asLong(0);
-                if (sn == 0 || (skipCached && hasCachedCompetition(sn))) continue;
-                JsonNode detailResponse = get("/detail", Map.of("resultType", "json", "sn", Long.toString(sn)));
-                requireSuccess(detailResponse);
-                save(detailResponse.path("result"));
-                count++;
-                Thread.sleep(delayMillis);
+                report.inspectedCount++;
+                if (sn == 0) {
+                    recordFailure(report, "식별번호가 없는 공고");
+                    continue;
+                }
+                if (skipCached && hasCachedCompetition(sn)) continue;
+                try {
+                    JsonNode detailResponse = get("/detail", Map.of("resultType", "json", "sn", Long.toString(sn)));
+                    requireSuccess(detailResponse);
+                    if (save(detailResponse.path("result"))) {
+                        report.savedCount++;
+                    } else {
+                        recordFailure(report, sn + " · 필수 정보 누락");
+                    }
+                    Thread.sleep(delayMillis);
+                } catch (InterruptedException e) {
+                    throw e;
+                } catch (Exception e) {
+                    String title = Optional.ofNullable(text(summary, "recrutPbancTtl")).orElse("제목 미확인");
+                    recordFailure(report, sn + " · " + title + " · " + e.getMessage());
+                }
             }
-            if (result.size() < rows) break;
+            if (result.size() < rows) {
+                report.reachedEnd = true;
+                break;
+            }
         }
-        return count;
+        if (report.sourceCount > 0 && report.inspectedCount >= report.sourceCount) report.reachedEnd = true;
+        if (report.sourceCount == 0) report.sourceCount = report.inspectedCount;
+        return report;
+    }
+
+    private void recordFailure(ListingReport report, String message) {
+        report.failedCount++;
+        if (report.failures.size() < 20) report.failures.add(message);
     }
 
     private boolean hasCachedCompetition(long sn) {
@@ -213,9 +274,9 @@ public class PublicRecruitmentApiService {
                     + response.path("resultMsg").asText("알 수 없는 오류"));
     }
 
-    private void save(JsonNode item) {
+    private boolean save(JsonNode item) {
         String sn = text(item, "recrutPblntSn");
-        if (sn == null || text(item, "recrutPbancTtl") == null || text(item, "instNm") == null) return;
+        if (sn == null || text(item, "recrutPbancTtl") == null || text(item, "instNm") == null) return false;
         String title = text(item, "recrutPbancTtl");
         String organization = text(item, "instNm");
         LocalDate postedAt = date(text(item, "pbancBgngYmd"));
@@ -295,6 +356,7 @@ public class PublicRecruitmentApiService {
         if (competitionCount == 0 && !posting.open) collectOfficialCompetition(posting);
         posting.competitionCheckedAt = Instant.now();
         postings.save(posting);
+        return true;
     }
 
     /** API에 수치가 없을 때만 잡알리오 공식 HTML과 결과 관련 PDF에서 명시된 값만 보완한다. */
