@@ -85,7 +85,55 @@ $env:JOBHUB_ADMIN_EMAILS='admin@example.com'
 
 운영 서버에서는 인증서가 설정된 MySQL을 사용하고 JDBC 주소의 `useSSL`을 `true`로 바꾸세요. 연결 풀 크기는 `MYSQL_MAX_POOL_SIZE`, 최소 유휴 연결은 `MYSQL_MIN_IDLE`로 조절할 수 있습니다. 현재 설정은 최초 전환을 위해 Hibernate `ddl-auto=update`를 사용합니다. 실제 운영 데이터를 투입하기 전에는 Flyway 같은 버전 관리형 마이그레이션으로 고정하는 것이 다음 단계입니다.
 
-기존 H2 데이터는 자동으로 MySQL에 복사되지 않습니다. 두 DB의 스키마를 먼저 확인하고 별도 이관 절차로 옮겨야 하며, 이관이 검증될 때까지 `data` 폴더를 삭제하지 마세요.
+기존 H2 데이터는 일반 앱 실행만으로 MySQL에 복사되지 않습니다. 아래의 전용 이관 절차를 사용하고, 결과가 검증될 때까지 `data` 폴더를 삭제하지 마세요.
+
+### 기존 H2 데이터 자동 이관
+
+프로젝트에 포함된 일회성 이관기는 회원, 공고, 스크랩, 역량, 지원 일정, 관심 기관, 공지·문의, 자격증, 보수·경쟁률 데이터를 외래키 순서에 맞춰 복사합니다. 안전을 위해 MySQL 대상 테이블 중 하나라도 데이터가 있으면 복사를 시작하지 않으며, 완료 전 테이블별 원본·대상 건수를 비교합니다.
+
+1. 실행 중인 Spring Boot 서버를 종료합니다.
+2. 비어 있는 MySQL 데이터베이스를 준비합니다.
+3. `MYSQL_URL`, `MYSQL_USERNAME`, `MYSQL_PASSWORD`를 설정합니다.
+4. 최신 JAR을 빌드한 뒤 이관 스크립트를 실행합니다.
+
+```powershell
+$env:MYSQL_URL='jdbc:mysql://localhost:3306/public_job_hub?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true'
+$env:MYSQL_USERNAME='jobhub'
+$env:MYSQL_PASSWORD='강력한-비밀번호'
+.\gradlew.bat --gradle-user-home .gradle-user-home bootJar
+.\scripts\migrate-h2-to-mysql.ps1
+```
+
+스크립트는 먼저 `backups/h2-before-mysql-실행시각`에 H2 파일을 복사합니다. 이관 중 오류나 건수 불일치가 발생하면 MySQL 트랜잭션을 롤백합니다. 성공 후에도 H2 백업은 운영 MySQL의 별도 백업까지 확인하기 전에는 삭제하지 마세요.
+
+## Docker 운영 배포
+
+운영 서버에는 Docker와 Docker Compose 플러그인만 설치하면 앱, MySQL 8.4, HTTPS 프록시를 함께 실행할 수 있습니다. 저장소의 `.env.example`을 `.env`로 복사하고 도메인, MySQL 비밀번호, 관리자 계정을 반드시 변경하세요. `JOBHUB_DOMAIN`의 DNS A/AAAA 레코드는 이 서버를 가리켜야 하며 외부 방화벽에서 80·443 포트를 허용해야 합니다.
+
+```bash
+cp .env.example .env
+# 편집기로 .env의 change-* 값과 도메인을 수정
+docker compose config
+docker compose up -d --build
+docker compose logs -f app
+```
+
+Caddy가 도메인의 TLS 인증서를 자동으로 발급하고 HTTPS 요청을 Spring Boot로 전달합니다. MySQL 포트는 외부에 공개하지 않으며 데이터는 `mysql-data` Docker 볼륨에 저장됩니다. 앱 컨테이너는 루트 권한이 아닌 `jobhub` 사용자로 실행됩니다.
+
+배포 갱신은 소스 반영 후 아래 명령으로 실행합니다. MySQL 볼륨은 앱 컨테이너를 다시 만들어도 유지됩니다.
+
+```bash
+docker compose up -d --build app
+docker compose logs --tail=100 app
+```
+
+Windows 서버나 관리 PC에서는 다음 명령으로 일관된 MySQL 덤프를 생성할 수 있습니다. 백업은 `backups` 폴더에 생성되고 Git에는 포함되지 않습니다.
+
+```powershell
+.\scripts\backup-mysql.ps1
+```
+
+운영 서버 외부의 별도 저장소에도 백업 파일을 복사하고, 정기 백업은 작업 스케줄러 또는 cron에서 위 스크립트와 동일한 `mysqldump --single-transaction` 명령을 실행하도록 구성하세요. 배포 전 H2 데이터는 그대로 보존하고 MySQL 전환 결과를 확인한 후에만 기존 `data` 폴더를 정리하세요.
 
 ## 운영 인증·세션 보안
 

@@ -1,7 +1,7 @@
 package kr.co.jobhub;
 
-import kr.co.jobhub.model.JobPosting;
-import kr.co.jobhub.repo.JobPostingRepository;
+import kr.co.jobhub.posting.domain.JobPosting;
+import kr.co.jobhub.posting.repository.JobPostingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

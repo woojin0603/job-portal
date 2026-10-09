@@ -1,11 +1,11 @@
 package kr.co.jobhub;
 
-import kr.co.jobhub.model.JobPosting;
-import kr.co.jobhub.model.InstitutionCompensation;
-import kr.co.jobhub.model.RecruitmentPosition;
-import kr.co.jobhub.repo.JobPostingRepository;
-import kr.co.jobhub.repo.InstitutionCompensationRepository;
-import kr.co.jobhub.repo.RecruitmentPositionRepository;
+import kr.co.jobhub.compensation.domain.InstitutionCompensation;
+import kr.co.jobhub.compensation.repository.InstitutionCompensationRepository;
+import kr.co.jobhub.posting.domain.JobPosting;
+import kr.co.jobhub.posting.domain.RecruitmentPosition;
+import kr.co.jobhub.posting.repository.JobPostingRepository;
+import kr.co.jobhub.posting.repository.RecruitmentPositionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

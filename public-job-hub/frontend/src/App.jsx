@@ -798,40 +798,64 @@ function CapabilityDialog({ profile, loading, onClose, onEdit }) {
   )
 }
 
-function CommunityBoard({ user, securePost, onLogin }) {
+function CommunityBoard({ user, securePost, onLogin, onUnreadChange }) {
   const [tab, setTab] = useState('notices')
   const [notices, setNotices] = useState([])
   const [inquiries, setInquiries] = useState([])
   const [noticeForm, setNoticeForm] = useState({ title: '', content: '', pinned: false })
-  const [questionForm, setQuestionForm] = useState({ category: 'SERVICE', title: '', content: '' })
+  const [editingNoticeId, setEditingNoticeId] = useState(null)
+  const [questionForm, setQuestionForm] = useState({
+    category: 'SERVICE',
+    title: '',
+    content: '',
+    postingUrl: '',
+  })
   const [answers, setAnswers] = useState({})
+  const [inquiryQuery, setInquiryQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
   const loadCommunity = async () => {
     const savedNotices = await getJson('/api/community/notices')
     setNotices(savedNotices)
-    if (user) setInquiries(await getJson('/api/community/inquiries'))
-    else setInquiries([])
+    if (user) {
+      const savedInquiries = await getJson('/api/community/inquiries')
+      setInquiries(savedInquiries)
+      if (!user.admin) onUnreadChange(savedInquiries.filter((item) => !item.answerRead).length)
+    } else setInquiries([])
   }
   useEffect(() => {
     loadCommunity().catch((e) => setMessage(e.message))
     // 로그인 상태가 바뀌면 열람 가능한 문의 범위를 다시 읽는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
+  useEffect(() => {
+    if (tab !== 'questions' || !user || user.admin) return
+    securePost('/api/community/inquiries/read')
+      .then(() => {
+        setInquiries((items) => items.map((item) => ({ ...item, answerRead: true })))
+        onUnreadChange(0)
+      })
+      .catch(() => {})
+  }, [tab, user, securePost, onUnreadChange])
 
   const submitNotice = async (event) => {
     event.preventDefault()
     setBusy(true)
     try {
       await securePost(
-        '/api/admin/community/notices',
+        editingNoticeId
+          ? `/api/admin/community/notices/${editingNoticeId}`
+          : '/api/admin/community/notices',
         JSON.stringify(noticeForm),
         'application/json',
       )
       setNoticeForm({ title: '', content: '', pinned: false })
+      setEditingNoticeId(null)
       await loadCommunity()
-      setMessage('공지사항을 등록했습니다.')
+      setMessage(editingNoticeId ? '공지사항을 수정했습니다.' : '공지사항을 등록했습니다.')
     } catch (e) {
       setMessage(e.message)
     } finally {
@@ -843,9 +867,47 @@ function CommunityBoard({ user, securePost, onLogin }) {
     setBusy(true)
     try {
       await securePost('/api/community/inquiries', JSON.stringify(questionForm), 'application/json')
-      setQuestionForm({ category: 'SERVICE', title: '', content: '' })
+      setQuestionForm({ category: 'SERVICE', title: '', content: '', postingUrl: '' })
       await loadCommunity()
       setMessage('문의가 접수되었습니다.')
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const editNotice = (item) => {
+    setEditingNoticeId(item.id)
+    setNoticeForm({ title: item.title, content: item.content, pinned: item.pinned })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const deleteNotice = async (id) => {
+    if (!window.confirm('이 공지사항을 삭제할까요?')) return
+    setBusy(true)
+    try {
+      await securePost(`/api/admin/community/notices/${id}/delete`)
+      if (editingNoticeId === id) {
+        setEditingNoticeId(null)
+        setNoticeForm({ title: '', content: '', pinned: false })
+      }
+      await loadCommunity()
+      setMessage('공지사항을 삭제했습니다.')
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const changeInquiryStatus = async (id, status) => {
+    setBusy(true)
+    try {
+      await securePost(
+        `/api/admin/community/inquiries/${id}/status`,
+        JSON.stringify({ status }),
+        'application/json',
+      )
+      await loadCommunity()
+      setMessage('문의 처리 상태를 변경했습니다.')
     } catch (e) {
       setMessage(e.message)
     } finally {
@@ -874,6 +936,20 @@ function CommunityBoard({ user, securePost, onLogin }) {
     value
       ? new Date(value).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })
       : ''
+  const statusLabel = (status) =>
+    ({ WAITING: '접수', IN_PROGRESS: '처리 중', ANSWERED: '답변 완료' })[status] || status
+  const filteredInquiries = inquiries.filter((item) => {
+    const query = inquiryQuery.trim().toLowerCase()
+    return (
+      (!statusFilter || item.status === statusFilter) &&
+      (!categoryFilter || item.category === categoryFilter) &&
+      (!query ||
+        item.title.toLowerCase().includes(query) ||
+        item.content.toLowerCase().includes(query) ||
+        item.requesterName?.toLowerCase().includes(query) ||
+        item.requesterEmail?.toLowerCase().includes(query))
+    )
+  })
 
   return (
     <section className="community-page">
@@ -901,7 +977,7 @@ function CommunityBoard({ user, securePost, onLogin }) {
         <div className="community-content">
           {user?.admin && (
             <form className="community-form" onSubmit={submitNotice}>
-              <h2>공지 등록</h2>
+              <h2>{editingNoticeId ? '공지 수정' : '공지 등록'}</h2>
               <input
                 value={noticeForm.title}
                 onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
@@ -924,7 +1000,21 @@ function CommunityBoard({ user, securePost, onLogin }) {
                 />
                 상단 고정
               </label>
-              <button disabled={busy}>공지 등록</button>
+              <div className="community-form-actions">
+                <button disabled={busy}>{editingNoticeId ? '수정 저장' : '공지 등록'}</button>
+                {editingNoticeId && (
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => {
+                      setEditingNoticeId(null)
+                      setNoticeForm({ title: '', content: '', pinned: false })
+                    }}
+                  >
+                    취소
+                  </button>
+                )}
+              </div>
             </form>
           )}
           <div className="board-list">
@@ -936,6 +1026,16 @@ function CommunityBoard({ user, securePost, onLogin }) {
                   <time>{formatDateTime(item.createdAt)}</time>
                 </summary>
                 <p>{item.content}</p>
+                {user?.admin && (
+                  <div className="board-admin-actions">
+                    <button type="button" onClick={() => editNotice(item)}>
+                      수정
+                    </button>
+                    <button type="button" className="danger" onClick={() => deleteNotice(item.id)}>
+                      삭제
+                    </button>
+                  </div>
+                )}
               </details>
             ))}
             {!notices.length && <p className="empty">등록된 공지사항이 없습니다.</p>}
@@ -978,17 +1078,45 @@ function CommunityBoard({ user, securePost, onLogin }) {
                 maxLength={10000}
                 required
               />
+              {questionForm.category === 'POSTING' && (
+                <input
+                  type="url"
+                  value={questionForm.postingUrl}
+                  onChange={(e) => setQuestionForm({ ...questionForm, postingUrl: e.target.value })}
+                  placeholder="오류가 있는 채용공고 원문 주소"
+                  maxLength={1500}
+                />
+              )}
               <button disabled={busy}>문의 접수</button>
             </form>
           )}
           <div className="board-list inquiry-list">
             <h2>{user.admin ? '전체 문의 관리' : '내 문의'}</h2>
-            {inquiries.map((item) => (
+            <div className="inquiry-filters">
+              <input
+                value={inquiryQuery}
+                onChange={(e) => setInquiryQuery(e.target.value)}
+                placeholder={user.admin ? '제목, 내용, 문의자 검색' : '제목과 내용 검색'}
+              />
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="">전체 상태</option>
+                <option value="WAITING">접수</option>
+                <option value="IN_PROGRESS">처리 중</option>
+                <option value="ANSWERED">답변 완료</option>
+              </select>
+              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+                <option value="">전체 분류</option>
+                <option value="SERVICE">서비스 이용</option>
+                <option value="POSTING">채용공고 오류</option>
+                <option value="ACCOUNT">계정</option>
+                <option value="SUGGESTION">기능 제안</option>
+                <option value="OTHER">기타</option>
+              </select>
+            </div>
+            {filteredInquiries.map((item) => (
               <details key={item.id}>
                 <summary>
-                  <span className={item.status === 'ANSWERED' ? 'answered' : 'waiting'}>
-                    {item.status === 'ANSWERED' ? '답변완료' : '답변대기'}
-                  </span>
+                  <span className={item.status.toLowerCase()}>{statusLabel(item.status)}</span>
                   <strong>{item.title}</strong>
                   <time>{formatDateTime(item.createdAt)}</time>
                 </summary>
@@ -998,6 +1126,16 @@ function CommunityBoard({ user, securePost, onLogin }) {
                   </small>
                 )}
                 <p>{item.content}</p>
+                {item.postingUrl && (
+                  <a
+                    className="inquiry-posting-link"
+                    href={item.postingUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    연결된 채용공고 확인 ↗
+                  </a>
+                )}
                 {item.answer && (
                   <div className="admin-answer">
                     <strong>관리자 답변</strong>
@@ -1007,6 +1145,18 @@ function CommunityBoard({ user, securePost, onLogin }) {
                 )}
                 {user.admin && (
                   <div className="answer-form">
+                    <label>
+                      처리 상태
+                      <select
+                        value={item.status === 'ANSWERED' ? 'ANSWERED' : item.status}
+                        disabled={item.status === 'ANSWERED' || busy}
+                        onChange={(e) => changeInquiryStatus(item.id, e.target.value)}
+                      >
+                        <option value="WAITING">접수</option>
+                        <option value="IN_PROGRESS">처리 중</option>
+                        {item.status === 'ANSWERED' && <option value="ANSWERED">답변 완료</option>}
+                      </select>
+                    </label>
                     <textarea
                       value={answers[item.id] ?? item.answer ?? ''}
                       onChange={(e) => setAnswers({ ...answers, [item.id]: e.target.value })}
@@ -1020,8 +1170,465 @@ function CommunityBoard({ user, securePost, onLogin }) {
                 )}
               </details>
             ))}
-            {!inquiries.length && <p className="empty">등록된 문의가 없습니다.</p>}
+            {!filteredInquiries.length && <p className="empty">조건에 맞는 문의가 없습니다.</p>}
           </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+/** 공고 변경·마감 임박·관심 기관 신규 공고를 상단에서 함께 보여준다. */
+function NotificationCenter({ user, securePost, onOpen }) {
+  const [open, setOpen] = useState(false)
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const load = async () => {
+    if (!user) return
+    setLoading(true)
+    try {
+      const [changes, alerts, favorites, notificationStates, savedPreference] = await Promise.all([
+        getJson('/api/tools/posting-changes'),
+        getJson('/api/tools/alerts'),
+        getJson('/api/tools/favorite-organizations/postings'),
+        getJson('/api/tools/notification-states'),
+        getJson('/api/tools/preferences'),
+      ])
+      const visibleChanges = savedPreference.postingChangeAlerts
+        ? changes.filter(
+            (item) => !savedPreference.importantChangeOnly || item.importance === 'IMPORTANT',
+          )
+        : []
+      const stateByKey = new Map(notificationStates.map((item) => [item.key, item]))
+      const alertPostingIds = new Set(alerts.map((item) => item.id))
+      const merged = [
+        ...visibleChanges.map((item) => ({
+          ...item,
+          key: `change-${item.id}`,
+          category: '공고 변경',
+          important: item.importance === 'IMPORTANT',
+          reason: `${item.fieldLabel} 변경`,
+          detail: `${item.oldValue || '정보 없음'} → ${item.newValue || '정보 없음'}`,
+          occurredAt: item.detectedAt,
+        })),
+        ...alerts.map((item) => ({
+          ...item,
+          key: `alert-${item.id}-${item.reason}`,
+          postingId: item.id,
+          category:
+            item.reason === '오늘 마감' || item.reason?.startsWith('마감 ')
+              ? '마감 알림'
+              : '맞춤 공고',
+          important:
+            (item.reason === '오늘 마감' || item.reason?.startsWith('마감 ')) &&
+            item.remainingDays != null &&
+            item.remainingDays <= 3,
+          detail: item.region || '지역 미정',
+          occurredAt: item.deadline ? `${item.deadline}T00:00:00` : null,
+        })),
+        ...favorites
+          .filter((item) => item.fresh && !alertPostingIds.has(item.id))
+          .map((item) => ({
+            ...item,
+            key: `favorite-${item.id}`,
+            postingId: item.id,
+            category: '관심 기관',
+            important: false,
+            reason: '관심 기관의 새로운 공고',
+            detail: item.region || '지역 미정',
+            occurredAt: item.postedAt ? `${item.postedAt}T00:00:00` : null,
+          })),
+      ]
+        .map((item) => ({
+          ...item,
+          fresh: item.fresh && !stateByKey.get(item.key)?.read,
+          deleted: stateByKey.get(item.key)?.deleted,
+        }))
+        .filter((item) => !item.deleted)
+        .sort((a, b) => {
+          if (a.important !== b.important) return a.important ? -1 : 1
+          return new Date(b.occurredAt || 0) - new Date(a.occurredAt || 0)
+        })
+      setItems(merged.slice(0, 60))
+      setMessage('')
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => {
+    load()
+    // 로그인 계정이 바뀔 때 해당 회원의 알림만 다시 읽는다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email])
+
+  const readAll = async () => {
+    try {
+      await Promise.all([
+        securePost(
+          '/api/tools/notification-states/read',
+          JSON.stringify({ keys: items.map((item) => item.key) }),
+          'application/json',
+        ),
+        securePost('/api/tools/posting-changes/read'),
+        securePost('/api/tools/alerts/read'),
+        securePost('/api/tools/favorite-organizations/read'),
+      ])
+      setItems((values) => values.map((item) => ({ ...item, fresh: false })))
+    } catch (e) {
+      setMessage(e.message)
+    }
+  }
+  const markRead = async (item) => {
+    if (!item.fresh) return
+    await securePost(
+      '/api/tools/notification-states/read',
+      JSON.stringify({ keys: [item.key] }),
+      'application/json',
+    )
+    setItems((values) =>
+      values.map((value) => (value.key === item.key ? { ...value, fresh: false } : value)),
+    )
+  }
+  const openItem = async (item) => {
+    try {
+      await markRead(item)
+    } catch (e) {
+      setMessage(e.message)
+    }
+    onOpen({
+      id: item.postingId || item.id,
+      title: item.title,
+      organization: item.organization,
+      sourceUrl: item.sourceUrl,
+    })
+  }
+  const deleteItem = async (item) => {
+    try {
+      await securePost(
+        '/api/tools/notification-states/delete',
+        JSON.stringify({ keys: [item.key] }),
+        'application/json',
+      )
+      setItems((values) => values.filter((value) => value.key !== item.key))
+    } catch (e) {
+      setMessage(e.message)
+    }
+  }
+  const unread = items.filter((item) => item.fresh).length
+
+  return (
+    <div className="notification-center">
+      <button
+        className={open ? 'active notification-trigger' : 'notification-trigger'}
+        type="button"
+        aria-label={`알림센터${unread ? `, 새 알림 ${unread}건` : ''}`}
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span aria-hidden="true">●</span> 알림
+        {unread > 0 && <b className="nav-notification">{unread}</b>}
+      </button>
+      {open && (
+        <section className="notification-popover">
+          <div className="notification-popover-head">
+            <div>
+              <strong>알림센터</strong>
+              <span>중요한 채용 변동을 먼저 보여드립니다.</span>
+            </div>
+            {unread > 0 && (
+              <button type="button" onClick={readAll}>
+                모두 확인
+              </button>
+            )}
+          </div>
+          {message && <p className="notification-message">{message}</p>}
+          <div className="notification-list">
+            {items.map((item) => (
+              <article
+                key={item.key}
+                className={`${item.important ? 'important' : ''} ${item.fresh ? 'fresh' : ''}`}
+              >
+                <button className="notification-main" type="button" onClick={() => openItem(item)}>
+                  <span className="notification-labels">
+                    {item.important && <b>중요</b>}
+                    <em>{item.category}</em>
+                    {item.fresh && <i>NEW</i>}
+                  </span>
+                  <strong>{item.title}</strong>
+                  <span>{item.organization}</span>
+                  <small>{item.reason}</small>
+                  {item.detail && <p>{item.detail}</p>}
+                </button>
+                <button
+                  className="notification-delete"
+                  type="button"
+                  aria-label="이 알림 삭제"
+                  onClick={() => deleteItem(item)}
+                >
+                  ×
+                </button>
+              </article>
+            ))}
+            {loading && <p className="empty">알림을 불러오는 중...</p>}
+            {!loading && !items.length && <p className="empty">현재 확인할 알림이 없습니다.</p>}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}
+
+function PostingChangesPanel({ securePost, onOpen, onUnreadChange }) {
+  const [changes, setChanges] = useState([])
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const loadChanges = async () => {
+    try {
+      const values = await getJson('/api/tools/posting-changes')
+      setChanges(values)
+      onUnreadChange(values.filter((item) => item.fresh).length)
+    } catch (e) {
+      setMessage(e.message)
+    }
+  }
+  useEffect(() => {
+    loadChanges()
+    // 마이페이지 진입 시 최신 변경 이력을 가져온다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const toggle = async () => {
+    const next = !open
+    setOpen(next)
+    if (!next) return
+    try {
+      await securePost('/api/tools/posting-changes/read')
+      setChanges((items) => items.map((item) => ({ ...item, fresh: false })))
+      onUnreadChange(0)
+    } catch (e) {
+      setMessage(e.message)
+    }
+  }
+  const displayValue = (value) => value || '정보 없음'
+  const formatDateTime = (value) =>
+    new Date(value).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })
+
+  return (
+    <section className="posting-changes-panel">
+      <div className="posting-changes-head">
+        <div>
+          <p className="eyebrow">POSTING UPDATES</p>
+          <h2>공고 변경 알림</h2>
+          <p>스크랩하거나 관심 기관으로 등록한 공고의 주요 변경사항입니다.</p>
+        </div>
+        <button type="button" onClick={toggle}>
+          {open ? '변경사항 닫기' : '변경사항 확인'}
+          {!open && changes.some((item) => item.fresh) && (
+            <b>{changes.filter((item) => item.fresh).length} NEW</b>
+          )}
+        </button>
+      </div>
+      {message && <p className="favorite-message">{message}</p>}
+      {open && (
+        <div className="posting-change-list">
+          {changes.map((item) => (
+            <article key={item.id} className={item.fresh ? 'fresh' : ''}>
+              <div className="posting-change-title">
+                <span>{item.organization}</span>
+                <strong>{item.title}</strong>
+                <time>{formatDateTime(item.detectedAt)}</time>
+              </div>
+              <div className="posting-change-badges">
+                <b className="posting-change-field">{item.fieldLabel} 변경</b>
+                <b
+                  className={`change-importance ${item.importance === 'IMPORTANT' ? 'important' : ''}`}
+                >
+                  {item.importance === 'IMPORTANT' ? '중요' : '일반'}
+                </b>
+              </div>
+              <div className="posting-change-values">
+                <p>
+                  <span>변경 전</span>
+                  {displayValue(item.oldValue)}
+                </p>
+                <p>
+                  <span>변경 후</span>
+                  {displayValue(item.newValue)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  onOpen({
+                    id: item.postingId,
+                    title: item.title,
+                    organization: item.organization,
+                    sourceUrl: item.sourceUrl,
+                  })
+                }
+              >
+                공고 원문 확인 ↗
+              </button>
+            </article>
+          ))}
+          {!changes.length && <p className="empty">아직 감지된 공고 변경사항이 없습니다.</p>}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function FavoriteOrganizationsPanel({ securePost, onOpen }) {
+  const [favorites, setFavorites] = useState([])
+  const [postings, setPostings] = useState([])
+  const [query, setQuery] = useState('')
+  const [options, setOptions] = useState([])
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const loadFavorites = () =>
+    getJson('/api/tools/favorite-organizations')
+      .then(setFavorites)
+      .catch((e) => setMessage(e.message))
+  useEffect(() => {
+    loadFavorites()
+  }, [])
+
+  const searchOrganizations = async (event) => {
+    event.preventDefault()
+    if (!query.trim()) return
+    setBusy(true)
+    try {
+      setOptions(
+        await getJson(
+          `/api/tools/favorite-organizations/search?q=${encodeURIComponent(query.trim())}`,
+        ),
+      )
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const toggleFavorite = async (organization) => {
+    setBusy(true)
+    try {
+      const result = await securePost(
+        '/api/tools/favorite-organizations/toggle',
+        JSON.stringify({ organization }),
+        'application/json',
+      )
+      await loadFavorites()
+      setOptions([])
+      setQuery('')
+      setMessage(result.followed ? '관심 기관으로 등록했습니다.' : '관심 기관에서 해제했습니다.')
+      if (open) setPostings(await getJson('/api/tools/favorite-organizations/postings'))
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const showPostings = async () => {
+    setBusy(true)
+    try {
+      setPostings(await getJson('/api/tools/favorite-organizations/postings'))
+      await securePost('/api/tools/favorite-organizations/read')
+      setOpen(true)
+      await loadFavorites()
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const totalNew = favorites.reduce((sum, item) => sum + item.newPostings, 0)
+
+  return (
+    <section className="favorite-organizations">
+      <div className="profile-heading favorite-heading">
+        <div>
+          <p className="eyebrow">FAVORITE ORGANIZATIONS</p>
+          <h2>관심 기관</h2>
+          <p>관심 기관을 등록하면 해당 기관의 진행 중 공고와 신규 공고를 모아볼 수 있습니다.</p>
+        </div>
+        <button type="button" disabled={busy || !favorites.length} onClick={showPostings}>
+          관심 기관 공고 {totalNew > 0 && <b>{totalNew} NEW</b>}
+        </button>
+      </div>
+      <form className="organization-search" onSubmit={searchOrganizations}>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="기관명을 검색하세요. 예: 한국전력공사"
+          maxLength={200}
+        />
+        <button disabled={busy || !query.trim()}>기관 검색</button>
+      </form>
+      {message && <p className="favorite-message">{message}</p>}
+      {options.length > 0 && (
+        <div className="organization-options">
+          {options.map((item) => {
+            const followed = favorites.some((favorite) =>
+              favorite.aliases.includes(item.organization),
+            )
+            return (
+              <button
+                type="button"
+                key={item.organization}
+                disabled={busy}
+                onClick={() => toggleFavorite(item.organization)}
+              >
+                <span>{item.organization}</span>
+                <small>수집 공고 {item.postings}건</small>
+                <b>{followed ? '등록 해제' : '＋ 관심 기관'}</b>
+              </button>
+            )
+          })}
+        </div>
+      )}
+      <div className="favorite-list">
+        {favorites.map((item) => (
+          <article key={item.id}>
+            <div>
+              <strong>{item.organization}</strong>
+              {item.aliases.length > 1 && (
+                <small title={item.aliases.join(', ')}>명칭 {item.aliases.length}개 통합</small>
+              )}
+            </div>
+            <span>진행 중 {item.openPostings}건</span>
+            <span>최근 마감 {item.nearestDeadline || '미정'}</span>
+            {item.newPostings > 0 && <b>NEW {item.newPostings}</b>}
+            <button type="button" disabled={busy} onClick={() => toggleFavorite(item.organization)}>
+              해제
+            </button>
+          </article>
+        ))}
+        {!favorites.length && <p className="empty">등록한 관심 기관이 없습니다.</p>}
+      </div>
+      {open && (
+        <div className="favorite-postings">
+          <div className="favorite-postings-head">
+            <h3>관심 기관 채용공고</h3>
+            <button type="button" onClick={() => setOpen(false)}>
+              닫기
+            </button>
+          </div>
+          {postings.map((item) => (
+            <button type="button" key={item.id} onClick={() => onOpen(item)}>
+              <span>{item.organization}</span>
+              <strong>{item.title}</strong>
+              <small>
+                {item.region || '지역 미정'} · 마감 {item.deadline || '미정'}
+              </small>
+            </button>
+          ))}
+          {!postings.length && <p className="empty">현재 진행 중인 관심 기관 공고가 없습니다.</p>}
         </div>
       )}
     </section>
@@ -2004,10 +2611,201 @@ const ADMIN_CATEGORIES = [
   '사회복지',
 ]
 
+const POSTING_CHANGE_TYPES = [
+  ['TITLE', '공고 제목'],
+  ['DEADLINE', '지원 마감일'],
+  ['REGION', '근무 지역'],
+  ['EMPLOYMENT_TYPE', '고용 형태'],
+  ['SOURCE_URL', '원문·첨부 링크'],
+  ['HEADCOUNT', '채용 인원'],
+  ['REQUIREMENTS', '지원 자격'],
+  ['POSITIONS', '채용 직렬'],
+]
+
+/** 전체 변경 이력을 검색하고 실제 원문과 비교해 오탐 기록을 정리한다. */
+function AdminPostingChanges({ securePost }) {
+  const [data, setData] = useState({ items: [], total: 0, page: 0, totalPages: 0 })
+  const [queryInput, setQueryInput] = useState('')
+  const [query, setQuery] = useState('')
+  const [type, setType] = useState('')
+  const [importance, setImportance] = useState('')
+  const [page, setPage] = useState(0)
+  const [selected, setSelected] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [message, setMessage] = useState('')
+
+  const load = useCallback(() => {
+    setLoading(true)
+    const params = new URLSearchParams({ q: query, type, importance, page: String(page) })
+    getJson(`/api/admin/posting-changes?${params}`)
+      .then((value) => {
+        setData(value)
+        setSelected([])
+        setMessage('')
+      })
+      .catch((e) => setMessage(e.message))
+      .finally(() => setLoading(false))
+  }, [importance, page, query, type])
+  useEffect(load, [load])
+
+  const search = (event) => {
+    event.preventDefault()
+    setPage(0)
+    setQuery(queryInput.trim())
+  }
+  const toggle = (id) =>
+    setSelected((values) =>
+      values.includes(id) ? values.filter((value) => value !== id) : [...values, id],
+    )
+  const toggleAll = () =>
+    setSelected((values) =>
+      values.length === data.items.length ? [] : data.items.map((item) => item.id),
+    )
+  const removeSelected = async () => {
+    if (!selected.length || !window.confirm(`선택한 변경 이력 ${selected.length}건을 삭제할까요?`))
+      return
+    try {
+      const result = await securePost(
+        '/api/admin/posting-changes/delete',
+        JSON.stringify({ ids: selected }),
+        'application/json',
+      )
+      setMessage(`오탐 변경 이력 ${result.deleted}건을 삭제했습니다.`)
+      load()
+    } catch (e) {
+      setMessage(e.message)
+    }
+  }
+  const displayValue = (value) => value || '정보 없음'
+
+  return (
+    <section className="admin-change-history" aria-label="공고 변경 이력 관리">
+      <div className="admin-change-heading">
+        <div>
+          <h2>공고 변경 이력</h2>
+          <p>감지된 변경을 원문과 비교하고 오탐 기록을 정리합니다.</p>
+        </div>
+        <strong>전체 {data.total}건</strong>
+      </div>
+      <form className="admin-change-filters" onSubmit={search}>
+        <input
+          value={queryInput}
+          onChange={(e) => setQueryInput(e.target.value)}
+          placeholder="기관명, 공고명, 변경 항목 검색"
+        />
+        <select
+          value={type}
+          onChange={(e) => {
+            setType(e.target.value)
+            setPage(0)
+          }}
+        >
+          <option value="">전체 변경 항목</option>
+          {POSTING_CHANGE_TYPES.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={importance}
+          onChange={(e) => {
+            setImportance(e.target.value)
+            setPage(0)
+          }}
+        >
+          <option value="">전체 중요도</option>
+          <option value="IMPORTANT">중요</option>
+          <option value="NORMAL">일반</option>
+        </select>
+        <button>검색</button>
+        <button
+          className="danger-button"
+          type="button"
+          disabled={!selected.length}
+          onClick={removeSelected}
+        >
+          선택 삭제{selected.length ? ` (${selected.length})` : ''}
+        </button>
+      </form>
+      {message && <p className="status">{message}</p>}
+      {!loading && data.items.length > 0 && (
+        <label className="admin-change-select-all">
+          <input
+            type="checkbox"
+            checked={selected.length === data.items.length}
+            onChange={toggleAll}
+          />
+          현재 페이지 전체 선택
+        </label>
+      )}
+      <div className="admin-change-list">
+        {data.items.map((item) => (
+          <article key={item.id}>
+            <input
+              type="checkbox"
+              aria-label={`${item.title} 변경 이력 선택`}
+              checked={selected.includes(item.id)}
+              onChange={() => toggle(item.id)}
+            />
+            <div className="admin-change-summary">
+              <span>{item.organization}</span>
+              <strong>{item.title}</strong>
+              <time>{new Date(item.detectedAt).toLocaleString('ko-KR')}</time>
+            </div>
+            <div className="admin-change-badges">
+              <b>{item.fieldLabel}</b>
+              <b
+                className={`change-importance ${item.importance === 'IMPORTANT' ? 'important' : ''}`}
+              >
+                {item.importance === 'IMPORTANT' ? '중요' : '일반'}
+              </b>
+            </div>
+            <div className="admin-change-compare">
+              <p>
+                <span>변경 전</span>
+                {displayValue(item.oldValue)}
+              </p>
+              <p>
+                <span>변경 후</span>
+                {displayValue(item.newValue)}
+              </p>
+            </div>
+            <a href={item.sourceUrl} target="_blank" rel="noreferrer">
+              원문 비교 ↗
+            </a>
+          </article>
+        ))}
+        {loading && <p className="empty">변경 이력을 불러오는 중...</p>}
+        {!loading && !data.items.length && (
+          <p className="empty">조건에 맞는 변경 이력이 없습니다.</p>
+        )}
+      </div>
+      {data.totalPages > 1 && (
+        <div className="pagination">
+          <button disabled={page === 0} onClick={() => setPage((value) => value - 1)}>
+            ← 이전
+          </button>
+          <span>
+            {page + 1} / {data.totalPages} 페이지
+          </span>
+          <button
+            disabled={page + 1 >= data.totalPages}
+            onClick={() => setPage((value) => value + 1)}
+          >
+            다음 →
+          </button>
+        </div>
+      )}
+    </section>
+  )
+}
+
 /** 관리자가 자동 추출 결과를 원문과 대조하고 공고별 분류를 바로 정정하는 화면. */
 function AdminReviewPanel({ securePost }) {
   const [items, setItems] = useState([])
   const [quality, setQuality] = useState(null)
+  const [dashboard, setDashboard] = useState(null)
   const [busy, setBusy] = useState(null)
   const [message, setMessage] = useState('')
   const [crawlInfo, setCrawlInfo] = useState(null)
@@ -2017,10 +2815,15 @@ function AdminReviewPanel({ securePost }) {
   const [compensationFile, setCompensationFile] = useState(null)
   const loadReviews = useCallback(
     () =>
-      Promise.all([getJson('/api/admin/reviews'), getJson('/api/admin/reviews/quality')])
-        .then(([reviews, report]) => {
+      Promise.all([
+        getJson('/api/admin/reviews'),
+        getJson('/api/admin/reviews/quality'),
+        getJson('/api/admin/dashboard'),
+      ])
+        .then(([reviews, report, dashboardReport]) => {
           setItems(reviews)
           setQuality(report)
+          setDashboard(dashboardReport)
         })
         .catch((e) => setMessage(e.message)),
     [],
@@ -2178,6 +2981,88 @@ function AdminReviewPanel({ securePost }) {
           </button>
         </div>
       </div>
+      {dashboard && (
+        <section className="operations-dashboard" aria-label="서비스 운영 현황">
+          <div className="operations-heading">
+            <div>
+              <h2>운영 현황</h2>
+              <span>{new Date(dashboard.checkedAt).toLocaleString('ko-KR')} 기준</span>
+            </div>
+            <button type="button" onClick={loadReviews}>
+              새로고침
+            </button>
+          </div>
+          <div className="operations-stats">
+            <div>
+              <span>전체 공고</span>
+              <strong>{dashboard.totalPostings}</strong>
+              <small>진행 중 {dashboard.openPostings}건</small>
+            </div>
+            <div>
+              <span>오늘 수집</span>
+              <strong>{dashboard.collectedToday}</strong>
+              <small>새로 발견한 공고</small>
+            </div>
+            <div className={dashboard.qualityAttention ? 'attention' : ''}>
+              <span>검수 필요</span>
+              <strong>{dashboard.qualityAttention}</strong>
+              <small>정보 누락·미분류</small>
+            </div>
+            <div>
+              <span>전체 회원</span>
+              <strong>{dashboard.totalUsers}</strong>
+              <small>오늘 가입 {dashboard.newUsersToday}명</small>
+            </div>
+            <div className={dashboard.waitingInquiries ? 'attention' : ''}>
+              <span>답변 대기</span>
+              <strong>{dashboard.waitingInquiries}</strong>
+              <small>완료 {dashboard.answeredInquiries}건</small>
+            </div>
+            <div>
+              <span>공지사항</span>
+              <strong>{dashboard.notices}</strong>
+              <small>등록된 운영 공지</small>
+            </div>
+          </div>
+          <div className="operations-detail-grid">
+            <section className="source-health">
+              <h3>수집 출처 현황</h3>
+              <div className="source-health-list">
+                {dashboard.sources.map((source) => (
+                  <div key={source.source}>
+                    <strong>{source.source}</strong>
+                    <span>
+                      전체 {source.total}건 · 진행 중 {source.open}건
+                    </span>
+                    <small>
+                      최근 갱신{' '}
+                      {source.lastUpdatedAt
+                        ? new Date(source.lastUpdatedAt).toLocaleString('ko-KR')
+                        : '기록 없음'}
+                    </small>
+                  </div>
+                ))}
+                {!dashboard.sources.length && <p className="empty">수집된 공고가 없습니다.</p>}
+              </div>
+            </section>
+            <section className="admin-activity">
+              <h3>최근 운영 기록</h3>
+              <div>
+                {dashboard.recentActivities.map((activity, index) => (
+                  <article key={`${activity.type}-${activity.occurredAt}-${index}`}>
+                    <span>{activity.type === 'NOTICE' ? '공지' : '문의답변'}</span>
+                    <strong>{activity.detail}</strong>
+                    <time>{new Date(activity.occurredAt).toLocaleString('ko-KR')}</time>
+                  </article>
+                ))}
+                {!dashboard.recentActivities.length && (
+                  <p className="empty">아직 기록된 운영 작업이 없습니다.</p>
+                )}
+              </div>
+            </section>
+          </div>
+        </section>
+      )}
       {message && (
         <p className="status" role="status">
           {message}
@@ -2252,6 +3137,7 @@ function AdminReviewPanel({ securePost }) {
           </div>
         </section>
       )}
+      <AdminPostingChanges securePost={securePost} />
       <form className="qualification-import" onSubmit={importQualifications}>
         <strong>자격증 목록 관리</strong>
         <select value={qualificationType} onChange={(e) => setQualificationType(e.target.value)}>
@@ -2408,6 +3294,8 @@ export default function App() {
   const [scrapsOpen, setScrapsOpen] = useState(false)
   const [adminView, setAdminView] = useState(false)
   const [communityView, setCommunityView] = useState(false)
+  const [inquiryUnreadCount, setInquiryUnreadCount] = useState(0)
+  const [postingChangeUnread, setPostingChangeUnread] = useState(0)
   const [queryInput, setQueryInput] = useState('')
   const [query, setQuery] = useState('')
   const [regionProvince, setRegionProvince] = useState('')
@@ -2513,6 +3401,24 @@ export default function App() {
   useEffect(() => {
     refreshAuth().catch(() => setError('서버에 연결할 수 없습니다.'))
   }, [refreshAuth])
+  useEffect(() => {
+    if (!user || user.admin) {
+      setInquiryUnreadCount(0)
+      return
+    }
+    getJson('/api/community/inquiries/unread-count')
+      .then((value) => setInquiryUnreadCount(value.count))
+      .catch(() => {})
+  }, [user])
+  useEffect(() => {
+    if (!user) {
+      setPostingChangeUnread(0)
+      return
+    }
+    getJson('/api/tools/posting-changes/unread-count')
+      .then((value) => setPostingChangeUnread(value.count))
+      .catch(() => {})
+  }, [user])
   useEffect(() => {
     getJson('/api/tools/filters')
       .then(setFilterOptions)
@@ -2849,10 +3755,19 @@ export default function App() {
             </button>
             <button className={mine ? 'active' : ''} onClick={() => navigate(true)}>
               마이페이지
+              {postingChangeUnread > 0 && (
+                <span
+                  className="nav-notification"
+                  aria-label={`확인하지 않은 공고 변경 ${postingChangeUnread}건`}
+                >
+                  {postingChangeUnread}
+                </span>
+              )}
             </button>
             <button className={capabilityOpen ? 'active' : ''} onClick={openCapabilities}>
               내 역량
             </button>
+            {user && <NotificationCenter user={user} securePost={securePost} onOpen={openSource} />}
             <button
               className={communityView ? 'active' : ''}
               onClick={() => {
@@ -2862,6 +3777,11 @@ export default function App() {
               }}
             >
               공지·Q&amp;A
+              {inquiryUnreadCount > 0 && (
+                <span className="nav-notification" aria-label={`새 답변 ${inquiryUnreadCount}건`}>
+                  {inquiryUnreadCount}
+                </span>
+              )}
             </button>
             {user?.admin && (
               <button
@@ -2906,6 +3826,7 @@ export default function App() {
             user={user}
             securePost={securePost}
             onLogin={() => setAuthMode('login')}
+            onUnreadChange={setInquiryUnreadCount}
           />
         ) : (
           <>
@@ -3094,6 +4015,12 @@ export default function App() {
             {mine && user && (
               <div className="mypage-dashboard">
                 <ApplicationDashboard applications={applications} onOpen={openSource} />
+                <FavoriteOrganizationsPanel securePost={securePost} onOpen={openSource} />
+                <PostingChangesPanel
+                  securePost={securePost}
+                  onOpen={openSource}
+                  onUnreadChange={setPostingChangeUnread}
+                />
                 <CareerToolsPanel
                   preference={preference}
                   alerts={alerts}

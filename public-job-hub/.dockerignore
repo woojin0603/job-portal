@@ -1,0 +1,11 @@
+.git
+.gradle
+.gradle-*-home
+.idea
+build
+data
+backups
+frontend/node_modules
+frontend/dist
+.env
+*.log

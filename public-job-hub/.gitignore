@@ -1,0 +1,15 @@
+.gradle/
+.gradle-*-home/
+build/
+frontend/node_modules/
+frontend/dist/
+data/
+*.mv.db
+*.trace.db
+.env
+.env.*
+!.env.example
+*.log
+backups/
+.idea/
+*.iml

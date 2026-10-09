@@ -1,0 +1,67 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: public_job_hub
+      MYSQL_USER: ${MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql,prod
+      MYSQL_URL: jdbc:mysql://mysql:3306/public_job_hub?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true
+      MYSQL_USERNAME: ${MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_MAX_POOL_SIZE: ${MYSQL_MAX_POOL_SIZE:-10}
+      MYSQL_MIN_IDLE: ${MYSQL_MIN_IDLE:-2}
+      JOBHUB_ADMIN_USERNAME: ${JOBHUB_ADMIN_USERNAME}
+      JOBHUB_ADMIN_PASSWORD: ${JOBHUB_ADMIN_PASSWORD}
+      JOBHUB_ADMIN_EMAILS: ${JOBHUB_ADMIN_EMAILS:-}
+      JOBHUB_PUBLIC_DATA_ENABLED: ${JOBHUB_PUBLIC_DATA_ENABLED:-true}
+      JOBHUB_PUBLIC_DATA_API_KEY: ${JOBHUB_PUBLIC_DATA_API_KEY:-}
+      JOBHUB_CRAWL_SOURCES: ${JOBHUB_CRAWL_SOURCES:-JOB-ALIO|https://job.alio.go.kr/recruit.do?order=REG_DATE&pageNo=1|PUBLIC|TABLE|CENTRAL_PUBLIC}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      JOBHUB_PAID_AI_ENABLED: ${JOBHUB_PAID_AI_ENABLED:-false}
+      JOBHUB_OCR_ENABLED: ${JOBHUB_OCR_ENABLED:-false}
+      TZ: Asia/Seoul
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      JOBHUB_DOMAIN: ${JOBHUB_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  mysql-data:
+  caddy-data:
+  caddy-config:
