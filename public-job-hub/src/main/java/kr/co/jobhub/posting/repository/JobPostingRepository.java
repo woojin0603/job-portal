@@ -23,7 +23,7 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
      * 공개 중인 공고를 제목·기관명으로 검색하고 20건씩 페이지로 나눈다.
      * mine이 참이면 지정 회원이 스크랩한 공고만 DB 쿼리 단계에서 필터링한다.
      */
-    @Query("select p from JobPosting p where (p.deadline is null or p.deadline >= :today) and " +
+    @Query("select p from JobPosting p where (:mine = true or p.deadline is null or p.deadline >= :today) and " +
            "(lower(p.title) like lower(concat('%', :q, '%')) or lower(p.organization) like lower(concat('%', :q, '%'))) " +
            "and (:region = '' or lower(p.region) like lower(concat('%', :region, '%')) " +
            "or lower(p.region) like lower(concat('%', :regionFull, '%'))) " +
@@ -38,4 +38,20 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
                             @Param("district") String district, @Param("mobility") String mobility,
                             @Param("jobCategory") String jobCategory,
                             @Param("userId") Long userId, Pageable pageable);
+
+    /** 마감된 공고를 최신 마감일순으로 검색하며 원본 데이터는 삭제하지 않는다. */
+    @Query("select p from JobPosting p where p.deadline is not null and p.deadline < :today and " +
+           "(lower(p.title) like lower(concat('%', :q, '%')) or lower(p.organization) like lower(concat('%', :q, '%'))) " +
+           "and (:region = '' or lower(p.region) like lower(concat('%', :region, '%'))) " +
+           "and (:employmentType = '' or lower(p.employmentType) like lower(concat('%', :employmentType, '%'))) " +
+           "and (:fromDate is null or coalesce(p.postedAt, p.deadline) >= :fromDate) " +
+           "and (:toDate is null or coalesce(p.postedAt, p.deadline) <= :toDate) " +
+           "and (:jobCategory = '' or exists (select rp.id from RecruitmentPosition rp where rp.posting = p " +
+           "and lower(rp.standardCategory) like lower(concat('%', :jobCategory, '%')))) " +
+           "order by p.deadline desc, p.updatedAt desc")
+    Page<JobPosting> searchArchive(@Param("q") String q, @Param("today") LocalDate today,
+                                   @Param("region") String region,
+                                   @Param("employmentType") String employmentType,
+                                   @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate,
+                                   @Param("jobCategory") String jobCategory, Pageable pageable);
 }

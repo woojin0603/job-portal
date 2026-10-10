@@ -170,6 +170,47 @@ public class PostingController {
         return new PostingPage(items, result.getTotalElements(), safePage, result.hasNext(), crawler.status());
     }
 
+    /** 마감된 과거 공고를 기관·직렬·지역·연도·고용형태로 검색한다. */
+    @GetMapping("/postings/archive")
+    public PostingPage archive(@RequestParam(defaultValue = "") String q,
+                               @RequestParam(defaultValue = "0") int page,
+                               @RequestParam(defaultValue = "") String region,
+                               @RequestParam(defaultValue = "") String jobCategory,
+                               @RequestParam(defaultValue = "") String employmentType,
+                               @RequestParam(required = false) Integer year,
+                               Principal principal) {
+        long userId = principal == null ? 0L : user(principal).id;
+        int safePage = Math.max(0, page);
+        int currentYear = LocalDate.now(ZoneId.of("Asia/Seoul")).getYear();
+        if (year != null && (year < 1990 || year > currentYear)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "채용연도를 확인해 주세요.");
+        }
+        LocalDate fromDate = year == null ? null : LocalDate.of(year, 1, 1);
+        LocalDate toDate = year == null ? null : LocalDate.of(year, 12, 31);
+        var result = postings.searchArchive(q, LocalDate.now(ZoneId.of("Asia/Seoul")), region,
+                employmentType, fromDate, toDate, jobCategory, PageRequest.of(safePage, 20));
+        Map<Long, Scrap> saved = scraps.findByUserId(userId).stream()
+                .collect(Collectors.toMap(s -> s.posting.getId(), Function.identity()));
+        List<PostingDto> items = result.getContent().stream().map(p -> postingDto(p, saved.get(p.id))).toList();
+        return new PostingPage(items, result.getTotalElements(), safePage, result.hasNext(), crawler.status());
+    }
+
+    private PostingDto postingDto(JobPosting p, Scrap s) {
+        String publicInstitutionType = p.publicInstitutionType;
+        if ("PUBLIC".equals(p.organizationType)) {
+            publicInstitutionType = "ROTATIONAL".equals(p.mobilityType) ? "CENTRAL_PUBLIC"
+                    : "FIXED".equals(p.mobilityType) ? "LOCAL_PUBLIC" : null;
+        }
+        return new PostingDto(p.id, p.source, p.title, p.organization, p.region, p.alioInstitutionCode,
+                p.employmentType, p.organizationType, publicInstitutionType,
+                p.mobilityType == null ? "UNKNOWN" : p.mobilityType, p.postedAt, p.deadline, p.sourceUrl,
+                s != null, s != null && s.applied, s == null || s.stage == null ? "SAVED" : s.stage,
+                s == null ? null : s.nextStepDate, s == null ? "" : s.memo,
+                positions.findByPostingIdOrderById(p.id).stream()
+                        .map(rp -> new PositionDto(rp.standardCategory, rp.originalName, rp.headcount,
+                                rp.workRegion, rp.requirements)).toList());
+    }
+
     /** 공고의 알리오 기관코드로 가장 최근 신입사원 초임 공시를 조회한다. */
     @GetMapping("/postings/{id}/salary")
     public SalaryView salary(@PathVariable Long id) {

@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface UserNotificationStateRepository extends JpaRepository<UserNotificationState, Long> {
     List<UserNotificationState> findByUserId(Long userId);
     Optional<UserNotificationState> findByUserIdAndNotificationKey(Long userId, String notificationKey);
+    long countByUpdatedAtBefore(java.time.Instant cutoff);
+    long deleteByUpdatedAtBefore(java.time.Instant cutoff);
 }

@@ -319,6 +319,7 @@ function JobCard({
     ? Math.ceil((deadlineDate.getTime() - today.getTime()) / 86400000)
     : null
   const urgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7
+  const expired = daysLeft !== null && daysLeft < 0
   const visiblePositions = (job.positions || []).slice(0, 2)
   const hiddenPositionCount = Math.max(0, (job.positions?.length || 0) - visiblePositions.length)
   const [tracking, setTracking] = useState({
@@ -335,12 +336,13 @@ function JobCard({
   }, [job.applicationStage, job.nextStepDate, job.applicationMemo])
   return (
     <article
-      className={`card ${institutionClass} ${urgent ? 'deadline-urgent' : ''} ${job.applied ? 'applied' : job.scrapped ? 'saved' : ''}`}
+      className={`card ${institutionClass} ${urgent ? 'deadline-urgent' : ''} ${expired ? 'posting-expired' : ''} ${job.applied ? 'applied' : job.scrapped ? 'saved' : ''}`}
     >
       <div className="card-top">
         <div className="card-labels">
           <span className="tag">채용공고</span>
           {urgent && <span className="urgent-tag">마감임박</span>}
+          {expired && <span className="expired-tag">접수마감</span>}
         </div>
         <div className="card-tools">
           <button type="button" onClick={() => onShare(job)} aria-label="공고 공유">
@@ -1179,7 +1181,7 @@ function CommunityBoard({ user, securePost, onLogin, onUnreadChange }) {
 }
 
 /** 공고 변경·마감 임박·관심 기관 신규 공고를 상단에서 함께 보여준다. */
-function NotificationCenter({ user, securePost, onOpen }) {
+function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
@@ -1263,7 +1265,7 @@ function NotificationCenter({ user, securePost, onOpen }) {
     load()
     // 로그인 계정이 바뀔 때 해당 회원의 알림만 다시 읽는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email])
+  }, [user?.email, refreshVersion])
 
   const readAll = async () => {
     try {
@@ -1293,18 +1295,15 @@ function NotificationCenter({ user, securePost, onOpen }) {
       values.map((value) => (value.key === item.key ? { ...value, fresh: false } : value)),
     )
   }
-  const openItem = async (item) => {
-    try {
-      await markRead(item)
-    } catch (e) {
-      setMessage(e.message)
-    }
+  const openItem = (item) => {
+    // 사용자 클릭 시 즉시 빈 원문 창을 열어 브라우저 팝업 차단을 피한다.
     onOpen({
       id: item.postingId || item.id,
       title: item.title,
       organization: item.organization,
       sourceUrl: item.sourceUrl,
     })
+    markRead(item).catch((e) => setMessage(e.message))
   }
   const deleteItem = async (item) => {
     try {
@@ -1919,6 +1918,23 @@ function CareerToolsPanel({ preference, alerts, busy, message, onChange, onSave,
             aria-label="마감 알림 일수"
           />
           <small>일 전 · 쉼표로 구분</small>
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={preference.postingChangeAlerts ?? true}
+            onChange={(e) => onChange({ ...preference, postingChangeAlerts: e.target.checked })}
+          />
+          공고 변경 알림
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            disabled={!(preference.postingChangeAlerts ?? true)}
+            checked={preference.importantChangeOnly ?? false}
+            onChange={(e) => onChange({ ...preference, importantChangeOnly: e.target.checked })}
+          />
+          중요한 변경만 받기
         </label>
       </div>
       {message && <p role="status">{message}</p>}
@@ -2622,6 +2638,178 @@ const POSTING_CHANGE_TYPES = [
   ['POSITIONS', '채용 직렬'],
 ]
 
+function AdminRetentionPanel({ securePost }) {
+  const [policy, setPolicy] = useState({
+    enabled: true,
+    postingChangeDays: 180,
+    notificationStateDays: 90,
+  })
+  const [dates, setDates] = useState({ postingChangesBefore: '', notificationStatesBefore: '' })
+  const [preview, setPreview] = useState(null)
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    getJson('/api/admin/data-retention')
+      .then(setPolicy)
+      .catch((e) => setMessage(e.message))
+  }, [])
+  const save = async () => {
+    setBusy(true)
+    try {
+      setPolicy(
+        await securePost('/api/admin/data-retention', JSON.stringify(policy), 'application/json'),
+      )
+      setMessage('자동 정리 정책을 저장했습니다.')
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const requestBody = () => JSON.stringify(dates)
+  const inspect = async () => {
+    if (!dates.postingChangesBefore || !dates.notificationStatesBefore) return
+    try {
+      const result = await securePost(
+        '/api/admin/data-retention/preview',
+        requestBody(),
+        'application/json',
+      )
+      setPreview(result)
+      setMessage('삭제 전 예상 건수를 확인했습니다.')
+    } catch (e) {
+      setMessage(e.message)
+    }
+  }
+  const cleanup = async () => {
+    if (!preview) return
+    const total = preview.postingChanges + preview.notificationStates
+    if (
+      !window.confirm(`확인한 오래된 데이터 ${total}건을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)
+    )
+      return
+    setBusy(true)
+    try {
+      const result = await securePost(
+        '/api/admin/data-retention/cleanup',
+        JSON.stringify({
+          ...dates,
+          expectedPostingChanges: preview.postingChanges,
+          expectedNotificationStates: preview.notificationStates,
+        }),
+        'application/json',
+      )
+      setPreview(null)
+      setMessage(
+        `변경 이력 ${result.postingChanges}건, 알림 상태 ${result.notificationStates}건을 정리했습니다.`,
+      )
+      setPolicy(await getJson('/api/admin/data-retention'))
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="admin-retention" aria-label="데이터 보관 정책">
+      <div className="admin-retention-heading">
+        <div>
+          <h2>데이터 보관 정책</h2>
+          <p>오래된 변경 이력과 알림 상태를 자동 또는 수동으로 정리합니다.</p>
+        </div>
+        <label>
+          <input
+            type="checkbox"
+            checked={policy.enabled}
+            onChange={(e) => setPolicy({ ...policy, enabled: e.target.checked })}
+          />
+          자동 정리
+        </label>
+      </div>
+      <div className="admin-retention-policy">
+        <label>
+          공고 변경 이력 보관
+          <input
+            type="number"
+            min="30"
+            max="3650"
+            value={policy.postingChangeDays}
+            onChange={(e) => setPolicy({ ...policy, postingChangeDays: Number(e.target.value) })}
+          />
+          <span>일</span>
+        </label>
+        <label>
+          알림 읽음·삭제 상태 보관
+          <input
+            type="number"
+            min="30"
+            max="3650"
+            value={policy.notificationStateDays}
+            onChange={(e) =>
+              setPolicy({ ...policy, notificationStateDays: Number(e.target.value) })
+            }
+          />
+          <span>일</span>
+        </label>
+        <button type="button" disabled={busy} onClick={save}>
+          정책 저장
+        </button>
+      </div>
+      {policy.lastRunAt && (
+        <p className="retention-last-run">
+          최근 정리 {new Date(policy.lastRunAt).toLocaleString('ko-KR')} · 변경 이력{' '}
+          {policy.lastPostingChangesDeleted}건 · 알림 상태 {policy.lastNotificationStatesDeleted}건
+        </p>
+      )}
+      <div className="admin-retention-manual">
+        <strong>수동 정리</strong>
+        <label>
+          변경 이력 기준일
+          <input
+            type="date"
+            value={dates.postingChangesBefore}
+            onChange={(e) => {
+              setDates({ ...dates, postingChangesBefore: e.target.value })
+              setPreview(null)
+            }}
+          />
+        </label>
+        <label>
+          알림 상태 기준일
+          <input
+            type="date"
+            value={dates.notificationStatesBefore}
+            onChange={(e) => {
+              setDates({ ...dates, notificationStatesBefore: e.target.value })
+              setPreview(null)
+            }}
+          />
+        </label>
+        <button type="button" onClick={inspect}>
+          삭제 전 확인
+        </button>
+        <button
+          className="danger-button"
+          type="button"
+          disabled={!preview || busy}
+          onClick={cleanup}
+        >
+          확인한 데이터 정리
+        </button>
+      </div>
+      {preview && (
+        <div className="retention-preview">
+          삭제 예정: 변경 이력 <strong>{preview.postingChanges}건</strong> · 알림 상태{' '}
+          <strong>{preview.notificationStates}건</strong>
+        </div>
+      )}
+      {message && <p className="status">{message}</p>}
+    </section>
+  )
+}
+
 /** 전체 변경 이력을 검색하고 실제 원문과 비교해 오탐 기록을 정리한다. */
 function AdminPostingChanges({ securePost }) {
   const [data, setData] = useState({ items: [], total: 0, page: 0, totalPages: 0 })
@@ -3137,6 +3325,7 @@ function AdminReviewPanel({ securePost }) {
           </div>
         </section>
       )}
+      <AdminRetentionPanel securePost={securePost} />
       <AdminPostingChanges securePost={securePost} />
       <form className="qualification-import" onSubmit={importQualifications}>
         <strong>자격증 목록 관리</strong>
@@ -3278,6 +3467,167 @@ function AdminReviewPanel({ securePost }) {
   )
 }
 
+function ArchivedPostings({ handlers, jobCategories }) {
+  const currentYear = new Date().getFullYear()
+  const [queryInput, setQueryInput] = useState('')
+  const [query, setQuery] = useState('')
+  const [region, setRegion] = useState('')
+  const [jobCategory, setJobCategory] = useState('')
+  const [employmentType, setEmploymentType] = useState('')
+  const [year, setYear] = useState('')
+  const [page, setPage] = useState(0)
+  const [data, setData] = useState({ items: [], total: 0, hasNext: false })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const loadArchive = useCallback(() => {
+    setLoading(true)
+    const params = new URLSearchParams({
+      q: query,
+      page: String(page),
+      region,
+      jobCategory,
+      employmentType,
+    })
+    if (year) params.set('year', year)
+    getJson(`/api/postings/archive?${params}`)
+      .then((value) => {
+        setData(value)
+        setError('')
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [employmentType, jobCategory, page, query, region, year])
+  useEffect(loadArchive, [loadArchive])
+  const changeFilter = (setter) => (event) => {
+    setter(event.target.value)
+    setPage(0)
+  }
+
+  return (
+    <section className="archive-page">
+      <div className="archive-heading">
+        <div>
+          <p className="eyebrow">RECRUITMENT ARCHIVE</p>
+          <h1>종료 공고 보관함</h1>
+          <p className="sub">과거 채용 조건과 지원 기록을 다시 확인할 수 있습니다.</p>
+        </div>
+        <form
+          className="search"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setQuery(queryInput.trim())
+            setPage(0)
+          }}
+        >
+          <input
+            value={queryInput}
+            onChange={(event) => setQueryInput(event.target.value)}
+            placeholder="기관명, 공고명 검색"
+          />
+          <button>검색</button>
+        </form>
+      </div>
+      <div className="archive-filters">
+        <label>
+          지역
+          <select value={region} onChange={changeFilter(setRegion)}>
+            <option value="">전국</option>
+            {REGION_LEVELS.map((item) => (
+              <option key={item.code} value={item.label}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          채용 직렬
+          <select value={jobCategory} onChange={changeFilter(setJobCategory)}>
+            <option value="">전체 직렬</option>
+            {jobCategories.map((item) => (
+              <option key={item}>{item}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          채용연도
+          <select value={year} onChange={changeFilter(setYear)}>
+            <option value="">전체 연도</option>
+            {Array.from({ length: 15 }, (_, index) => currentYear - index).map((value) => (
+              <option key={value} value={value}>
+                {value}년
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          고용형태
+          <select value={employmentType} onChange={changeFilter(setEmploymentType)}>
+            <option value="">전체</option>
+            <option value="정규직">정규직</option>
+            <option value="무기계약직">무기계약직</option>
+            <option value="계약직">계약직</option>
+            <option value="인턴">인턴</option>
+          </select>
+        </label>
+        {(region || jobCategory || year || employmentType) && (
+          <button
+            type="button"
+            onClick={() => {
+              setRegion('')
+              setJobCategory('')
+              setYear('')
+              setEmploymentType('')
+              setPage(0)
+            }}
+          >
+            필터 초기화
+          </button>
+        )}
+      </div>
+      <div className="meta">
+        <span>보관된 공고 {data.total}건</span>
+        <span>최신 마감일순</span>
+      </div>
+      {error && <p className="error">{error}</p>}
+      {loading ? (
+        <p className="empty">종료 공고를 불러오는 중...</p>
+      ) : (
+        <section className="grid archive-grid" aria-label="종료된 채용공고 목록">
+          {data.items.map((job) => (
+            <JobCard
+              key={job.id}
+              job={job}
+              busy={handlers.busyId === job.id}
+              onOpenSource={() => handlers.onOpen(job)}
+              onSalary={handlers.onSalary}
+              onCompetition={handlers.onCompetition}
+              onScrap={async (id) => {
+                await handlers.onScrap(id)
+                loadArchive()
+              }}
+              onTrack={handlers.onTrack}
+              onMatch={handlers.onMatch}
+              onShare={handlers.onShare}
+              matchBusy={handlers.matchBusyId === job.id}
+            />
+          ))}
+        </section>
+      )}
+      {!loading && !data.items.length && <p className="empty">조건에 맞는 종료 공고가 없습니다.</p>}
+      <div className="pagination">
+        <button disabled={page === 0} onClick={() => setPage((value) => value - 1)}>
+          ← 이전
+        </button>
+        <span>{page + 1} 페이지</span>
+        <button disabled={!data.hasNext} onClick={() => setPage((value) => value + 1)}>
+          다음 →
+        </button>
+      </div>
+    </section>
+  )
+}
+
 /** 검색·페이지 이동·인증·개인 상태와 원문 창을 조합하는 메인 화면. */
 export default function App() {
   // 현재 회원과 CSRF 토큰은 세션 변경 요청에 공통으로 사용한다.
@@ -3294,6 +3644,7 @@ export default function App() {
   const [scrapsOpen, setScrapsOpen] = useState(false)
   const [adminView, setAdminView] = useState(false)
   const [communityView, setCommunityView] = useState(false)
+  const [archiveView, setArchiveView] = useState(false)
   const [inquiryUnreadCount, setInquiryUnreadCount] = useState(0)
   const [postingChangeUnread, setPostingChangeUnread] = useState(0)
   const [queryInput, setQueryInput] = useState('')
@@ -3331,7 +3682,10 @@ export default function App() {
     newPostingAlerts: true,
     deadlineAlerts: true,
     deadlineDays: '7,3,1',
+    postingChangeAlerts: true,
+    importantChangeOnly: false,
   })
+  const [notificationRefresh, setNotificationRefresh] = useState(0)
   const [alerts, setAlerts] = useState([])
   const [applications, setApplications] = useState([])
   const [toolsBusy, setToolsBusy] = useState(false)
@@ -3609,6 +3963,7 @@ export default function App() {
       )
       setPreference(saved)
       setAlerts(await getJson('/api/tools/alerts'))
+      setNotificationRefresh((value) => value + 1)
       setToolsMessage('맞춤 알림 조건을 저장했습니다.')
     } catch (e) {
       setToolsMessage(e.message)
@@ -3709,6 +4064,7 @@ export default function App() {
     setScrapsOpen(false)
     setAdminView(false)
     setCommunityView(false)
+    setArchiveView(false)
     setPage(0)
   }
   /** 서비스 배너를 누르면 검색·필터·개인 화면 상태를 모두 지우고 첫 화면으로 돌아간다. */
@@ -3717,6 +4073,7 @@ export default function App() {
     setScrapsOpen(false)
     setAdminView(false)
     setCommunityView(false)
+    setArchiveView(false)
     setQueryInput('')
     setQuery('')
     setRegionProvince('')
@@ -3750,8 +4107,22 @@ export default function App() {
           <span>한눈에 확인하는 공공기관 채용공고</span>
           <nav>
             {installPrompt && <button onClick={installApp}>앱 설치</button>}
-            <button className={!mine ? 'active' : ''} onClick={() => navigate(false)}>
+            <button
+              className={!mine && !archiveView && !communityView && !adminView ? 'active' : ''}
+              onClick={() => navigate(false)}
+            >
               채용정보
+            </button>
+            <button
+              className={archiveView ? 'active' : ''}
+              onClick={() => {
+                setArchiveView(true)
+                setMine(false)
+                setAdminView(false)
+                setCommunityView(false)
+              }}
+            >
+              종료 공고
             </button>
             <button className={mine ? 'active' : ''} onClick={() => navigate(true)}>
               마이페이지
@@ -3767,13 +4138,21 @@ export default function App() {
             <button className={capabilityOpen ? 'active' : ''} onClick={openCapabilities}>
               내 역량
             </button>
-            {user && <NotificationCenter user={user} securePost={securePost} onOpen={openSource} />}
+            {user && (
+              <NotificationCenter
+                user={user}
+                securePost={securePost}
+                onOpen={openSource}
+                refreshVersion={notificationRefresh}
+              />
+            )}
             <button
               className={communityView ? 'active' : ''}
               onClick={() => {
                 setCommunityView(true)
                 setMine(false)
                 setAdminView(false)
+                setArchiveView(false)
               }}
             >
               공지·Q&amp;A
@@ -3790,6 +4169,7 @@ export default function App() {
                   setAdminView(true)
                   setMine(false)
                   setCommunityView(false)
+                  setArchiveView(false)
                 }}
               >
                 관리자 검수
@@ -3827,6 +4207,21 @@ export default function App() {
             securePost={securePost}
             onLogin={() => setAuthMode('login')}
             onUnreadChange={setInquiryUnreadCount}
+          />
+        ) : archiveView ? (
+          <ArchivedPostings
+            jobCategories={filterOptions.jobCategories || []}
+            handlers={{
+              busyId,
+              matchBusyId,
+              onOpen: openSource,
+              onSalary: openSalary,
+              onCompetition: openCompetition,
+              onScrap: (id) => mutate(id, 'scrap'),
+              onTrack: saveTracking,
+              onMatch: analyzeMatch,
+              onShare: shareJob,
+            }}
           />
         ) : (
           <>

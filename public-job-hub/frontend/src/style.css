@@ -365,6 +365,69 @@ h1 {
   font-size: 10px;
   font-weight: 900;
 }
+.expired-tag {
+  border-radius: 999px;
+  background: #68788e;
+  color: #fff;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 900;
+}
+.card.posting-expired {
+  background: #fbfcfe;
+}
+.card.posting-expired .date strong {
+  color: #6c798a;
+}
+.archive-page {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.archive-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+}
+.archive-filters {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+  border: 1px solid #dce5f0;
+  border-radius: 12px;
+  background: #fff;
+  padding: 16px;
+}
+.archive-filters label {
+  display: flex;
+  min-width: 150px;
+  flex-direction: column;
+  gap: 5px;
+  color: #63748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+.archive-filters select {
+  min-height: 40px;
+  border: 1px solid #c8d6e5;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 10px;
+}
+.archive-filters > button {
+  min-height: 40px;
+  border: 1px solid #b9cbe0;
+  border-radius: 8px;
+  background: #f4f8fd;
+  color: #245d9e;
+  padding: 0 13px;
+  font-weight: 800;
+}
+.archive-grid .card {
+  border-top-color: #75859a;
+}
 .card h2 {
   font-size: 18px;
   line-height: 1.3;
@@ -556,6 +619,16 @@ button {
   }
   .heading {
     display: block;
+  }
+  .archive-heading {
+    display: block;
+  }
+  .archive-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .archive-filters label {
+    width: 100%;
   }
   .search {
     margin-top: 20px;
@@ -1290,42 +1363,48 @@ nav button.active {
   max-height: min(590px, calc(100vh - 160px));
   overflow-y: auto;
 }
-.notification-list > button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  border: 0;
+.notification-list > article {
+  position: relative;
   border-bottom: 1px solid #e7edf4;
   background: #fff;
-  padding: 14px 17px;
   color: #132136;
-  text-align: left;
 }
-.notification-list > button:hover {
+.notification-list > article:hover {
   background: #f5f9fe;
 }
-.notification-list > button.fresh {
+.notification-list > article.fresh {
   background: #f5f9ff;
 }
-.notification-list > button.important {
+.notification-list > article.important {
   border-left: 5px solid #d83d4b;
   background: #fff8f8;
   order: -1;
 }
-.notification-list > button > strong {
+.notification-main {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  padding: 14px 46px 14px 17px;
+  color: #132136;
+  text-align: left;
+}
+.notification-main > strong {
   width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 13px;
 }
-.notification-list > button > span:not(.notification-labels),
-.notification-list > button > small {
+.notification-main > span:not(.notification-labels),
+.notification-main > small {
   color: #65768c;
   font-size: 11px;
 }
-.notification-list > button > p {
+.notification-main > p {
   display: -webkit-box;
   overflow: hidden;
   margin: 2px 0 0;
@@ -1334,6 +1413,23 @@ nav button.active {
   font-weight: 400;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+.notification-delete {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #8492a5;
+  font-size: 20px;
+  line-height: 1;
+}
+.notification-delete:hover {
+  background: #feecee;
+  color: #b32635;
 }
 .notification-labels {
   display: flex;
@@ -2625,6 +2721,93 @@ nav button.active {
   color: #66788f;
   font-size: 12px;
 }
+.admin-retention {
+  margin-bottom: 20px;
+  border: 1px solid #cad9e9;
+  border-radius: 14px;
+  background: #fff;
+  padding: 20px;
+}
+.admin-retention-heading,
+.admin-retention-heading > label,
+.admin-retention-policy,
+.admin-retention-policy label,
+.admin-retention-manual,
+.admin-retention-manual label {
+  display: flex;
+  align-items: center;
+}
+.admin-retention-heading {
+  justify-content: space-between;
+  gap: 16px;
+}
+.admin-retention-heading h2,
+.admin-retention-heading p {
+  margin: 0;
+}
+.admin-retention-heading p {
+  margin-top: 5px;
+  color: #6e7e92;
+  font-size: 12px;
+}
+.admin-retention-heading > label {
+  gap: 7px;
+  font-weight: 800;
+}
+.admin-retention-policy,
+.admin-retention-manual {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  border-radius: 10px;
+  background: #f5f8fc;
+  padding: 13px;
+}
+.admin-retention-policy label,
+.admin-retention-manual label {
+  gap: 7px;
+  color: #40546b;
+  font-size: 12px;
+  font-weight: 700;
+}
+.admin-retention input[type='number'] {
+  width: 90px;
+}
+.admin-retention input[type='number'],
+.admin-retention input[type='date'] {
+  border: 1px solid #bdcde0;
+  border-radius: 7px;
+  background: #fff;
+  padding: 8px;
+}
+.admin-retention button {
+  border: 0;
+  border-radius: 7px;
+  background: #173f76;
+  color: #fff;
+  padding: 9px 12px;
+  font-weight: 800;
+}
+.admin-retention button:disabled {
+  opacity: 0.45;
+}
+.admin-retention .danger-button {
+  background: #b93643;
+}
+.retention-last-run {
+  margin: 10px 0 0;
+  color: #66788f;
+  font-size: 11px;
+}
+.retention-preview {
+  margin-top: 10px;
+  border: 1px solid #edbd78;
+  border-radius: 8px;
+  background: #fff8ed;
+  padding: 11px;
+  color: #8b5314;
+  font-size: 12px;
+}
 .admin-change-history {
   margin-bottom: 20px;
   border: 1px solid #cad9e9;
@@ -2931,6 +3114,21 @@ nav button.active {
   }
   .admin-change-history {
     padding: 16px;
+  }
+  .admin-retention {
+    padding: 16px;
+  }
+  .admin-retention-heading {
+    align-items: flex-start;
+  }
+  .admin-retention-policy,
+  .admin-retention-manual {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .admin-retention-policy label,
+  .admin-retention-manual label {
+    justify-content: space-between;
   }
   .admin-change-heading {
     align-items: flex-start;

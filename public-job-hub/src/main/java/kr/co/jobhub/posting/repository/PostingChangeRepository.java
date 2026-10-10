@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface PostingChangeRepository extends JpaRepository<PostingChange, Long>, JpaSpecificationExecutor<PostingChange> {
     List<PostingChange> findAllByOrderByDetectedAtDesc();
+    long countByDetectedAtBefore(java.time.Instant cutoff);
+    long deleteByDetectedAtBefore(java.time.Instant cutoff);
 }
