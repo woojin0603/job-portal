@@ -16,6 +16,22 @@ spring:
     timeout-per-shutdown-phase: 30s
   jpa:
     open-in-view: false
+    hibernate:
+      # 최초 빈 DB는 update로 생성하고, 첫 정상 기동 뒤 JOBHUB_DDL_AUTO=validate로 잠근다.
+      ddl-auto: ${JOBHUB_DDL_AUTO:update}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  health:
+    db:
+      enabled: true
 jobhub:
   admin:
     username: ${JOBHUB_ADMIN_USERNAME}

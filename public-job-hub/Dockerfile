@@ -18,4 +18,6 @@ RUN addgroup -S jobhub && adduser -S jobhub -G jobhub
 COPY --from=backend-build /workspace/build/libs/public-job-hub-0.1.0.jar /app/jobhub.jar
 USER jobhub
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD wget -q --spider http://127.0.0.1:8080/actuator/health || exit 1
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-Duser.timezone=Asia/Seoul", "-jar", "/app/jobhub.jar"]

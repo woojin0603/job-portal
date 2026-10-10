@@ -139,51 +139,54 @@ public class CrawlService {
         int count = 0;
         List<String> errors = new ArrayList<>();
         for (Source source : sources) {
-            try {
-                URI sourceUri = source.url();
-                if (!"https".equals(sourceUri.getScheme())) {
-                    throw new IllegalArgumentException("HTTPS required");
+            Exception lastError = null;
+            boolean completed = false;
+            for (int attemptNumber = 1; attemptNumber <= 3 && !completed; attemptNumber++) {
+                try {
+                    count += crawlSource(source);
+                    completed = true;
+                } catch (Exception e) {
+                    lastError = e;
+                    if (attemptNumber < 3) try { Thread.sleep(attemptNumber * 1500L); }
+                    catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); break; }
                 }
-                for (int pageNumber = 1; pageNumber <= pages; pageNumber++) {
-                    String pageUrl = source.url().toString().replaceAll("([?&]pageNo=)\\d+", "$1" + pageNumber);
-                    if (pageNumber > 1 && pageUrl.equals(source.url().toString())) {
-                        break;
-                    }
-                    URI pageUri = URI.create(pageUrl);
-                    if (!robots.allows(pageUri)) {
-                        throw new IllegalStateException("robots.txt disallows " + pageUri.getPath());
-                    }
-                    Document doc = Jsoup.connect(pageUrl).userAgent("PublicJobHub/0.2").timeout(15000).get();
-                    List<Candidate> jobs = source.mode() == Mode.AI ? List.of()
-                            : parseTable(doc, source.organizationType(), source.publicInstitutionType());
-                    if ((source.mode() == Mode.AI || jobs.isEmpty()) && canUsePaidAi()) {
-                        jobs = parseWithAi(doc, pageUri, source.organizationType(), source.publicInstitutionType());
-                    }
-                    if (jobs.isEmpty()) {
-                        String reason = source.mode() == Mode.AI && !paidFeaturesEnabled
-                                ? "Paid AI features are disabled; use TABLE mode or enable them explicitly"
-                                : apiKey.isBlank() && source.mode() == Mode.AI
-                                ? "OPENAI_API_KEY is required for AI source"
-                                : "No valid rows on page " + pageNumber;
-                        throw new IllegalStateException(reason);
-                    }
-                    for (Candidate candidate : jobs) {
-                        Candidate enriched = enrichMobility(candidate);
-                        if (save(source.name(), enriched)) {
-                            count++;
-                        }
-                        Thread.sleep(Math.min(requestDelayMillis, 1000));
-                    }
-                    if (pageNumber < pages) {
-                        Thread.sleep(requestDelayMillis);
-                    }
-                }
-            } catch (Exception e) {
-                errors.add(source.name() + ": " + e.getMessage());
             }
+            if (!completed) errors.add(source.name() + " (3회 시도): "
+                    + (lastError == null ? "중단됨" : lastError.getMessage()));
         }
         status = new Status(attempt, errors.size() == sources.size() ? status.lastSuccess() : attempt,
                 count, errors.isEmpty() ? null : String.join("; ", errors));
+    }
+
+    /** 한 출처만 독립 실행해 다른 출처를 다시 요청하지 않고 실패 대상을 재시도한다. */
+    private int crawlSource(Source source) throws Exception {
+        URI sourceUri = source.url();
+        if (!"https".equals(sourceUri.getScheme())) throw new IllegalArgumentException("HTTPS required");
+        int saved = 0;
+        for (int pageNumber = 1; pageNumber <= pages; pageNumber++) {
+            String pageUrl = source.url().toString().replaceAll("([?&]pageNo=)\\d+", "$1" + pageNumber);
+            if (pageNumber > 1 && pageUrl.equals(source.url().toString())) break;
+            URI pageUri = URI.create(pageUrl);
+            if (!robots.allows(pageUri)) throw new IllegalStateException("robots.txt disallows " + pageUri.getPath());
+            Document doc = Jsoup.connect(pageUrl).userAgent("PublicJobHub/0.2").timeout(15000).get();
+            List<Candidate> jobs = source.mode() == Mode.AI ? List.of()
+                    : parseTable(doc, source.organizationType(), source.publicInstitutionType());
+            if ((source.mode() == Mode.AI || jobs.isEmpty()) && canUsePaidAi())
+                jobs = parseWithAi(doc, pageUri, source.organizationType(), source.publicInstitutionType());
+            if (jobs.isEmpty()) {
+                String reason = source.mode() == Mode.AI && !paidFeaturesEnabled
+                        ? "Paid AI features are disabled; use TABLE mode or enable them explicitly"
+                        : apiKey.isBlank() && source.mode() == Mode.AI
+                        ? "OPENAI_API_KEY is required for AI source" : "No valid rows on page " + pageNumber;
+                throw new IllegalStateException(reason);
+            }
+            for (Candidate candidate : jobs) {
+                if (save(source.name(), enrichMobility(candidate))) saved++;
+                Thread.sleep(Math.min(requestDelayMillis, 1000));
+            }
+            if (pageNumber < pages) Thread.sleep(requestDelayMillis);
+        }
+        return saved;
     }
 
     /** NAME|URL|PUBLIC/PRIVATE|TABLE/AI/AUTO|CENTRAL_PUBLIC/LOCAL_PUBLIC 형식의 출처 설정을 검증한다. */

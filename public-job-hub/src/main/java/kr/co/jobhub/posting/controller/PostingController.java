@@ -133,6 +133,7 @@ public class PostingController {
     public PostingPage list(@RequestParam(defaultValue = "") String q,
                             @RequestParam(defaultValue = "0") int page,
                             @RequestParam(defaultValue = "false") boolean mine,
+                            @RequestParam(defaultValue = "false") boolean includeClosed,
                             @RequestParam(defaultValue = "") String region,
                             @RequestParam(defaultValue = "") String regionFull,
                             @RequestParam(defaultValue = "") String district,
@@ -140,7 +141,7 @@ public class PostingController {
                             @RequestParam(defaultValue = "") String jobCategory, Principal principal) {
         long userId = principal == null ? 0L : user(principal).id;
         int safePage = Math.max(0, page);
-        var result = postings.search(q, mine, LocalDate.now(ZoneId.of("Asia/Seoul")), region, regionFull,
+        var result = postings.search(q, mine, includeClosed, LocalDate.now(ZoneId.of("Asia/Seoul")), region, regionFull,
                 district, mobility, jobCategory, userId,
                 PageRequest.of(safePage, 20));
         Map<Long, Scrap> saved = scraps.findByUserId(userId).stream()

@@ -13,6 +13,8 @@ services:
       - --collation-server=utf8mb4_0900_ai_ci
     volumes:
       - mysql-data:/var/lib/mysql
+    networks:
+      - database
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 10s
@@ -33,6 +35,7 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_MAX_POOL_SIZE: ${MYSQL_MAX_POOL_SIZE:-10}
       MYSQL_MIN_IDLE: ${MYSQL_MIN_IDLE:-2}
+      JOBHUB_DDL_AUTO: ${JOBHUB_DDL_AUTO:-update}
       JOBHUB_ADMIN_USERNAME: ${JOBHUB_ADMIN_USERNAME}
       JOBHUB_ADMIN_PASSWORD: ${JOBHUB_ADMIN_PASSWORD}
       JOBHUB_ADMIN_EMAILS: ${JOBHUB_ADMIN_EMAILS:-}
@@ -45,12 +48,29 @@ services:
       TZ: Asia/Seoul
     expose:
       - "8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - database
+      - web
 
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     environment:
       JOBHUB_DOMAIN: ${JOBHUB_DOMAIN}
     ports:
@@ -60,8 +80,15 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
+    networks:
+      - web
 
 volumes:
   mysql-data:
   caddy-data:
   caddy-config:
+
+networks:
+  database:
+    internal: true
+  web:

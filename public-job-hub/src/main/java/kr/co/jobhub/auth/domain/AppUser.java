@@ -30,6 +30,12 @@ public class AppUser {
     /** 기본 관리자 비밀번호를 계속 사용하는 계정은 변경 화면을 우선 노출한다. */
     @Column(name = "must_change_password", nullable = false, columnDefinition = "boolean default false")
     public boolean mustChangePassword;
+    @Column(name = "session_version")
+    public Long sessionVersion = 0L;
+    @Column(name = "two_factor_enabled")
+    public Boolean twoFactorEnabled = false;
+    @Column(name = "two_factor_secret", length = 100)
+    public String twoFactorSecret;
 
     /** 회원 레코드가 처음 생성된 시각. */
     @Column(nullable = false)

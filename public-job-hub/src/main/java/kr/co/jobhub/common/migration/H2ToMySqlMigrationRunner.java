@@ -22,10 +22,10 @@ import java.util.*;
 @ConditionalOnProperty(name = "jobhub.migration.h2-to-mysql", havingValue = "true")
 public class H2ToMySqlMigrationRunner implements ApplicationRunner {
     private static final List<String> TABLES = List.of(
-            "app_users", "job_postings", "qualification_catalog", "institution_compensations", "notices", "data_retention_policies",
+            "app_users", "login_histories", "job_postings", "qualification_catalog", "institution_compensations", "notices", "data_retention_policies", "admin_audit_logs",
             "user_profiles", "job_alert_preferences", "favorite_organizations", "posting_change_cursors",
             "user_notification_states", "push_subscriptions",
-            "scraps", "inquiries", "recruitment_positions", "recruitment_competitions", "posting_changes");
+            "scraps", "inquiries", "recruitment_positions", "recruitment_competitions", "posting_changes", "posting_reports");
 
     private final DataSource targetDataSource;
     private final ConfigurableApplicationContext context;
@@ -53,6 +53,7 @@ public class H2ToMySqlMigrationRunner implements ApplicationRunner {
              Connection target = targetDataSource.getConnection()) {
             if (!target.getMetaData().getDatabaseProductName().toLowerCase(Locale.ROOT).contains("mysql"))
                 throw new IllegalStateException("이관 대상 데이터소스가 MySQL이 아닙니다.");
+            prepareTargetSchema(target);
             assertTargetIsEmpty(target);
             target.setAutoCommit(false);
             try {
@@ -78,6 +79,14 @@ public class H2ToMySqlMigrationRunner implements ApplicationRunner {
         }
         System.out.println("H2 -> MySQL migration completed: " + copied);
         SpringApplication.exit(context);
+    }
+
+    /**
+     * 예전 엔티티로 이미 생성된 빈 MySQL 스키마도 최신 장문 데이터 크기에 맞춘다.
+     * MySQL DDL은 자동 커밋되므로 데이터 복사를 시작하기 전에만 실행한다.
+     */
+    private void prepareTargetSchema(Connection target) throws SQLException {
+        execute(target, "ALTER TABLE recruitment_positions MODIFY requirements LONGTEXT NULL");
     }
 
     /** 대상에 한 건이라도 있으면 전체 이관을 거부한다. */

@@ -1,6 +1,10 @@
 package kr.co.jobhub.common.config;
 
+import jakarta.servlet.http.HttpServletRequest;
 import kr.co.jobhub.auth.repository.AppUserRepository;
+import kr.co.jobhub.admin.service.AdminAuditService;
+import kr.co.jobhub.auth.repository.LoginHistoryRepository;
+import kr.co.jobhub.auth.domain.LoginHistory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -67,7 +71,9 @@ public class SecurityConfig {
     /** 로그인·로그아웃을 JSON 응답으로 처리하고 경로별 접근 규칙을 적용한다. */
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, CsrfTokenRepository tokens,
-                                            LoginRateLimitFilter loginRateLimitFilter) throws Exception {
+                                            LoginRateLimitFilter loginRateLimitFilter,
+                                            AdminAuditService adminAuditService, AppUserRepository appUsers,
+                                            LoginHistoryRepository loginHistories) throws Exception {
         http.csrf(csrf -> csrf.csrfTokenRepository(tokens))
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin())
@@ -76,6 +82,7 @@ public class SecurityConfig {
                                 "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
                                         "img-src 'self' data: https:; connect-src 'self'; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'")))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/community/notices").permitAll()
                         .requestMatchers("/api/community/inquiries", "/api/community/inquiries/**").authenticated()
@@ -87,11 +94,28 @@ public class SecurityConfig {
                         .anyRequest().permitAll())
                 .formLogin(form -> form.loginProcessingUrl("/api/auth/login")
                         .successHandler((request, response, authentication) -> {
+                            var account = appUsers.findByEmail(authentication.getName()).orElse(null);
+                            if (account != null) request.getSession().setAttribute("SESSION_VERSION", account.sessionVersion == null ? 0L : account.sessionVersion);
+                            LoginHistory history = new LoginHistory(); history.email = authentication.getName(); history.success = true;
+                            history.ipAddress = request.getRemoteAddr(); history.userAgent = limitedUserAgent(request); loginHistories.save(history);
+                            if (authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")))
+                                adminAuditService.record(authentication.getName(), "LOGIN", "/api/auth/login", 200);
                             response.setStatus(200);
                             response.setContentType("application/json;charset=UTF-8");
                             response.getWriter().write("{\"ok\":true}");
                         })
                         .failureHandler((request, response, exception) -> {
+                            try {
+                                LoginHistory history = new LoginHistory();
+                                String email = request.getParameter("username");
+                                history.email = email == null || email.isBlank() ? "unknown" : email.trim().toLowerCase();
+                                history.success = false;
+                                history.ipAddress = request.getRemoteAddr();
+                                history.userAgent = limitedUserAgent(request);
+                                loginHistories.save(history);
+                            } catch (RuntimeException ignored) {
+                                // 기록 저장 장애가 로그인 실패 응답을 가리지 않도록 한다.
+                            }
                             response.setStatus(401);
                             response.setContentType("application/json;charset=UTF-8");
                             response.getWriter().write("{\"error\":\"이메일 또는 비밀번호가 올바르지 않습니다.\"}");
@@ -105,6 +129,14 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, exception) ->
                         response.sendError(401)));
         http.addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(new AccountSecurityFilter(appUsers), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(new AdminAuditFilter(adminAuditService), UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    private static String limitedUserAgent(HttpServletRequest request) {
+        String value = request.getHeader("User-Agent");
+        if (value == null) return null;
+        return value.length() <= 500 ? value : value.substring(0, 500);
     }
 }

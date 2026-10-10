@@ -66,7 +66,7 @@ H2 파일은 `./data/jobhub`에 저장됩니다. 운영 배포에는 MySQL, 스�
 
 ## MySQL 전환 실행
 
-기본 프로필은 기존 H2 파일 DB를 사용하므로 현재 데이터를 잃지 않습니다. MySQL 8.x에 `public_job_hub` 데이터베이스와 전용 사용자를 만든 다음 아래 환경변수를 설정하고 `mysql` 프로필로 실행하세요. 실제 비밀번호는 설정 파일이나 Git에 넣지 않습니다.
+기본 프로필은 MySQL을 사용합니다. MySQL 8.x에 `public_job_hub` 데이터베이스와 전용 사용자를 만든 다음 아래 환경변수를 설정해 실행하세요. 실제 비밀번호는 설정 파일이나 Git에 넣지 않습니다. 기존 H2 파일은 삭제하지 않으며 복구 확인이 필요할 때만 `--spring.profiles.active=h2`로 명시해 사용합니다.
 
 ```sql
 CREATE DATABASE public_job_hub CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
@@ -80,7 +80,7 @@ $env:MYSQL_USERNAME='jobhub'
 $env:MYSQL_PASSWORD='강력한-비밀번호'
 $env:MYSQL_URL='jdbc:mysql://localhost:3306/public_job_hub?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true'
 $env:JOBHUB_ADMIN_EMAILS='admin@example.com'
-.\gradlew.bat --gradle-user-home .gradle-user-home bootRun --args="--spring.profiles.active=mysql"
+.\gradlew.bat --gradle-user-home .gradle-user-home bootRun
 ```
 
 운영 서버에서는 인증서가 설정된 MySQL을 사용하고 JDBC 주소의 `useSSL`을 `true`로 바꾸세요. 연결 풀 크기는 `MYSQL_MAX_POOL_SIZE`, 최소 유휴 연결은 `MYSQL_MIN_IDLE`로 조절할 수 있습니다. 현재 설정은 최초 전환을 위해 Hibernate `ddl-auto=update`를 사용합니다. 실제 운영 데이터를 투입하기 전에는 Flyway 같은 버전 관리형 마이그레이션으로 고정하는 것이 다음 단계입니다.

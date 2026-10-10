@@ -147,23 +147,19 @@ public class CareerToolsController {
     public List<AlertItem> alerts(Principal principal) {
         AppUser user = user(principal);
         JobAlertPreference pref = preferences.findByUserId(user.id).orElse(null);
-        if (pref == null || !pref.enabled) return List.of();
-        Set<String> keywords = csv(pref.keywords);
-        Set<String> regions = csv(pref.regions);
-        Set<String> mobility = csv(pref.mobilityTypes);
+        if (pref == null || !pref.enabled || !pref.deadlineAlerts) return List.of();
         Set<Integer> deadlineDays = deadlineDays(pref.deadlineDays);
+        Set<Long> scrappedPostingIds = scraps.findByUserId(user.id).stream()
+                .map(scrap -> scrap.posting.id)
+                .collect(java.util.stream.Collectors.toSet());
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         return postings.findAll().stream()
+                .filter(p -> scrappedPostingIds.contains(p.id))
                 .filter(p -> p.deadline == null || !p.deadline.isBefore(today))
-                .filter(p -> keywords.isEmpty() || keywords.stream().anyMatch(k -> contains(p.title, k) || contains(p.organization, k)))
-                .filter(p -> regions.isEmpty() || regions.stream().anyMatch(r -> contains(p.region, r)))
-                .filter(p -> mobility.isEmpty() || mobility.contains(p.mobilityType))
                 .filter(p -> {
-                    boolean fresh = pref.lastViewedAt == null || p.updatedAt.isAfter(pref.lastViewedAt);
                     long remaining = p.deadline == null ? Long.MIN_VALUE
                             : java.time.temporal.ChronoUnit.DAYS.between(today, p.deadline);
-                    return pref.newPostingAlerts && fresh
-                            || pref.deadlineAlerts && deadlineDays.contains((int) remaining);
+                    return deadlineDays.contains((int) remaining);
                 })
                 .sorted(Comparator.comparing((JobPosting p) -> p.deadline, Comparator.nullsLast(Comparator.naturalOrder())))
                 .limit(30)
@@ -171,9 +167,7 @@ public class CareerToolsController {
                     boolean fresh = pref.lastViewedAt == null || p.updatedAt.isAfter(pref.lastViewedAt);
                     Long remaining = p.deadline == null ? null
                             : java.time.temporal.ChronoUnit.DAYS.between(today, p.deadline);
-                    boolean deadlineDue = remaining != null && deadlineDays.contains(remaining.intValue());
-                    String reason = deadlineDue ? remaining == 0 ? "오늘 마감" : "마감 " + remaining + "일 전"
-                            : "새로운 공고";
+                    String reason = remaining != null && remaining == 0 ? "오늘 마감" : "마감 " + remaining + "일 전";
                     return new AlertItem(p.id, p.title, p.organization, p.region, p.deadline, p.mobilityType,
                             p.sourceUrl, fresh, remaining, reason);
                 })

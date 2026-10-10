@@ -62,7 +62,7 @@ header {
   font-weight: 800;
 }
 .bar {
-  max-width: 1280px;
+  max-width: 1600px;
   margin: auto;
   height: 62px;
   display: flex;
@@ -82,8 +82,16 @@ header {
 nav {
   margin-left: auto;
   display: flex;
-  gap: 25px;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: clamp(8px, 1vw, 18px);
   font-weight: 700;
+  white-space: nowrap;
+}
+nav button,
+nav .notification-center,
+nav .user-name {
+  flex: 0 0 auto;
 }
 nav a:hover {
   color: #1c60af;
@@ -132,6 +140,24 @@ h1 {
   border-color: #175eb5;
   color: #fff;
   background: #175eb5;
+}
+.mypage-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 11px;
+}
+.mypage-heading-actions .scrap-list-toggle {
+  margin-top: 0;
+}
+.password-change-button {
+  border: 1px solid #b9cbe0;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #fff;
+  color: #31577f;
+  font-size: 12px;
+  font-weight: 800;
 }
 .scrap-list-grid {
   margin-top: 22px;
@@ -203,6 +229,24 @@ h1 {
   color: #52677f;
   padding: 0 14px;
   font-size: 13px;
+}
+.filter-row .closed-posting-toggle {
+  height: 38px;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #d2deeb;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  color: #354b64;
+  white-space: nowrap;
+}
+.closed-posting-toggle input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: #175eb5;
 }
 
 /* 오프라인 앱 셸과 서버 데이터 기능의 차이를 사용자에게 알린다. */
@@ -428,6 +472,186 @@ h1 {
 .archive-grid .card {
   border-top-color: #75859a;
 }
+.report-link {
+  border: 0;
+  background: transparent;
+  color: #7b6570;
+  font-size: 11px;
+  text-decoration: underline;
+}
+.insight-dialog,
+.report-dialog {
+  position: relative;
+  width: min(760px, 94vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #fff;
+  padding: 26px;
+}
+.insight-dialog h2,
+.report-dialog h2 {
+  margin-top: 0;
+}
+.insight-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.insight-stats div {
+  border-radius: 9px;
+  background: #f3f7fc;
+  padding: 12px;
+}
+.insight-stats span,
+.insight-stats strong {
+  display: block;
+}
+.insight-stats span {
+  color: #6d7d91;
+  font-size: 11px;
+}
+.insight-stats strong {
+  margin-top: 5px;
+  color: #173f76;
+  font-size: 19px;
+}
+.similar-list {
+  display: grid;
+  gap: 7px;
+}
+.similar-list button {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #dce5ef;
+  border-radius: 8px;
+  background: #fafcff;
+  padding: 11px;
+  text-align: left;
+}
+.similar-list button b {
+  color: #175eb5;
+  font-size: 10px;
+}
+.similar-list button span {
+  color: #718197;
+  font-size: 11px;
+}
+.report-dialog label {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  font-weight: 800;
+}
+.report-dialog select,
+.report-dialog textarea {
+  border: 1px solid #cbd8e7;
+  border-radius: 8px;
+  padding: 10px;
+  font: inherit;
+}
+.report-dialog textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+.report-dialog .primary {
+  width: 100%;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #173f76;
+  color: #fff;
+  padding: 12px;
+  font-weight: 800;
+}
+.admin-operations-logs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.admin-operations-logs > div {
+  max-height: 430px;
+  overflow-y: auto;
+  border: 1px solid #cad9e9;
+  border-radius: 12px;
+  background: #fff;
+  padding: 16px;
+}
+.admin-operations-logs h2 {
+  margin-top: 0;
+}
+.admin-operations-logs article {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  border-radius: 8px;
+  background: #f6f9fd;
+  padding: 10px;
+}
+.admin-operations-logs article span,
+.admin-operations-logs article small {
+  color: #66788f;
+  font-size: 10px;
+}
+.admin-operations-logs article p {
+  margin: 0;
+  font-size: 12px;
+}
+.security-dialog {
+  position: relative;
+  width: min(620px, 94vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #fff;
+  padding: 26px;
+}
+.security-dialog h2 {
+  margin-top: 0;
+}
+.security-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+.security-actions button {
+  border: 0;
+  border-radius: 8px;
+  background: #173f76;
+  color: #fff;
+  padding: 10px 13px;
+  font-weight: 800;
+}
+.security-actions b {
+  border-radius: 999px;
+  background: #e7f6ed;
+  color: #167247;
+  padding: 9px 12px;
+}
+.login-history {
+  display: grid;
+  gap: 7px;
+}
+.login-history article {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 10px;
+  border-radius: 8px;
+  background: #f5f8fc;
+  padding: 10px;
+}
+.login-history article span {
+  color: #65768c;
+  font-size: 11px;
+  text-align: right;
+}
+.login-history article small {
+  grid-column: 1/-1;
+  overflow-wrap: anywhere;
+  color: #718197;
+}
 .card h2 {
   font-size: 18px;
   line-height: 1.3;
@@ -629,6 +853,10 @@ button {
   }
   .archive-filters label {
     width: 100%;
+  }
+  .insight-stats,
+  .admin-operations-logs {
+    grid-template-columns: 1fr;
   }
   .search {
     margin-top: 20px;

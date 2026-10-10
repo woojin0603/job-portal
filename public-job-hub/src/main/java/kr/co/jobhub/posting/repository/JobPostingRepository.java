@@ -23,7 +23,7 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
      * 공개 중인 공고를 제목·기관명으로 검색하고 20건씩 페이지로 나눈다.
      * mine이 참이면 지정 회원이 스크랩한 공고만 DB 쿼리 단계에서 필터링한다.
      */
-    @Query("select p from JobPosting p where (:mine = true or p.deadline is null or p.deadline >= :today) and " +
+    @Query("select p from JobPosting p where (:includeClosed = true or :mine = true or p.deadline is null or p.deadline >= :today) and " +
            "(lower(p.title) like lower(concat('%', :q, '%')) or lower(p.organization) like lower(concat('%', :q, '%'))) " +
            "and (:region = '' or lower(p.region) like lower(concat('%', :region, '%')) " +
            "or lower(p.region) like lower(concat('%', :regionFull, '%'))) " +
@@ -32,8 +32,11 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
            "and (:jobCategory = '' or exists (select rp.id from RecruitmentPosition rp where rp.posting = p " +
            "and lower(rp.standardCategory) like lower(concat('%', :jobCategory, '%')))) " +
            "and (:mine = false or exists (select s.id from Scrap s where s.posting = p and s.user.id = :userId)) " +
-           "order by case when p.deadline is null then 1 else 0 end, p.deadline asc, p.updatedAt desc")
-    Page<JobPosting> search(@Param("q") String q, @Param("mine") boolean mine, @Param("today") LocalDate today,
+           "order by case when p.deadline >= :today then 0 when p.deadline is null then 1 else 2 end, " +
+           "case when p.deadline >= :today then p.deadline else null end asc, " +
+           "case when p.deadline < :today then p.deadline else null end desc, p.updatedAt desc")
+    Page<JobPosting> search(@Param("q") String q, @Param("mine") boolean mine,
+                            @Param("includeClosed") boolean includeClosed, @Param("today") LocalDate today,
                             @Param("region") String region, @Param("regionFull") String regionFull,
                             @Param("district") String district, @Param("mobility") String mobility,
                             @Param("jobCategory") String jobCategory,

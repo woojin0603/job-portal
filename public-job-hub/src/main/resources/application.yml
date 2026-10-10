@@ -1,24 +1,13 @@
-# H2 파일 DB와 JPA 설정. 데이터 파일은 프로젝트의 data 폴더에 유지한다.
+# 공통 애플리케이션 설정. 기본 실행 DB는 MySQL이며 H2는 h2 프로필로만 선택한다.
 spring:
+  profiles:
+    default: mysql
   # IntelliJ에서 JobHubApplication을 직접 실행해도 최신 React 빌드 결과를 제공한다.
   web:
     resources:
       static-locations: file:./frontend/dist/,classpath:/META-INF/resources/,classpath:/resources/,classpath:/static/,classpath:/public/
-  # 서비스 재시작 후에도 공고·회원·스크랩을 유지할 로컬 H2 파일 DB.
-  datasource:
-    url: jdbc:h2:file:./data/jobhub;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-  # 현재 초안에서는 엔티티 변경에 따라 테이블을 자동 갱신한다.
   jpa:
-    hibernate:
-      ddl-auto: update
     open-in-view: false
-  # 운영용 API 서버에서는 내장 H2 관리 콘솔을 열지 않는다.
-  h2:
-    console:
-      enabled: false
-      path: /h2-console
 # 외부 공고 수집과 AI 보완 추출에 사용하는 서비스 전용 설정.
 # OpenAI 키는 파일에 넣지 않고 환경 변수 OPENAI_API_KEY에서 읽는다.
 jobhub:

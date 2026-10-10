@@ -1,0 +1,14 @@
+# 기존 파일 DB 확인이나 복구 작업에서만 --spring.profiles.active=h2 로 사용한다.
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/jobhub;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: false
+      path: /h2-console

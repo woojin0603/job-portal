@@ -30,6 +30,6 @@ public class RecruitmentPosition {
 
     /** 공고 API의 지원자격 원문은 1,000자를 넘을 수 있으므로 축약하지 않고 대용량 텍스트로 저장한다. */
     @Lob
-    @Column
+    @Column(columnDefinition = "LONGTEXT")
     public String requirements;
 }
