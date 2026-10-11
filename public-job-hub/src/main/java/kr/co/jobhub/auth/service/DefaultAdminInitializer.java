@@ -19,8 +19,8 @@ public class DefaultAdminInitializer implements ApplicationRunner {
     private final String password;
 
     public DefaultAdminInitializer(AppUserRepository users, PasswordEncoder passwords,
-                                   @Value("${jobhub.admin.username:admin}") String username,
-                                   @Value("${jobhub.admin.password:admin1234!}") String password) {
+                                   @Value("${jobhub.admin.username:}") String username,
+                                   @Value("${jobhub.admin.password:}") String password) {
         this.users = users;
         this.passwords = passwords;
         this.username = username.trim().toLowerCase();
@@ -29,17 +29,12 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (username.isBlank()) return;
-        var existing = users.findByEmail(username);
-        if (existing.isPresent()) {
-            AppUser admin = existing.get();
-            if ("admin1234!".equals(password) && passwords.matches(password, admin.passwordHash)
-                    && !admin.mustChangePassword) {
-                admin.mustChangePassword = true;
-                users.save(admin);
-            }
-            return;
+        if (username.isBlank() || password.isBlank()) return;
+        if (password.length() < 10) {
+            throw new IllegalStateException("관리자 초기 비밀번호는 10자 이상이어야 합니다.");
         }
+        var existing = users.findByEmail(username);
+        if (existing.isPresent()) return;
         AppUser admin = new AppUser();
         admin.email = username;
         admin.passwordHash = passwords.encode(password);
