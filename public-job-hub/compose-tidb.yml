@@ -1,0 +1,67 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql,prod
+      MYSQL_URL: ${MYSQL_URL:?Set MYSQL_URL in .env}
+      MYSQL_USERNAME: ${MYSQL_USERNAME:?Set MYSQL_USERNAME in .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      MYSQL_MAX_POOL_SIZE: ${MYSQL_MAX_POOL_SIZE:-4}
+      MYSQL_MIN_IDLE: ${MYSQL_MIN_IDLE:-1}
+      MYSQL_MAX_LIFETIME_MS: ${MYSQL_MAX_LIFETIME_MS:-300000}
+      JOBHUB_DDL_AUTO: ${JOBHUB_DDL_AUTO:-validate}
+      JOBHUB_ADMIN_USERNAME: ${JOBHUB_ADMIN_USERNAME:-}
+      JOBHUB_ADMIN_PASSWORD: ${JOBHUB_ADMIN_PASSWORD:-}
+      JOBHUB_ADMIN_EMAILS: ${JOBHUB_ADMIN_EMAILS:-}
+      JOBHUB_PUBLIC_DATA_ENABLED: ${JOBHUB_PUBLIC_DATA_ENABLED:-true}
+      JOBHUB_PUBLIC_DATA_API_KEY: ${JOBHUB_PUBLIC_DATA_API_KEY:-}
+      JOBHUB_CRAWL_SOURCES: ${JOBHUB_CRAWL_SOURCES:-JOB-ALIO|https://job.alio.go.kr/recruit.do?order=REG_DATE&pageNo=1|PUBLIC|TABLE|CENTRAL_PUBLIC}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      JOBHUB_PAID_AI_ENABLED: ${JOBHUB_PAID_AI_ENABLED:-false}
+      JOBHUB_OCR_ENABLED: ${JOBHUB_OCR_ENABLED:-false}
+      TZ: Asia/Seoul
+    expose:
+      - "8080"
+    mem_limit: 640m
+    read_only: true
+    tmpfs:
+      - /tmp:size=96m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+      start_period: 90s
+    networks:
+      - web
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      JOBHUB_DOMAIN: ${JOBHUB_DOMAIN:?Set JOBHUB_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    mem_limit: 128m
+    networks:
+      - web
+
+volumes:
+  caddy-data:
+  caddy-config:
+
+networks:
+  web:
