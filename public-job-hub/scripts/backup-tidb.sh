@@ -70,8 +70,6 @@ docker run --rm \
   -u "${MYSQL_USERNAME}" \
   --ssl-mode=VERIFY_IDENTITY \
   --ssl-ca=/tmp/ca-certificates.crt \
-  --single-transaction \
-  --ignore-error=1305 \
   --skip-lock-tables \
   --no-tablespaces \
   --set-gtid-purged=OFF \
