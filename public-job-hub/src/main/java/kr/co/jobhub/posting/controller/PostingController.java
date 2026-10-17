@@ -56,7 +56,7 @@ public class PostingController {
     }
 
     /** 현재 페이지 목록과 다음 페이지 여부 및 최근 수집 상태. */
-    public record PostingPage(List<PostingDto> items, long total, int page, boolean hasNext,
+    public record PostingPage(List<PostingDto> items, long total, int page, int totalPages, boolean hasNext,
                               CrawlService.Status crawlStatus) {
     }
 
@@ -128,7 +128,7 @@ public class PostingController {
         return crawler.status();
     }
 
-    /** 검색어·마이페이지 여부·페이지 번호에 맞는 공고 20건을 반환한다. */
+    /** 검색어·마이페이지 여부·페이지 번호에 맞는 공고 12건을 반환한다. */
     @GetMapping("/postings")
     public PostingPage list(@RequestParam(defaultValue = "") String q,
                             @RequestParam(defaultValue = "0") int page,
@@ -143,7 +143,7 @@ public class PostingController {
         int safePage = Math.max(0, page);
         var result = postings.search(q, mine, includeClosed, LocalDate.now(ZoneId.of("Asia/Seoul")), region, regionFull,
                 district, mobility, jobCategory, userId,
-                PageRequest.of(safePage, 20));
+                PageRequest.of(safePage, 12));
         Map<Long, Scrap> saved = scraps.findByUserId(userId).stream()
                 .collect(Collectors.toMap(s -> s.posting.getId(), Function.identity()));
         List<PostingDto> items = result.getContent().stream()
@@ -168,7 +168,8 @@ public class PostingController {
                                             rp.workRegion, rp.requirements)).toList());
                 })
                 .toList();
-        return new PostingPage(items, result.getTotalElements(), safePage, result.hasNext(), crawler.status());
+        return new PostingPage(items, result.getTotalElements(), safePage, result.getTotalPages(),
+                result.hasNext(), crawler.status());
     }
 
     /** 마감된 과거 공고를 기관·직렬·지역·연도·고용형태로 검색한다. */
@@ -189,11 +190,12 @@ public class PostingController {
         LocalDate fromDate = year == null ? null : LocalDate.of(year, 1, 1);
         LocalDate toDate = year == null ? null : LocalDate.of(year, 12, 31);
         var result = postings.searchArchive(q, LocalDate.now(ZoneId.of("Asia/Seoul")), region,
-                employmentType, fromDate, toDate, jobCategory, PageRequest.of(safePage, 20));
+                employmentType, fromDate, toDate, jobCategory, PageRequest.of(safePage, 12));
         Map<Long, Scrap> saved = scraps.findByUserId(userId).stream()
                 .collect(Collectors.toMap(s -> s.posting.getId(), Function.identity()));
         List<PostingDto> items = result.getContent().stream().map(p -> postingDto(p, saved.get(p.id))).toList();
-        return new PostingPage(items, result.getTotalElements(), safePage, result.hasNext(), crawler.status());
+        return new PostingPage(items, result.getTotalElements(), safePage, result.getTotalPages(),
+                result.hasNext(), crawler.status());
     }
 
     private PostingDto postingDto(JobPosting p, Scrap s) {

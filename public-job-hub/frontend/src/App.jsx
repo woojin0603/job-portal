@@ -292,6 +292,59 @@ function summarizeList(value, limit = 2) {
   return `${items.slice(0, limit).join(' · ')} 외 ${items.length - limit}개`
 }
 
+function institutionLabel(job) {
+  if (job.organizationType === 'PRIVATE') return '민간기업'
+  if (job.publicInstitutionType === 'LOCAL_PUBLIC') return '지방공기업'
+  if (job.publicInstitutionType === 'CENTRAL_PUBLIC') return '중앙공기업'
+  return '공공기관'
+}
+
+function sourceIconUrl(sourceUrl) {
+  try {
+    return `${new URL(sourceUrl).origin}/favicon.ico`
+  } catch {
+    return ''
+  }
+}
+
+/** 현재 페이지가 속한 5개 묶음과 맨 앞·뒤 이동을 함께 제공한다. */
+function Pagination({ page, totalPages, onChange }) {
+  if (!totalPages || totalPages <= 1) return null
+  const groupStart = Math.floor(page / 5) * 5
+  const pages = Array.from(
+    { length: Math.min(5, totalPages - groupStart) },
+    (_, index) => groupStart + index,
+  )
+  return (
+    <div className="pagination" role="navigation" aria-label="페이지 이동">
+      <button disabled={page === 0} onClick={() => onChange(0)}>
+        « 맨앞
+      </button>
+      <button disabled={page === 0} onClick={() => onChange(page - 1)}>
+        ‹ 이전
+      </button>
+      <div className="page-numbers">
+        {pages.map((value) => (
+          <button
+            key={value}
+            className={value === page ? 'active' : ''}
+            aria-current={value === page ? 'page' : undefined}
+            onClick={() => onChange(value)}
+          >
+            {value + 1}
+          </button>
+        ))}
+      </div>
+      <button disabled={page + 1 >= totalPages} onClick={() => onChange(page + 1)}>
+        다음 ›
+      </button>
+      <button disabled={page + 1 >= totalPages} onClick={() => onChange(totalPages - 1)}>
+        맨뒤 »
+      </button>
+    </div>
+  )
+}
+
 function JobCard({
   job,
   busy,
@@ -305,6 +358,7 @@ function JobCard({
   onInsight,
   onReport,
   matchBusy,
+  memberActions = true,
 }) {
   const institutionClass =
     job.organizationType === 'PRIVATE'
@@ -320,8 +374,11 @@ function JobCard({
   const daysLeft = deadlineDate
     ? Math.ceil((deadlineDate.getTime() - today.getTime()) / 86400000)
     : null
-  const urgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7
+  const urgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 2
   const expired = daysLeft !== null && daysLeft < 0
+  const [iconFailed, setIconFailed] = useState(false)
+  const iconUrl = sourceIconUrl(job.sourceUrl)
+  const institutionType = institutionLabel(job)
   const visiblePositions = (job.positions || []).slice(0, 2)
   const hiddenPositionCount = Math.max(0, (job.positions?.length || 0) - visiblePositions.length)
   const [tracking, setTracking] = useState({
@@ -356,10 +413,22 @@ function JobCard({
         <h2>{job.title}</h2>
       </button>
       <div className="details">
-        <span>채용기관</span>
-        <strong className="organization-name" title={job.organization}>
-          {job.organization}
-        </strong>
+        <div className="organization-row">
+          <span className={`source-symbol ${iconFailed || !iconUrl ? 'fallback' : ''}`}>
+            {!iconFailed && iconUrl ? (
+              <img src={iconUrl} alt="" onError={() => setIconFailed(true)} />
+            ) : (
+              job.organization?.trim()?.charAt(0) || 'J'
+            )}
+          </span>
+          <div>
+            <span>채용기관</span>
+            <strong className="organization-name" title={job.organization}>
+              {job.organization}
+            </strong>
+          </div>
+          <span className={`institution-badge ${institutionClass}`}>{institutionType}</span>
+        </div>
         <div className="pills">
           {job.employmentType && (
             <span title={job.employmentType}>{summarizeList(job.employmentType)}</span>
@@ -415,17 +484,21 @@ function JobCard({
             과거 채용 분석
           </button>
         </div>
-        <button className="report-link" onClick={() => onReport(job)}>
-          정보 오류 신고
-        </button>
-        <div className="career-actions">
-          <button disabled={busy} onClick={() => onScrap(job.id)}>
-            {job.scrapped ? '스크랩 해제' : '＋ 스크랩'}
-          </button>
-          <button disabled={matchBusy} onClick={() => onMatch(job)}>
-            {matchBusy ? '분석 중...' : '내 스펙 매칭'}
-          </button>
-        </div>
+        {memberActions && (
+          <>
+            <button className="report-link" onClick={() => onReport(job)}>
+              정보 오류 신고
+            </button>
+            <div className="career-actions">
+              <button disabled={busy} onClick={() => onScrap(job.id)}>
+                {job.scrapped ? '스크랩 해제' : '＋ 스크랩'}
+              </button>
+              <button disabled={matchBusy} onClick={() => onMatch(job)}>
+                {matchBusy ? '분석 중...' : '내 스펙 매칭'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
       {job.scrapped && (
         <div className="tracking-box">
@@ -3623,7 +3696,7 @@ function ArchivedPostings({ handlers, jobCategories }) {
   const [employmentType, setEmploymentType] = useState('')
   const [year, setYear] = useState('')
   const [page, setPage] = useState(0)
-  const [data, setData] = useState({ items: [], total: 0, hasNext: false })
+  const [data, setData] = useState({ items: [], total: 0, totalPages: 0, hasNext: false })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -3764,13 +3837,38 @@ function ArchivedPostings({ handlers, jobCategories }) {
         </section>
       )}
       {!loading && !data.items.length && <p className="empty">조건에 맞는 종료 공고가 없습니다.</p>}
-      <div className="pagination">
-        <button disabled={page === 0} onClick={() => setPage((value) => value - 1)}>
-          ← 이전
+      <Pagination page={page} totalPages={data.totalPages} onChange={setPage} />
+    </section>
+  )
+}
+
+function LandingPage({ user, onPostings, onMyPage, onCommunity }) {
+  return (
+    <section className="landing-page">
+      <div className="landing-intro">
+        <p className="eyebrow">PUBLIC JOB HUB</p>
+        <h1>공공기관 채용, 필요한 화면부터 시작하세요</h1>
+        <p>최신 공고를 확인하고, 나의 역량과 지원 일정을 관리할 수 있습니다.</p>
+      </div>
+      <div className="landing-menu">
+        <button className="landing-card postings" onClick={onPostings}>
+          <span aria-hidden="true">⌕</span>
+          <strong>채용공고 확인</strong>
+          <small>로그인 없이 최신 채용공고를 검색하고 원문을 확인합니다.</small>
         </button>
-        <span>{page + 1} 페이지</span>
-        <button disabled={!data.hasNext} onClick={() => setPage((value) => value + 1)}>
-          다음 →
+        <button className="landing-card mypage" onClick={onMyPage}>
+          <span aria-hidden="true">◎</span>
+          <strong>마이페이지</strong>
+          <small>
+            {user
+              ? '내 역량·스크랩·지원 일정을 관리합니다.'
+              : '로그인 후 내 역량과 지원 일정을 관리합니다.'}
+          </small>
+        </button>
+        <button className="landing-card notice" onClick={onCommunity}>
+          <span aria-hidden="true">i</span>
+          <strong>공지사항</strong>
+          <small>서비스 공지와 자주 묻는 내용을 로그인 없이 확인합니다.</small>
         </button>
       </div>
     </section>
@@ -3783,6 +3881,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [csrf, setCsrf] = useState(null)
   const [authMode, setAuthMode] = useState(null)
+  const [authReturn, setAuthReturn] = useState(null)
   const [authError, setAuthError] = useState('')
   const [authBusy, setAuthBusy] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
@@ -3793,6 +3892,7 @@ export default function App() {
   const [scrapsOpen, setScrapsOpen] = useState(false)
   const [adminView, setAdminView] = useState(false)
   const [communityView, setCommunityView] = useState(false)
+  const [landingView, setLandingView] = useState(true)
   const [inquiryUnreadCount, setInquiryUnreadCount] = useState(0)
   const [postingChangeUnread, setPostingChangeUnread] = useState(0)
   const [queryInput, setQueryInput] = useState('')
@@ -3808,7 +3908,13 @@ export default function App() {
     jobCategories: [],
   })
   const [page, setPage] = useState(0)
-  const [data, setData] = useState({ items: [], total: 0, hasNext: false, crawlStatus: null })
+  const [data, setData] = useState({
+    items: [],
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    crawlStatus: null,
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
@@ -4022,6 +4128,11 @@ export default function App() {
       )
       await refreshAuth()
       setAuthMode(null)
+      if (authReturn === 'mypage') {
+        setMine(true)
+        setLandingView(false)
+      }
+      setAuthReturn(null)
       await load()
     } catch (e) {
       setAuthError(e.message)
@@ -4274,10 +4385,12 @@ export default function App() {
   /** 마이페이지는 로그인한 회원에게만 열고 필터 변경 시 첫 페이지로 이동한다. */
   function navigate(nextMine) {
     if (nextMine && !user) {
+      setAuthReturn('mypage')
       setAuthMode('login')
       return
     }
     setMine(nextMine)
+    setLandingView(false)
     setScrapsOpen(false)
     setAdminView(false)
     setCommunityView(false)
@@ -4285,6 +4398,7 @@ export default function App() {
   }
   /** 서비스 배너를 누르면 검색·필터·개인 화면 상태를 모두 지우고 첫 화면으로 돌아간다. */
   function resetHome() {
+    setLandingView(true)
     setMine(false)
     setScrapsOpen(false)
     setAdminView(false)
@@ -4324,12 +4438,12 @@ export default function App() {
           <nav>
             {installPrompt && <button onClick={installApp}>앱 설치</button>}
             <button
-              className={!mine && !communityView && !adminView ? 'active' : ''}
+              className={!landingView && !mine && !communityView && !adminView ? 'active' : ''}
               onClick={() => navigate(false)}
             >
               채용정보
             </button>
-            <button className={mine ? 'active' : ''} onClick={() => navigate(true)}>
+            <button className={mine && !landingView ? 'active' : ''} onClick={() => navigate(true)}>
               마이페이지
               {postingChangeUnread > 0 && (
                 <span
@@ -4340,9 +4454,11 @@ export default function App() {
                 </span>
               )}
             </button>
-            <button className={capabilityOpen ? 'active' : ''} onClick={openCapabilities}>
-              내 역량
-            </button>
+            {user && (
+              <button className={capabilityOpen ? 'active' : ''} onClick={openCapabilities}>
+                내 역량
+              </button>
+            )}
             {user && (
               <NotificationCenter
                 user={user}
@@ -4355,6 +4471,7 @@ export default function App() {
             <button
               className={communityView ? 'active' : ''}
               onClick={() => {
+                setLandingView(false)
                 setCommunityView(true)
                 setMine(false)
                 setAdminView(false)
@@ -4379,8 +4496,22 @@ export default function App() {
               </>
             ) : (
               <>
-                <button onClick={() => setAuthMode('login')}>로그인</button>
-                <button onClick={() => setAuthMode('register')}>회원가입</button>
+                <button
+                  onClick={() => {
+                    setAuthReturn(null)
+                    setAuthMode('login')
+                  }}
+                >
+                  로그인
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthReturn(null)
+                    setAuthMode('register')
+                  }}
+                >
+                  회원가입
+                </button>
               </>
             )}
           </nav>
@@ -4395,7 +4526,19 @@ export default function App() {
             </button>
           </div>
         )}
-        {adminView ? (
+        {landingView ? (
+          <LandingPage
+            user={user}
+            onPostings={() => navigate(false)}
+            onMyPage={() => navigate(true)}
+            onCommunity={() => {
+              setLandingView(false)
+              setCommunityView(true)
+              setMine(false)
+              setAdminView(false)
+            }}
+          />
+        ) : adminView ? (
           <AdminReviewPanel securePost={securePost} />
         ) : communityView ? (
           <CommunityBoard
@@ -4411,9 +4554,7 @@ export default function App() {
                 <p className="eyebrow">공공기관 채용정보</p>
                 <h1>{mine ? '마이페이지' : '최신 채용공고 현황'}</h1>
                 <p className="sub">
-                  {mine
-                    ? '내 스펙과 맞춤 알림을 관리하세요.'
-                    : '마감 임박순 · 20개씩 · 매일 자정 수집'}
+                  {mine ? '내 스펙과 맞춤 알림을 관리하세요.' : '마감 임박순 · 12개씩 조회'}
                 </p>
                 {mine && (
                   <div className="mypage-heading-actions">
@@ -4547,8 +4688,8 @@ export default function App() {
                 <div className="meta">
                   <span>검색 결과 {data.total}건</span>
                   <span>
-                    파란색: 중앙 공공기관 · 주황색: 지방공기업 · 청록색: 민간기업 · 빨간 강조: 마감
-                    7일 이내
+                    파란색: 중앙공기업 · 주황색: 지방공기업 · 청록색: 민간기업 · 빨간 강조: 마감 2일
+                    이내
                   </span>
                 </div>
               </>
@@ -4564,7 +4705,9 @@ export default function App() {
                 {status.lastSuccess
                   ? `마지막 수집: ${new Date(status.lastSuccess).toLocaleString('ko-KR')} · 처리 ${status.lastCount}건`
                   : '첫 자정 수집을 기다리는 중입니다.'}
-                {status.error && <span className="status-error"> · 수집 오류: {status.error}</span>}
+                {status.error && (
+                  <span className="status-error"> · 일부 공고 수집을 확인하고 있습니다.</span>
+                )}
               </p>
             )}
             {error && (
@@ -4593,6 +4736,7 @@ export default function App() {
                       onInsight={openInsight}
                       onReport={openReport}
                       matchBusy={matchBusyId === job.id}
+                      memberActions={Boolean(user)}
                     />
                   ))}
                 </section>
@@ -4601,15 +4745,7 @@ export default function App() {
               <p className="empty">스크랩한 공고가 없습니다.</p>
             )}
             {mine && scrapsOpen && (
-              <div className="pagination">
-                <button disabled={page === 0} onClick={() => setPage(page - 1)}>
-                  ← 이전
-                </button>
-                <span>{page + 1} 페이지</span>
-                <button disabled={!data.hasNext} onClick={() => setPage(page + 1)}>
-                  다음 →
-                </button>
-              </div>
+              <Pagination page={page} totalPages={data.totalPages} onChange={setPage} />
             )}
             {mine && user && (
               <div className="mypage-dashboard">
@@ -4658,6 +4794,7 @@ export default function App() {
                       onInsight={openInsight}
                       onReport={openReport}
                       matchBusy={matchBusyId === job.id}
+                      memberActions={Boolean(user)}
                     />
                   ))}
                 </section>
@@ -4669,17 +4806,7 @@ export default function App() {
                   : '공고가 없습니다.'}
               </p>
             )}
-            {!mine && (
-              <div className="pagination">
-                <button disabled={page === 0} onClick={() => setPage(page - 1)}>
-                  ← 이전
-                </button>
-                <span>{page + 1} 페이지</span>
-                <button disabled={!data.hasNext} onClick={() => setPage(page + 1)}>
-                  다음 →
-                </button>
-              </div>
-            )}
+            {!mine && <Pagination page={page} totalPages={data.totalPages} onChange={setPage} />}
           </>
         )}
       </main>

@@ -138,6 +138,8 @@ public class PostingChangeService {
     private String value(Object value) { return value == null ? "" : String.valueOf(value); }
     private String limit(String value) {
         String clean = clean(value);
-        return clean.length() <= 10000 ? clean : clean.substring(0, 10000) + "…";
+        // 운영 DB의 기존 VARCHAR(1000) 스키마와도 호환되도록 변경 이력은 화면 확인에
+        // 필요한 앞부분만 보관한다. 전체 내용은 sourceUrl의 원문에서 확인할 수 있다.
+        return clean.length() <= 1000 ? clean : clean.substring(0, 999) + "…";
     }
 }

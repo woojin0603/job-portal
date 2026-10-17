@@ -89,6 +89,24 @@ class PostingChangeServiceTest {
         assertTrue(saved.stream().allMatch(change -> "NORMAL".equals(change.importance)));
     }
 
+    @Test
+    void limitsChangeValuesToTheProductionColumnLength() {
+        List<PostingChange> saved = new ArrayList<>();
+        PostingChangeService service = new PostingChangeService(repository(saved));
+        JobPosting posting = posting();
+        RecruitmentPosition position = position("전산", 1, "기존 자격요건");
+        PostingChangeService.Snapshot before = service.snapshot(posting, List.of(position));
+
+        position.requirements = "가".repeat(1200);
+        service.detect(before, posting, List.of(position));
+
+        PostingChange requirements = saved.stream()
+                .filter(change -> "REQUIREMENTS".equals(change.changeType))
+                .findFirst().orElseThrow();
+        assertEquals(1000, requirements.newValue.length());
+        assertTrue(requirements.newValue.endsWith("…"));
+    }
+
     private JobPosting posting() {
         JobPosting posting = new JobPosting();
         posting.id = 7L;

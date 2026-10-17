@@ -102,6 +102,84 @@ main {
   margin: auto;
   padding: 36px 24px 70px;
 }
+.landing-page {
+  min-height: calc(100dvh - 168px);
+  display: grid;
+  align-content: center;
+  gap: 36px;
+}
+.landing-intro {
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
+}
+.landing-intro h1 {
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1.12;
+}
+.landing-intro > p:last-child {
+  margin: 16px 0 0;
+  color: #62748a;
+  font-size: 17px;
+}
+.landing-menu {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.landing-card {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 10px;
+  border: 2px solid #d6e1ee;
+  border-radius: 20px;
+  background: #fff;
+  padding: 26px;
+  color: #173457;
+  text-align: left;
+  box-shadow: 0 12px 32px #1b355412;
+  transition:
+    transform 0.18s,
+    border-color 0.18s,
+    box-shadow 0.18s;
+}
+.landing-card:hover {
+  transform: translateY(-5px);
+  border-color: #3575bd;
+  box-shadow: 0 18px 38px #1b355424;
+}
+.landing-card > span {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin-bottom: auto;
+  border-radius: 14px;
+  background: #eaf2fd;
+  color: #1f64b2;
+  font-size: 25px;
+  font-weight: 900;
+}
+.landing-card.mypage > span {
+  background: #fff3dd;
+  color: #aa6800;
+}
+.landing-card.notice > span {
+  background: #e9f8f4;
+  color: #087b6e;
+}
+.landing-card strong {
+  font-size: 23px;
+}
+.landing-card small {
+  min-height: 42px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
 .heading {
   display: flex;
   justify-content: space-between;
@@ -266,14 +344,13 @@ h1 {
 }
 /* 공고 카드와 스크랩·지원 완료 상태별 외곽선 색상. */
 .card {
-  height: 430px;
-  min-height: 430px;
-  overflow-y: auto;
-  scrollbar-width: thin;
+  min-height: 410px;
+  height: auto;
+  overflow: visible;
   background: #fff;
   border: 4px solid #94a3b8;
   border-radius: 13px;
-  padding: 17px;
+  padding: 15px;
   box-shadow: 0 4px 12px #1e345012;
   display: flex;
   flex-direction: column;
@@ -313,7 +390,7 @@ h1 {
   box-shadow: 0 12px 30px #1e34502b;
 }
 .card.deadline-urgent .card-top {
-  margin: -17px -17px 12px;
+  margin: -15px -15px 10px;
   border-radius: 8px 8px 0 0;
   background: #b91c1c;
   padding: 12px 13px;
@@ -657,7 +734,7 @@ h1 {
   line-height: 1.3;
   letter-spacing: -0.045em;
   color: #12315e;
-  margin: 12px 0 18px;
+  margin: 10px 0 12px;
   min-height: 40px;
   display: -webkit-box;
   overflow: hidden;
@@ -669,7 +746,68 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  margin-top: auto;
+  margin-top: 0;
+}
+.organization-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.organization-row > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.organization-row > div > span {
+  color: #7c8999;
+  font-size: 11px;
+}
+.source-symbol {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #d8e1ec;
+  border-radius: 9px;
+  background: #fff;
+}
+.source-symbol img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.source-symbol.fallback {
+  background: #edf3fa;
+  color: #315f95;
+  font-size: 15px;
+  font-weight: 900;
+}
+.institution-badge {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.institution-badge.institution-central {
+  color: #1d5fd1;
+  background: #eff6ff;
+}
+.institution-badge.institution-local {
+  color: #a55f00;
+  background: #fff8e7;
+}
+.institution-badge.institution-private {
+  color: #087b70;
+  background: #ecfdf9;
+}
+.institution-badge.institution-public {
+  color: #53657a;
+  background: #f3f6f9;
 }
 .details > span {
   color: #7c8999;
@@ -724,8 +862,8 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 15px;
-  padding-top: 11px;
+  margin-top: 10px;
+  padding-top: 8px;
 }
 .date > span {
   font-size: 20px;
@@ -746,8 +884,8 @@ h1 {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  margin-top: 13px;
-  gap: 8px;
+  margin-top: 10px;
+  gap: 6px;
 }
 .career-actions {
   display: grid;
@@ -792,9 +930,26 @@ button {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 20px;
+  gap: 8px;
   padding: 28px;
   font-size: 13px;
+}
+.page-numbers {
+  display: flex;
+  gap: 5px;
+}
+.pagination button {
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid #cfdae7;
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px 10px;
+}
+.pagination button.active {
+  border-color: #175eb5;
+  background: #175eb5;
+  color: #fff;
 }
 .pagination a {
   font-weight: 700;
@@ -809,6 +964,19 @@ button {
 @media (max-width: 650px) {
   .grid {
     grid-template-columns: 1fr;
+  }
+  .landing-menu {
+    grid-template-columns: 1fr;
+  }
+  .landing-page {
+    align-content: start;
+  }
+  .landing-card {
+    min-height: 180px;
+  }
+  .pagination {
+    flex-wrap: wrap;
+    padding-inline: 0;
   }
   .bar > span {
     display: none;
@@ -2214,13 +2382,12 @@ nav button.active {
   font-size: 13px;
 }
 .pagination button {
-  border: 0;
-  background: transparent;
   color: #2867ad;
   font-weight: 700;
 }
 .pagination button:disabled {
   color: #a8b3c0;
+  background: #f5f7fa;
   cursor: default;
 }
 /* 제목 클릭과 미니탭 열기 버튼은 페이지 이동 없이 상세 패널을 연다. */
