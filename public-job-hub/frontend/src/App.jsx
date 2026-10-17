@@ -399,7 +399,7 @@ function JobCard({
     >
       <div className="card-top">
         <div className="card-labels">
-          <span className="tag">채용공고</span>
+          <span className={`institution-badge ${institutionClass}`}>{institutionType}</span>
           {urgent && <span className="urgent-tag">마감임박</span>}
           {expired && <span className="expired-tag">접수마감</span>}
         </div>
@@ -427,7 +427,6 @@ function JobCard({
               {job.organization}
             </strong>
           </div>
-          <span className={`institution-badge ${institutionClass}`}>{institutionType}</span>
         </div>
         <div className="pills">
           {job.employmentType && (
