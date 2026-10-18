@@ -15,6 +15,8 @@ read_env_value() {
   elif [[ "${value}" == \'*\' && "${value}" == *\' ]]; then
     value="${value:1:${#value}-2}"
   fi
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
   printf '%s' "${value}"
 }
 
@@ -32,6 +34,10 @@ if [[ -z "${WEBHOOK_URL}" ]]; then
   echo "INFO: Discord alert is not configured; notification skipped."
   exit 0
 fi
+if [[ ! "${WEBHOOK_URL}" =~ ^https://(discord\.com|discordapp\.com)/api/webhooks/[0-9]+/[^[:space:]]+$ ]]; then
+  echo "ERROR: JOBHUB_DISCORD_WEBHOOK_URL is not a valid Discord webhook URL." >&2
+  exit 1
+fi
 
 HOST_NAME="$(hostname)"
 NOW="$(TZ=Asia/Seoul date +'%Y-%m-%d %H:%M:%S KST')"
@@ -45,7 +51,7 @@ escape_json() {
   awk 'BEGIN { ORS=""; first=1 }
     {
       gsub(/\\/, "\\\\");
-      gsub(/\"/, "\\\"");
+      gsub(/"/, "\\\"");
       gsub(/\r/, "");
       if (!first) printf "\\n";
       printf "%s", $0;
