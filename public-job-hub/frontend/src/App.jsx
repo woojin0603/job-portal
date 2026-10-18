@@ -2153,6 +2153,10 @@ const LEGAL_CONTENT = {
         '사이트의 공지·Q&A 게시판에서 서비스 문의, 개인정보 권리 행사, 계정 삭제 요청을 접수합니다.',
       ],
       [
+        '계정 삭제 방법',
+        '로그인 후 마이페이지의 회원 탈퇴에서 비밀번호를 확인하면 계정과 연결 개인정보를 직접 삭제할 수 있습니다. 로그인할 수 없는 경우 공지·Q&A를 통해 본인 확인 절차를 요청할 수 있습니다.',
+      ],
+      [
         '출시 전 확인',
         '플레이스토어 공개 전 운영자의 실명 또는 사업자명, 연락 가능한 이메일, 소재지 등 적용 대상 표시사항을 최종 입력해야 합니다.',
       ],
@@ -2414,6 +2418,61 @@ function PasswordDialog({ required, busy, error, onClose, onSubmit }) {
           </button>
         </form>
       </section>
+    </div>
+  )
+}
+
+function AccountDeletionDialog({ busy, error, onClose, onSubmit }) {
+  const [password, setPassword] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  return (
+    <div className="overlay">
+      <form
+        className="account-deletion-dialog"
+        onSubmit={(event) => {
+          event.preventDefault()
+          onSubmit({ password, confirmation })
+        }}
+      >
+        <button type="button" className="close" onClick={onClose}>
+          ×
+        </button>
+        <p className="eyebrow">ACCOUNT DELETION</p>
+        <h2>회원 탈퇴</h2>
+        <div className="deletion-warning">
+          <strong>탈퇴하면 다음 정보가 삭제됩니다.</strong>
+          <p>계정·역량·스크랩·지원 일정·알림 설정·문의 및 로그인 기록</p>
+          <small>
+            삭제된 정보는 복구할 수 없습니다. 공고 원본과 익명 운영 감사 기록은 남을 수 있습니다.
+          </small>
+        </div>
+        <label>
+          현재 비밀번호
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="current-password"
+          />
+        </label>
+        <label>
+          확인 문구
+          <input
+            required
+            value={confirmation}
+            onChange={(event) => setConfirmation(event.target.value)}
+            placeholder="탈퇴합니다"
+          />
+          <small>
+            <b>탈퇴합니다</b>를 정확히 입력해 주세요.
+          </small>
+        </label>
+        {error && <p className="error">{error}</p>}
+        <button className="danger" disabled={busy || confirmation !== '탈퇴합니다'}>
+          {busy ? '삭제 중...' : '계정과 개인정보 영구 삭제'}
+        </button>
+      </form>
     </div>
   )
 }
@@ -4613,6 +4672,9 @@ export default function App() {
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [passwordBusy, setPasswordBusy] = useState(false)
+  const [accountDeletionOpen, setAccountDeletionOpen] = useState(false)
+  const [accountDeletionError, setAccountDeletionError] = useState('')
+  const [accountDeletionBusy, setAccountDeletionBusy] = useState(false)
   // 공고 검색, 마이페이지 필터, 페이지 번호 및 API 결과를 보관한다.
   const [mine, setMine] = useState(false)
   const [scrapsOpen, setScrapsOpen] = useState(false)
@@ -4906,6 +4968,23 @@ export default function App() {
       setPasswordError(e.message)
     } finally {
       setPasswordBusy(false)
+    }
+  }
+  async function deleteAccount(form) {
+    setAccountDeletionBusy(true)
+    setAccountDeletionError('')
+    try {
+      await securePost('/api/account/delete', JSON.stringify(form), 'application/json')
+      setAccountDeletionOpen(false)
+      setUser(null)
+      setMine(false)
+      setLandingView(true)
+      setError('회원 탈퇴와 개인정보 삭제가 완료되었습니다.')
+      await refreshAuth()
+    } catch (e) {
+      setAccountDeletionError(e.message)
+    } finally {
+      setAccountDeletionBusy(false)
     }
   }
   /** 스크랩·지원 완료 상태를 토글한 뒤 최신 목록을 다시 읽는다. */
@@ -5313,6 +5392,15 @@ export default function App() {
                     >
                       비밀번호 변경
                     </button>
+                    {!user?.admin && (
+                      <button
+                        type="button"
+                        className="account-delete-button"
+                        onClick={() => setAccountDeletionOpen(true)}
+                      >
+                        회원 탈퇴
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -5640,6 +5728,17 @@ export default function App() {
             setPasswordError('')
           }}
           onSubmit={changePassword}
+        />
+      )}
+      {accountDeletionOpen && user && !user.admin && (
+        <AccountDeletionDialog
+          busy={accountDeletionBusy}
+          error={accountDeletionError}
+          onClose={() => {
+            setAccountDeletionOpen(false)
+            setAccountDeletionError('')
+          }}
+          onSubmit={deleteAccount}
         />
       )}
     </>

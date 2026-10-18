@@ -2906,6 +2906,63 @@ nav button.active {
   font-size: 14px;
   font-weight: 800;
 }
+.account-delete-button {
+  color: #a33b2c !important;
+  border-color: #e3b8b1 !important;
+}
+.account-deletion-dialog {
+  position: relative;
+  width: min(100%, 480px);
+  border-radius: 16px;
+  background: #fff;
+  padding: 30px;
+  box-shadow: 0 24px 70px #0b1c3650;
+}
+.account-deletion-dialog h2 {
+  margin: 0 0 18px;
+  color: #8d2d23;
+}
+.account-deletion-dialog label {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.account-deletion-dialog input {
+  height: 42px;
+  border: 1px solid #cdd9e7;
+  border-radius: 8px;
+  padding: 0 11px;
+  font: inherit;
+}
+.deletion-warning {
+  border: 1px solid #e6b9ae;
+  border-radius: 10px;
+  background: #fff6f3;
+  padding: 14px;
+  color: #754039;
+}
+.deletion-warning p {
+  margin: 7px 0;
+}
+.deletion-warning small {
+  color: #8b625c;
+}
+.account-deletion-dialog .danger {
+  width: 100%;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #b53a2c;
+  color: #fff;
+  padding: 12px;
+  font-weight: 900;
+}
+.account-deletion-dialog .danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .close {
   position: absolute;
   right: 18px;
