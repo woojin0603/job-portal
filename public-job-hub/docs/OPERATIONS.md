@@ -163,21 +163,19 @@ docker system df
 - 앱 상태 `unhealthy` 또는 HTTPS 실패: 즉시 로그 확인
 - 최근 채용공고 수집 실패: 관리자 화면에서 실패 출처와 원인 확인
 
-### 6.1 무료 Telegram 장애 알림
+### 6.1 무료 Discord 장애 알림
 
-상태 점검, TiDB 백업, 저장공간 정리가 실패하면 Telegram으로 한 번 알리고,
+상태 점검, TiDB 백업, 저장공간 정리가 실패하면 Discord로 한 번 알리고,
 다음 실행에서 정상으로 돌아왔을 때 복구 알림을 한 번 보낸다. 같은 장애가 계속되는
 동안에는 반복 알림을 보내지 않는다.
 
-1. Telegram에서 `@BotFather`를 열고 `/newbot`으로 봇을 만든다.
-2. 생성된 봇과 대화를 열어 `/start`를 보낸다.
-3. 브라우저에서 `https://api.telegram.org/bot<발급받은 토큰>/getUpdates`를 열고
-   응답의 `message.chat.id` 값을 확인한다.
-4. OCI 서버의 `.env`에 다음 두 값을 추가한다. 따옴표는 사용하지 않는다.
+1. Discord에서 운영 알림을 받을 비공개 서버와 채널을 준비한다.
+2. 채널의 `채널 편집 → 연동 → 웹후크 → 새 웹후크`를 선택한다.
+3. 이름과 알림 채널을 확인하고 `웹후크 URL 복사`를 누른다.
+4. OCI 서버의 `.env`에 다음 값을 추가한다. 따옴표는 사용하지 않는다.
 
 ```ini
-JOBHUB_TELEGRAM_BOT_TOKEN=BotFather에서_발급받은_토큰
-JOBHUB_TELEGRAM_CHAT_ID=getUpdates에서_확인한_chat_id
+JOBHUB_DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/발급값
 ```
 
 설정 후 테스트 알림을 보낸다.
@@ -188,7 +186,7 @@ chmod 700 scripts/send-ops-alert.sh scripts/monitor-command.sh
 ./scripts/send-ops-alert.sh TEST "Public Job Hub 알림 테스트" "운영 알림 연결이 완료되었습니다."
 ```
 
-Telegram에서 메시지를 받은 뒤 세 자동 작업을 다시 설치한다.
+Discord 채널에서 메시지를 받은 뒤 세 자동 작업을 다시 설치한다.
 
 ```bash
 ./scripts/install-health-check-cron.sh
@@ -197,8 +195,9 @@ Telegram에서 메시지를 받은 뒤 세 자동 작업을 다시 설치한다.
 crontab -l
 ```
 
-토큰과 chat ID는 Git에 커밋하거나 화면 캡처로 공유하지 않는다. Telegram 알림을
-사용하지 않을 때는 두 값을 비워 두면 기존 자동 작업만 실행되고 알림은 건너뛴다.
+웹훅 URL은 메시지를 보낼 수 있는 비밀번호와 같으므로 Git에 커밋하거나 화면 캡처로
+공유하지 않는다. Discord 알림을 사용하지 않을 때는 값을 비워 두면 기존 자동 작업만
+실행되고 알림은 건너뛴다.
 
 ## 7. 로그 확인
 

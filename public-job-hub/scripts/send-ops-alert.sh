@@ -27,10 +27,9 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   exit 0
 fi
 
-BOT_TOKEN="$(read_env_value JOBHUB_TELEGRAM_BOT_TOKEN)"
-CHAT_ID="$(read_env_value JOBHUB_TELEGRAM_CHAT_ID)"
-if [[ -z "${BOT_TOKEN}" || -z "${CHAT_ID}" ]]; then
-  echo "INFO: Telegram alert is not configured; notification skipped."
+WEBHOOK_URL="$(read_env_value JOBHUB_DISCORD_WEBHOOK_URL)"
+if [[ -z "${WEBHOOK_URL}" ]]; then
+  echo "INFO: Discord alert is not configured; notification skipped."
   exit 0
 fi
 
@@ -42,11 +41,28 @@ MESSAGE="[${LEVEL}] ${SUBJECT}
 
 ${DETAIL}"
 
+escape_json() {
+  awk 'BEGIN { ORS=""; first=1 }
+    {
+      gsub(/\\/, "\\\\");
+      gsub(/\"/, "\\\"");
+      gsub(/\r/, "");
+      if (!first) printf "\\n";
+      printf "%s", $0;
+      first=0;
+    }'
+}
+
+# Discord content 제한과 운영 로그의 민감 정보 노출을 줄이기 위해 메시지를 1,800자로 제한한다.
+MESSAGE="${MESSAGE:0:1800}"
+ESCAPED_MESSAGE="$(printf '%s' "${MESSAGE}" | escape_json)"
+PAYLOAD="{\"content\":\"${ESCAPED_MESSAGE}\",\"allowed_mentions\":{\"parse\":[]}}"
+
 curl --fail --silent --show-error --max-time 15 \
-  --request POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-  --data-urlencode "chat_id=${CHAT_ID}" \
-  --data-urlencode "text=${MESSAGE}" \
-  --data-urlencode "disable_web_page_preview=true" \
+  --header 'Content-Type: application/json' \
+  --request POST \
+  --data "${PAYLOAD}" \
+  "${WEBHOOK_URL}" \
   >/dev/null
 
-echo "Telegram alert sent: ${SUBJECT}"
+echo "Discord alert sent: ${SUBJECT}"
