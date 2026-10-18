@@ -2989,6 +2989,94 @@ nav button.active {
   padding: 22px;
   box-shadow: 0 5px 18px #1e345010;
 }
+.infrastructure-status {
+  margin: 0 0 22px;
+  border: 1px solid #ccdbea;
+  border-radius: 15px;
+  background: #fff;
+  padding: 22px;
+}
+.infrastructure-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.infrastructure-metrics > div {
+  display: flex;
+  min-height: 96px;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid #dce5ef;
+  border-radius: 11px;
+  background: #f8fbff;
+  padding: 13px;
+}
+.infrastructure-metrics > div.attention,
+.operations-job-status article.attention {
+  border-color: #e5aa79;
+  background: #fff7ef;
+}
+.infrastructure-metrics span,
+.infrastructure-metrics small {
+  color: #6d7d91;
+  font-size: 11px;
+}
+.infrastructure-metrics strong {
+  margin: 5px 0;
+  color: #177047;
+  font-size: 20px;
+}
+.infrastructure-metrics .attention strong {
+  color: #b54708;
+}
+.operations-job-status {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.operations-job-status article {
+  border: 1px solid #dce5ef;
+  border-radius: 11px;
+  padding: 13px;
+}
+.operations-job-status article > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.operations-job-status p {
+  min-height: 34px;
+  margin: 9px 0;
+  color: #536980;
+  font-size: 12px;
+}
+.operations-job-status time {
+  color: #7b899a;
+  font-size: 11px;
+}
+.job-state {
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #607286;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 800;
+}
+.job-state.healthy {
+  background: #e8f7ef;
+  color: #187347;
+}
+.job-state.failed {
+  background: #fff0ed;
+  color: #b42318;
+}
+.infrastructure-note {
+  margin: 14px 0 0;
+  color: #7a8899;
+  font-size: 11px;
+}
 .operations-heading {
   display: flex;
   align-items: center;
@@ -3687,6 +3775,10 @@ nav button.active {
   .admin-console-tabs {
     display: flex;
     overflow-x: auto;
+  }
+  .infrastructure-metrics,
+  .operations-job-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .admin-console-tabs button {
     min-width: 112px;

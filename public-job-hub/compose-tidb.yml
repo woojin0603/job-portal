@@ -20,6 +20,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       JOBHUB_PAID_AI_ENABLED: ${JOBHUB_PAID_AI_ENABLED:-false}
       JOBHUB_OCR_ENABLED: ${JOBHUB_OCR_ENABLED:-false}
+      JOBHUB_OPERATIONS_STATUS_DIR: /var/lib/jobhub-operations
       TZ: Asia/Seoul
     expose:
       - "8080"
@@ -32,6 +33,8 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=96m,mode=1777
+    volumes:
+      - ./backups/monitor-state:/var/lib/jobhub-operations:ro
     security_opt:
       - no-new-privileges:true
     cap_drop:

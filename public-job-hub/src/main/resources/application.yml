@@ -31,6 +31,8 @@ jobhub:
   security:
     login-max-failures: ${JOBHUB_LOGIN_MAX_FAILURES:5}
     login-window-minutes: ${JOBHUB_LOGIN_WINDOW_MINUTES:15}
+  operations:
+    status-directory: ${JOBHUB_OPERATIONS_STATUS_DIR:./backups/monitor-state}
   # 실제 사이트 목록을 읽는 예약 작업의 활성화 여부와 기본 출처.
   crawl:
     enabled: ${JOBHUB_CRAWL_ENABLED:true}

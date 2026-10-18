@@ -28,8 +28,11 @@ if [[ ! "${STATE_KEY}" =~ ^[a-zA-Z0-9_-]+$ ]]; then
 fi
 
 mkdir -p -- "${STATE_DIR}"
-chmod 700 -- "${STATE_DIR}"
+# 컨테이너는 디렉터리를 읽기 전용으로 마운트하며 공개 상태 파일만 읽는다.
+# 실패 전환 감지용 *.state 파일은 계속 600 권한을 유지한다.
+chmod 755 -- "${STATE_DIR}"
 STATE_FILE="${STATE_DIR}/${STATE_KEY}.state"
+STATUS_FILE="${STATE_DIR}/${STATE_KEY}.properties"
 OUTPUT_FILE="$(mktemp)"
 trap 'rm -f -- "${OUTPUT_FILE}"' EXIT
 
@@ -59,4 +62,17 @@ fi
 
 printf '%s\n' "${CURRENT_STATE}" >"${STATE_FILE}"
 chmod 600 -- "${STATE_FILE}"
+
+# 관리자 화면은 셸이나 Docker 소켓에 접근하지 않고 이 읽기 전용 상태만 조회한다.
+STATUS_TEMP="$(mktemp "${STATE_DIR}/.${STATE_KEY}.XXXXXX")"
+{
+  printf 'state=%s\n' "${CURRENT_STATE}"
+  printf 'updatedAt=%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+  printf 'exitCode=%s\n' "${COMMAND_STATUS}"
+  printf 'outputBase64='
+  base64 -w 0 <"${OUTPUT_FILE}"
+  printf '\n'
+} >"${STATUS_TEMP}"
+mv -- "${STATUS_TEMP}" "${STATUS_FILE}"
+chmod 644 -- "${STATUS_FILE}"
 exit "${COMMAND_STATUS}"

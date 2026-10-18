@@ -3114,6 +3114,7 @@ function AdminReviewPanel({ user, securePost }) {
   const [items, setItems] = useState([])
   const [quality, setQuality] = useState(null)
   const [dashboard, setDashboard] = useState(null)
+  const [operationsStatus, setOperationsStatus] = useState(null)
   const [busy, setBusy] = useState(null)
   const [message, setMessage] = useState('')
   const [crawlInfo, setCrawlInfo] = useState(null)
@@ -3127,11 +3128,13 @@ function AdminReviewPanel({ user, securePost }) {
         getJson('/api/admin/reviews'),
         getJson('/api/admin/reviews/quality'),
         getJson('/api/admin/dashboard'),
+        getJson('/api/admin/operations/status'),
       ])
-        .then(([reviews, report, dashboardReport]) => {
+        .then(([reviews, report, dashboardReport, operationsReport]) => {
           setItems(reviews)
           setQuality(report)
           setDashboard(dashboardReport)
+          setOperationsStatus(operationsReport)
         })
         .catch((e) => setMessage(e.message)),
     [],
@@ -3410,6 +3413,90 @@ function AdminReviewPanel({ user, securePost }) {
               </div>
             </section>
           </div>
+        </section>
+      )}
+      {section === 'overview' && operationsStatus && (
+        <section className="infrastructure-status" aria-label="서버 및 백업 상태">
+          <div className="operations-heading">
+            <div>
+              <h2>서버·백업 상태</h2>
+              <span>
+                {new Date(operationsStatus.checkedAt).toLocaleString('ko-KR')} 화면 확인 기준
+              </span>
+            </div>
+          </div>
+          <div className="infrastructure-metrics">
+            {[
+              ['애플리케이션', operationsStatus.server.appHealthy, '컨테이너'],
+              ['Caddy', operationsStatus.server.caddyRunning, '리버스 프록시'],
+              ['HTTPS', operationsStatus.server.httpsReachable, '외부 접속'],
+              ['TiDB', operationsStatus.server.databaseReachable, '데이터베이스'],
+              [
+                '가용 메모리',
+                operationsStatus.server.availableMemoryMb == null
+                  ? null
+                  : operationsStatus.server.availableMemoryMb >= 128,
+                operationsStatus.server.availableMemoryMb == null
+                  ? '확인 전'
+                  : `${operationsStatus.server.availableMemoryMb}MB`,
+              ],
+              [
+                '디스크 사용량',
+                operationsStatus.server.diskUsagePercent == null
+                  ? null
+                  : operationsStatus.server.diskUsagePercent < 85,
+                operationsStatus.server.diskUsagePercent == null
+                  ? '확인 전'
+                  : `${operationsStatus.server.diskUsagePercent}%`,
+              ],
+              [
+                '최근 백업',
+                operationsStatus.server.latestBackupAgeHours == null
+                  ? null
+                  : operationsStatus.server.latestBackupAgeHours <= 30,
+                operationsStatus.server.latestBackupAgeHours == null
+                  ? '확인 전'
+                  : `${operationsStatus.server.latestBackupAgeHours}시간 전`,
+              ],
+            ].map(([label, healthy, detail]) => (
+              <div className={healthy === false ? 'attention' : ''} key={label}>
+                <span>{label}</span>
+                <strong>{healthy == null ? '—' : healthy ? '정상' : '확인 필요'}</strong>
+                <small>{detail}</small>
+              </div>
+            ))}
+          </div>
+          <div className="operations-job-status">
+            {operationsStatus.jobs.map((job) => (
+              <article
+                key={job.key}
+                className={job.state !== 'healthy' || job.stale ? 'attention' : ''}
+              >
+                <div>
+                  <strong>{job.label}</strong>
+                  <span className={`job-state ${job.state}`}>
+                    {job.state === 'healthy'
+                      ? job.stale
+                        ? '점검 필요'
+                        : '정상'
+                      : job.state === 'failed'
+                        ? '실패'
+                        : '기록 없음'}
+                  </span>
+                </div>
+                <p>{job.summary}</p>
+                <time>
+                  {job.updatedAt
+                    ? new Date(job.updatedAt).toLocaleString('ko-KR')
+                    : '아직 실행되지 않음'}
+                </time>
+              </article>
+            ))}
+          </div>
+          <p className="infrastructure-note">
+            이 화면은 서버가 발행한 읽기 전용 상태만 표시하며 비밀번호와 접속 주소는 저장하지
+            않습니다.
+          </p>
         </section>
       )}
       {message && (
