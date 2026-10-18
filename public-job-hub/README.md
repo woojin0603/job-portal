@@ -2,6 +2,8 @@
 
 Spring Boot 프로젝트를 `build.gradle`로 가져와 Java 17로 실행하세요. React는 `frontend` 폴더에서 `npm install` 후 `npm run dev`로 실행합니다. 화면 주소는 http://localhost:5173 이며 Vite가 `/api` 요청을 Spring Boot의 8080 포트로 전달합니다. PowerShell에서 npm 스크립트가 차단되면 `npm.cmd`를 사용하세요.
 
+OCI·TiDB 운영 배포, 백업, 복구, 자동 점검과 장애 대응은 [운영 매뉴얼](docs/OPERATIONS.md)을 따르세요.
+
 한 주소에서 개발 화면을 확인하려면 프로젝트 루트에서 `gradlew.bat bootRun`을 실행하세요. 이 작업은 React를 먼저 빌드해 Spring Boot의 http://localhost:8080 에서 함께 제공합니다. Gradle 설정을 바꾼 뒤에는 실행 중인 서버를 종료하고 다시 시작해야 합니다.
 
 ## 휴대폰 앱처럼 설치하기 (PWA)
