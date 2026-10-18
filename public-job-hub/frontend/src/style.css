@@ -2784,6 +2784,109 @@ nav button.active {
   font-weight: 700;
   margin-top: 6px;
 }
+.consent-fields {
+  display: grid;
+  gap: 9px;
+}
+.auth-dialog .consent-fields label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #dce5ef;
+  border-radius: 8px;
+  padding: 10px;
+}
+.auth-dialog .consent-fields input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+.consent-fields b {
+  color: #b54708;
+}
+.consent-fields button {
+  border: 0;
+  background: none;
+  color: #185ca8;
+  font-weight: 800;
+}
+.legal-dialog {
+  position: relative;
+  width: min(100%, 760px);
+  max-height: 88vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #fff;
+  padding: 30px;
+  box-shadow: 0 24px 70px #0b1c3650;
+}
+.legal-dialog h2 {
+  margin: 0;
+  color: #173f76;
+}
+.legal-effective {
+  color: #718197;
+  font-size: 12px;
+}
+.legal-sections {
+  display: grid;
+  gap: 12px;
+  margin: 22px 0;
+}
+.legal-sections section {
+  border: 1px solid #dfe7f0;
+  border-radius: 10px;
+  padding: 14px;
+}
+.legal-sections h3 {
+  margin: 0 0 6px;
+  color: #284d78;
+  font-size: 15px;
+}
+.legal-sections p {
+  margin: 0;
+  color: #566a82;
+  line-height: 1.65;
+}
+.legal-dialog > .primary {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 12px;
+  background: #173f76;
+  color: #fff;
+  font-weight: 800;
+}
+.site-footer {
+  display: flex;
+  max-width: 1180px;
+  margin: 35px auto 0;
+  padding: 22px 20px 30px;
+  border-top: 1px solid #dce5ef;
+  justify-content: space-between;
+  gap: 20px;
+  color: #718197;
+  font-size: 12px;
+}
+.site-footer > div {
+  display: grid;
+  gap: 4px;
+}
+.site-footer strong {
+  color: #355474;
+}
+.site-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.site-footer button {
+  border: 0;
+  background: none;
+  color: #536b84;
+  font-weight: 700;
+}
 .auth-switch {
   display: flex;
   align-items: center;
@@ -4162,5 +4265,8 @@ nav button.active {
   }
   .qualification-import {
     grid-template-columns: 1fr;
+  }
+  .site-footer {
+    flex-direction: column;
   }
 }

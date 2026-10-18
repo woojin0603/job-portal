@@ -20,17 +20,21 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    private static final String CONSENT_VERSION = "2026-10-18";
     /** 회원가입 입력값. 서버에서 이메일 형식과 비밀번호 길이를 검증한다. */
     public record RegisterRequest(@Email @NotBlank String email,
                                   @NotBlank @Size(min = 10, max = 100) String password,
-                                  @NotBlank @Size(max = 80) String displayName) {
+                                  @NotBlank @Size(max = 80) String displayName,
+                                  boolean acceptedTerms, boolean acceptedPrivacy) {
     }
+    public record ConsentRequest(boolean acceptedTerms, boolean acceptedPrivacy) {}
 
     public record PasswordChangeRequest(@NotBlank String currentPassword,
                                         @NotBlank @Size(min = 10, max = 100) String newPassword) {}
 
     /** 비밀번호 해시를 제외하고 화면에 공개할 회원 정보. */
-    public record Profile(Long id, String email, String displayName, boolean admin, boolean mustChangePassword) {
+    public record Profile(Long id, String email, String displayName, boolean admin,
+                          boolean mustChangePassword, boolean consentRequired) {
     }
 
     /** 로그인 여부를 동일한 JSON 구조로 반환하기 위한 응답. */
@@ -70,6 +74,7 @@ public class AuthController {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public Profile register(@Valid @RequestBody RegisterRequest request) {
+        requireConsent(request.acceptedTerms(), request.acceptedPrivacy());
         if (!request.password().matches("^(?=.*[A-Za-z])(?=.*\\d).+$")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호는 영문과 숫자를 모두 포함해야 합니다.");
         }
@@ -81,11 +86,27 @@ public class AuthController {
         user.email = email;
         user.passwordHash = passwords.encode(request.password());
         user.displayName = request.displayName().trim();
+        user.termsAgreedAt = java.time.Instant.now();
+        user.privacyAgreedAt = user.termsAgreedAt;
+        user.consentVersion = CONSENT_VERSION;
         try {
             return profile(users.save(user), false);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다.");
         }
+    }
+
+    @PostMapping("/consent")
+    public Profile consent(@RequestBody ConsentRequest request, Authentication auth) {
+        if (auth == null || !auth.isAuthenticated()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        requireConsent(request.acceptedTerms(), request.acceptedPrivacy());
+        AppUser user = users.findByEmail(auth.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        user.termsAgreedAt = java.time.Instant.now();
+        user.privacyAgreedAt = user.termsAgreedAt;
+        user.consentVersion = CONSENT_VERSION;
+        return profile(users.save(user), auth.getAuthorities().stream()
+                .anyMatch(value -> "ROLE_ADMIN".equals(value.getAuthority())));
     }
 
     /** 로그인한 회원이 현재 비밀번호를 확인한 뒤 새 비밀번호로 안전하게 교체한다. */
@@ -112,6 +133,14 @@ public class AuthController {
 
     /** DB 엔티티에서 클라이언트에 필요한 안전한 필드만 골라 반환한다. */
     private Profile profile(AppUser user, boolean admin) {
-        return new Profile(user.id, user.email, user.displayName, admin, user.mustChangePassword);
+        boolean consentRequired = user.termsAgreedAt == null || user.privacyAgreedAt == null
+                || !CONSENT_VERSION.equals(user.consentVersion);
+        return new Profile(user.id, user.email, user.displayName, admin,
+                user.mustChangePassword, consentRequired);
+    }
+
+    private void requireConsent(boolean terms, boolean privacy) {
+        if (!terms || !privacy) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "이용약관과 개인정보 처리방침에 모두 동의해야 합니다.");
     }
 }

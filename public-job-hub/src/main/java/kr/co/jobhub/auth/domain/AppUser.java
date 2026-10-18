@@ -37,6 +37,14 @@ public class AppUser {
     @Column(name = "two_factor_secret", length = 100)
     public String twoFactorSecret;
 
+    /** 출시 약관에 동의한 시각과 당시 문서 버전. */
+    @Column(name = "terms_agreed_at")
+    public Instant termsAgreedAt;
+    @Column(name = "privacy_agreed_at")
+    public Instant privacyAgreedAt;
+    @Column(name = "consent_version", length = 20)
+    public String consentVersion;
+
     /** 회원 레코드가 처음 생성된 시각. */
     @Column(nullable = false)
     public Instant createdAt = Instant.now();

@@ -2073,11 +2073,162 @@ function CareerToolsPanel({ preference, alerts, busy, message, onChange, onSave,
   )
 }
 
+const LEGAL_CONTENT = {
+  terms: {
+    title: '이용약관',
+    sections: [
+      [
+        '제1조 목적',
+        '본 약관은 Public Job Hub가 제공하는 채용공고 조회, 스크랩, 역량 관리, 알림 및 커뮤니티 서비스의 이용 조건을 정합니다.',
+      ],
+      [
+        '제2조 서비스 성격',
+        '채용정보는 공공 API와 공개 웹페이지를 바탕으로 제공됩니다. 지원 전 반드시 원문을 확인해야 하며, 서비스는 채용기관의 모집·선발 결과를 보증하지 않습니다.',
+      ],
+      [
+        '제3조 계정 관리',
+        '이용자는 정확한 이메일을 사용하고 계정 정보를 안전하게 관리해야 합니다. 타인의 권리를 침해하거나 서비스를 방해하는 이용은 제한될 수 있습니다.',
+      ],
+      [
+        '제4조 게시물과 문의',
+        '문의에는 주민등록번호, 전화번호, 자격증 번호 등 불필요한 개인정보를 작성하지 않아야 합니다. 불법·권리침해 내용은 제한될 수 있습니다.',
+      ],
+      [
+        '제5조 서비스 변경',
+        '외부 제공기관의 장애, 점검 또는 정책 변경에 따라 일부 정보가 지연되거나 서비스가 변경될 수 있습니다. 중요한 변경은 공지사항으로 안내합니다.',
+      ],
+      [
+        '제6조 문의',
+        '서비스 이용, 계정 삭제 및 권리 행사는 사이트의 공지·Q&A 게시판을 통해 운영자에게 요청할 수 있습니다.',
+      ],
+    ],
+  },
+  privacy: {
+    title: '개인정보 처리방침',
+    sections: [
+      [
+        '처리 목적',
+        '회원 인증, 개인화된 채용공고·알림·스크랩·역량 관리, 문의 처리, 보안 및 서비스 안정화를 위해 개인정보를 처리합니다.',
+      ],
+      [
+        '처리 항목',
+        '필수 항목은 이메일, 표시 이름, 비밀번호 해시, 약관 동의 기록입니다. 선택 입력은 학위·성적·자격증·경력·대외활동입니다. 로그인 시 접속 IP, 브라우저 정보와 접속 시각이 보안 목적으로 기록될 수 있습니다.',
+      ],
+      [
+        '입력 금지 정보',
+        '주민등록번호, 전화번호, 자격증 번호, 학위번호 등 서비스에 필요하지 않은 고유·상세 개인정보는 입력하지 않습니다.',
+      ],
+      [
+        '보유 기간',
+        '회원 정보와 이용자가 저장한 역량·스크랩 정보는 회원 탈퇴 또는 삭제 요청 처리 시까지 보유합니다. 법령상 보존 의무가 있는 경우 해당 기간 동안 분리 보관할 수 있습니다.',
+      ],
+      [
+        '제3자 제공과 국외 처리',
+        '개인정보를 판매하지 않습니다. 운영 DB와 암호화 백업은 서비스 운영을 위해 클라우드 인프라에서 처리될 수 있으며, 실제 제공업체·지역 변경 시 본 방침과 공지로 안내합니다.',
+      ],
+      [
+        '파기와 안전조치',
+        '보유 목적이 끝난 개인정보는 복구가 어렵도록 삭제합니다. 비밀번호 해시, HTTPS, 접근권한 통제, 로그인 제한, 감사 기록 및 암호화 백업을 적용합니다.',
+      ],
+      [
+        '이용자 권리',
+        '이용자는 마이페이지에서 정보를 조회·수정할 수 있으며, 열람·정정·삭제·처리정지·탈퇴 요청은 공지·Q&A를 통해 신청할 수 있습니다.',
+      ],
+      [
+        '자동 수집 장치',
+        '로그인 세션 유지와 보안을 위해 필수 쿠키를 사용합니다. 맞춤 광고용 쿠키는 사용하지 않습니다. 브라우저에서 쿠키를 차단하면 로그인 기능이 제한될 수 있습니다.',
+      ],
+      [
+        '보호책임 및 문의',
+        '개인정보 보호책임자는 Public Job Hub 운영자이며, 개인정보 관련 문의와 권리 행사는 사이트의 공지·Q&A에서 접수합니다.',
+      ],
+    ],
+  },
+  contact: {
+    title: '운영자 안내',
+    sections: [
+      ['서비스 운영', '서비스명: Public Job Hub · 운영자: Public Job Hub 운영자'],
+      [
+        '문의 방법',
+        '사이트의 공지·Q&A 게시판에서 서비스 문의, 개인정보 권리 행사, 계정 삭제 요청을 접수합니다.',
+      ],
+      [
+        '출시 전 확인',
+        '플레이스토어 공개 전 운영자의 실명 또는 사업자명, 연락 가능한 이메일, 소재지 등 적용 대상 표시사항을 최종 입력해야 합니다.',
+      ],
+    ],
+  },
+}
+
+function LegalDialog({ type, onClose }) {
+  const content = LEGAL_CONTENT[type]
+  return (
+    <div className="overlay">
+      <section className="legal-dialog" role="dialog" aria-modal="true">
+        <button className="close" onClick={onClose}>
+          ×
+        </button>
+        <p className="eyebrow">PUBLIC JOB HUB</p>
+        <h2>{content.title}</h2>
+        <p className="legal-effective">시행일 2026년 10월 18일 · 버전 2026-10-18</p>
+        <div className="legal-sections">
+          {content.sections.map(([title, body]) => (
+            <section key={title}>
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </section>
+          ))}
+        </div>
+        <button className="primary" onClick={onClose}>
+          확인
+        </button>
+      </section>
+    </div>
+  )
+}
+
+function ConsentFields({ terms, privacy, onTerms, onPrivacy, onOpenLegal }) {
+  return (
+    <div className="consent-fields">
+      <label>
+        <input
+          type="checkbox"
+          checked={terms}
+          onChange={(e) => onTerms(e.target.checked)}
+          required
+        />
+        <span>
+          <b>[필수]</b> 이용약관에 동의합니다.
+        </span>
+        <button type="button" onClick={() => onOpenLegal('terms')}>
+          보기
+        </button>
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={privacy}
+          onChange={(e) => onPrivacy(e.target.checked)}
+          required
+        />
+        <span>
+          <b>[필수]</b> 개인정보 처리방침에 동의합니다.
+        </span>
+        <button type="button" onClick={() => onOpenLegal('privacy')}>
+          보기
+        </button>
+      </label>
+    </div>
+  )
+}
+
 /** 로그인·회원가입을 같은 입력 패널에서 처리하는 대화상자. */
-function AuthDialog({ mode, onClose, onSubmit, onSwitch, busy, error }) {
+function AuthDialog({ mode, onClose, onSubmit, onSwitch, onOpenLegal, busy, error }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false)
   return (
     <div
       className="overlay"
@@ -2099,7 +2250,7 @@ function AuthDialog({ mode, onClose, onSubmit, onSwitch, busy, error }) {
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            onSubmit({ email, password, displayName })
+            onSubmit({ email, password, displayName, acceptedTerms, acceptedPrivacy })
           }}
         >
           {mode === 'register' && (
@@ -2123,6 +2274,15 @@ function AuthDialog({ mode, onClose, onSubmit, onSwitch, busy, error }) {
               autoComplete={mode === 'register' ? 'email' : 'username'}
             />
           </label>
+          {mode === 'register' && (
+            <ConsentFields
+              terms={acceptedTerms}
+              privacy={acceptedPrivacy}
+              onTerms={setAcceptedTerms}
+              onPrivacy={setAcceptedPrivacy}
+              onOpenLegal={onOpenLegal}
+            />
+          )}
           <label>
             비밀번호
             <input
@@ -2152,6 +2312,35 @@ function AuthDialog({ mode, onClose, onSubmit, onSwitch, busy, error }) {
             </button>
           </div>
         )}
+      </section>
+    </div>
+  )
+}
+
+function RequiredConsentDialog({ busy, error, onSubmit, onOpenLegal }) {
+  const [terms, setTerms] = useState(false)
+  const [privacy, setPrivacy] = useState(false)
+  return (
+    <div className="overlay">
+      <section className="auth-dialog" role="dialog" aria-modal="true">
+        <p className="eyebrow">POLICY UPDATE</p>
+        <h2>서비스 이용 동의</h2>
+        <p>서비스 이용을 계속하려면 현재 약관과 개인정보 처리방침을 확인해 주세요.</p>
+        <ConsentFields
+          terms={terms}
+          privacy={privacy}
+          onTerms={setTerms}
+          onPrivacy={setPrivacy}
+          onOpenLegal={onOpenLegal}
+        />
+        {error && <p className="error">{error}</p>}
+        <button
+          className="primary"
+          disabled={busy || !terms || !privacy}
+          onClick={() => onSubmit({ acceptedTerms: terms, acceptedPrivacy: privacy })}
+        >
+          {busy ? '처리 중...' : '동의하고 계속'}
+        </button>
       </section>
     </div>
   )
@@ -4420,6 +4609,7 @@ export default function App() {
   const [authReturn, setAuthReturn] = useState(null)
   const [authError, setAuthError] = useState('')
   const [authBusy, setAuthBusy] = useState(false)
+  const [legalView, setLegalView] = useState(null)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [passwordBusy, setPasswordBusy] = useState(false)
@@ -4544,7 +4734,7 @@ export default function App() {
   const refreshAuth = useCallback(async () => {
     const [session, token] = await Promise.all([getJson('/api/auth/me'), getJson('/api/auth/csrf')])
     setUser(session.user)
-    if (session.user?.mustChangePassword) setPasswordOpen(true)
+    if (session.user?.mustChangePassword && !session.user?.consentRequired) setPasswordOpen(true)
     setCsrf(token)
   }, [])
   useEffect(() => {
@@ -4670,6 +4860,18 @@ export default function App() {
       }
       setAuthReturn(null)
       await load()
+    } catch (e) {
+      setAuthError(e.message)
+    } finally {
+      setAuthBusy(false)
+    }
+  }
+  async function submitConsent(consent) {
+    setAuthBusy(true)
+    setAuthError('')
+    try {
+      await securePost('/api/auth/consent', JSON.stringify(consent), 'application/json')
+      await refreshAuth()
     } catch (e) {
       setAuthError(e.message)
     } finally {
@@ -5346,6 +5548,17 @@ export default function App() {
           </>
         )}
       </main>
+      <footer className="site-footer">
+        <div>
+          <strong>Public Job Hub</strong>
+          <span>공공기관 채용정보와 지원 준비를 한곳에서 관리합니다.</span>
+        </div>
+        <nav aria-label="서비스 정책">
+          <button onClick={() => setLegalView('terms')}>이용약관</button>
+          <button onClick={() => setLegalView('privacy')}>개인정보 처리방침</button>
+          <button onClick={() => setLegalView('contact')}>운영자 안내</button>
+        </nav>
+      </footer>
       {matchDialog && (
         <MatchDialog
           value={matchDialog}
@@ -5403,10 +5616,20 @@ export default function App() {
             setAuthMode('register')
             setAuthError('')
           }}
+          onOpenLegal={setLegalView}
           busy={authBusy}
           error={authError}
         />
       )}
+      {user?.consentRequired && !authMode && (
+        <RequiredConsentDialog
+          busy={authBusy}
+          error={authError}
+          onSubmit={submitConsent}
+          onOpenLegal={setLegalView}
+        />
+      )}
+      {legalView && <LegalDialog type={legalView} onClose={() => setLegalView(null)} />}
       {passwordOpen && user && (
         <PasswordDialog
           required={Boolean(user.mustChangePassword)}
