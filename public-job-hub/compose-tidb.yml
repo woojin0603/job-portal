@@ -24,6 +24,11 @@ services:
     expose:
       - "8080"
     mem_limit: 640m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     read_only: true
     tmpfs:
       - /tmp:size=96m,mode=1777
@@ -56,6 +61,11 @@ services:
       - caddy-data:/data
       - caddy-config:/config
     mem_limit: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - web
 
