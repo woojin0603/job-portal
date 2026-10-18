@@ -3109,7 +3109,8 @@ function AdminOperationsLogs({ securePost }) {
   )
 }
 
-function AdminReviewPanel({ securePost }) {
+function AdminReviewPanel({ user, securePost }) {
+  const [section, setSection] = useState('overview')
   const [items, setItems] = useState([])
   const [quality, setQuality] = useState(null)
   const [dashboard, setDashboard] = useState(null)
@@ -3155,6 +3156,21 @@ function AdminReviewPanel({ securePost }) {
     try {
       setCrawlInfo(await securePost('/api/admin/crawl'))
       setMessage('공고 수집을 시작했습니다. 완료될 때까지 이 화면에서 상태를 확인할 수 있습니다.')
+    } catch (e) {
+      setMessage(e.message)
+    }
+  }
+  async function retryPublicRecruitment() {
+    setMessage('')
+    try {
+      const apiStatus = await securePost('/api/admin/public-recruitment')
+      setCrawlInfo((current) => ({ ...(current || {}), apiStatus }))
+      await loadReviews()
+      setMessage(
+        apiStatus.error
+          ? `공식 공고 재처리를 마쳤지만 확인이 필요합니다: ${apiStatus.error}`
+          : `공식 공고 ${apiStatus.lastCount || 0}건을 다시 반영했습니다.`,
+      )
     } catch (e) {
       setMessage(e.message)
     }
@@ -3267,7 +3283,7 @@ function AdminReviewPanel({ securePost }) {
       <div className="admin-title">
         <div>
           <p className="eyebrow">운영 관리</p>
-          <h1>공고 분류 검수</h1>
+          <h1>관리자 통합 운영센터</h1>
         </div>
         <div className="admin-crawl-actions">
           <span>
@@ -3288,7 +3304,33 @@ function AdminReviewPanel({ securePost }) {
           </button>
         </div>
       </div>
-      {dashboard && (
+      <nav className="admin-console-tabs" aria-label="관리자 운영 메뉴">
+        {[
+          ['overview', '운영 현황'],
+          ['collection', '수집 관리'],
+          [
+            'review',
+            `공고 검수${dashboard?.qualityAttention ? ` ${dashboard.qualityAttention}` : ''}`,
+          ],
+          ['changes', '변경·신고'],
+          [
+            'support',
+            `공지·문의${dashboard?.waitingInquiries ? ` ${dashboard.waitingInquiries}` : ''}`,
+          ],
+          ['data', '데이터 관리'],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            className={section === value ? 'active' : ''}
+            aria-current={section === value ? 'page' : undefined}
+            onClick={() => setSection(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+      {section === 'overview' && dashboard && (
         <section className="operations-dashboard" aria-label="서비스 운영 현황">
           <div className="operations-heading">
             <div>
@@ -3375,7 +3417,44 @@ function AdminReviewPanel({ securePost }) {
           {message}
         </p>
       )}
-      {crawlInfo?.apiStatus?.validation?.pagesScanned > 0 && (
+      {section === 'collection' && (
+        <section className="admin-collection-control" aria-label="채용공고 수집 관리">
+          <div>
+            <h2>수집 작업</h2>
+            <p>전체 출처를 수집하거나 공식 채용정보만 즉시 다시 처리할 수 있습니다.</p>
+          </div>
+          <div className="admin-collection-actions">
+            <button type="button" disabled={crawlInfo?.running} onClick={startCrawl}>
+              {crawlInfo?.running ? '전체 수집 중…' : '전체 공고 수집'}
+            </button>
+            <button type="button" className="secondary" onClick={retryPublicRecruitment}>
+              공식 공고 재처리
+            </button>
+          </div>
+          <dl>
+            <div>
+              <dt>전체 수집</dt>
+              <dd>
+                {crawlInfo?.status?.lastSuccess
+                  ? new Date(crawlInfo.status.lastSuccess).toLocaleString('ko-KR')
+                  : '성공 기록 없음'}
+              </dd>
+            </div>
+            <div>
+              <dt>공식 채용정보</dt>
+              <dd>
+                {crawlInfo?.apiStatus?.lastSuccess
+                  ? `${new Date(crawlInfo.apiStatus.lastSuccess).toLocaleString('ko-KR')} · ${crawlInfo.apiStatus.lastCount || 0}건`
+                  : '성공 기록 없음'}
+              </dd>
+            </div>
+          </dl>
+          {crawlInfo?.apiStatus?.error && (
+            <p className="status-error">최근 오류: {crawlInfo.apiStatus.error}</p>
+          )}
+        </section>
+      )}
+      {section === 'collection' && crawlInfo?.apiStatus?.validation?.pagesScanned > 0 && (
         <section className="collection-audit" aria-label="최근 공고 수집 검증 결과">
           <div className="collection-audit-head">
             <div>
@@ -3412,7 +3491,7 @@ function AdminReviewPanel({ securePost }) {
           )}
         </section>
       )}
-      {quality && (
+      {section === 'overview' && quality && (
         <section className="quality-overview" aria-label="채용정보 품질 현황">
           <div>
             <strong>{quality.total}</strong>
@@ -3444,145 +3523,166 @@ function AdminReviewPanel({ securePost }) {
           </div>
         </section>
       )}
-      <AdminRetentionPanel securePost={securePost} />
-      <AdminOperationsLogs securePost={securePost} />
-      <AdminPostingChanges securePost={securePost} />
-      <form className="qualification-import" onSubmit={importQualifications}>
-        <strong>자격증 목록 관리</strong>
-        <select value={qualificationType} onChange={(e) => setQualificationType(e.target.value)}>
-          <option value="AUTO">파일 내용으로 자동 구분</option>
-          <option value="NATIONAL_TECHNICAL">국가기술자격</option>
-          <option value="NATIONAL_PROFESSIONAL">국가전문자격</option>
-          <option value="ACCREDITED_PRIVATE">국가공인 민간자격</option>
-        </select>
-        <select
-          value={qualificationEncoding}
-          onChange={(e) => setQualificationEncoding(e.target.value)}
-        >
-          <option value="AUTO">인코딩 자동 감지</option>
-          <option value="UTF-8">UTF-8</option>
-          <option value="MS949">한글 파일</option>
-        </select>
-        <input
-          type="file"
-          accept=".csv,text/csv"
-          required
-          onChange={(e) => setQualificationFile(e.target.files?.[0] || null)}
+      {section === 'changes' && (
+        <>
+          <AdminOperationsLogs securePost={securePost} />
+          <AdminPostingChanges securePost={securePost} />
+        </>
+      )}
+      {section === 'support' && (
+        <CommunityBoard
+          user={user}
+          securePost={securePost}
+          onLogin={() => {}}
+          onUnreadChange={() => loadReviews()}
         />
-        <button>자격증 목록 등록</button>
-      </form>
-      <form className="qualification-import" onSubmit={importCompensations}>
-        <strong>기관 초임 자료 관리</strong>
-        <span>직원 평균보수 파일에서 신입사원 초임을 가져옵니다.</span>
-        <input
-          type="file"
-          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          required
-          onChange={(e) => setCompensationFile(e.target.files?.[0] || null)}
-        />
-        <button>초임 자료 등록</button>
-      </form>
-      {items.map((item) => (
-        <article className="admin-card" key={item.id}>
-          <div className="admin-card-head">
-            <div>
-              <strong>{item.title}</strong>
-              <span>{item.organization}</span>
+      )}
+      {section === 'data' && <AdminRetentionPanel securePost={securePost} />}
+      {section === 'data' && (
+        <form className="qualification-import" onSubmit={importQualifications}>
+          <strong>자격증 목록 관리</strong>
+          <select value={qualificationType} onChange={(e) => setQualificationType(e.target.value)}>
+            <option value="AUTO">파일 내용으로 자동 구분</option>
+            <option value="NATIONAL_TECHNICAL">국가기술자격</option>
+            <option value="NATIONAL_PROFESSIONAL">국가전문자격</option>
+            <option value="ACCREDITED_PRIVATE">국가공인 민간자격</option>
+          </select>
+          <select
+            value={qualificationEncoding}
+            onChange={(e) => setQualificationEncoding(e.target.value)}
+          >
+            <option value="AUTO">인코딩 자동 감지</option>
+            <option value="UTF-8">UTF-8</option>
+            <option value="MS949">한글 파일</option>
+          </select>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            required
+            onChange={(e) => setQualificationFile(e.target.files?.[0] || null)}
+          />
+          <button>자격증 목록 등록</button>
+        </form>
+      )}
+      {section === 'data' && (
+        <form className="qualification-import" onSubmit={importCompensations}>
+          <strong>기관 초임 자료 관리</strong>
+          <span>직원 평균보수 파일에서 신입사원 초임을 가져옵니다.</span>
+          <input
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            required
+            onChange={(e) => setCompensationFile(e.target.files?.[0] || null)}
+          />
+          <button>초임 자료 등록</button>
+        </form>
+      )}
+      {section === 'review' &&
+        items.map((item) => (
+          <article className="admin-card" key={item.id}>
+            <div className="admin-card-head">
+              <div>
+                <strong>{item.title}</strong>
+                <span>{item.organization}</span>
+              </div>
+              <a href={item.sourceUrl} target="_blank" rel="noreferrer">
+                원문 보기
+              </a>
             </div>
-            <a href={item.sourceUrl} target="_blank" rel="noreferrer">
-              원문 보기
-            </a>
-          </div>
-          <div className="admin-fields">
-            <label>
-              기관 유형
-              <select
-                value={item.organizationType || 'PUBLIC'}
-                onChange={(e) => change(item.id, 'organizationType', e.target.value)}
-              >
-                <option value="PUBLIC">공공기관</option>
-                <option value="PRIVATE">민간기업</option>
-              </select>
-            </label>
-            <label>
-              근무 형태
-              <select
-                value={item.mobilityType || 'UNKNOWN'}
-                onChange={(e) => change(item.id, 'mobilityType', e.target.value)}
-              >
-                <option value="ROTATIONAL">순환근무</option>
-                <option value="FIXED">지역고정</option>
-                <option value="UNKNOWN">확인 필요</option>
-              </select>
-            </label>
-            <label>
-              근무지역
-              <input
-                value={item.region || ''}
-                onChange={(e) => change(item.id, 'region', e.target.value)}
-              />
-            </label>
-            <label>
-              고용형태
-              <input
-                value={item.employmentType || ''}
-                onChange={(e) => change(item.id, 'employmentType', e.target.value)}
-              />
-            </label>
-          </div>
-          <div className="admin-position-head">
-            <strong>채용 직렬</strong>
-            <button type="button" onClick={() => addPosition(item.id)}>
-              + 직렬 추가
-            </button>
-          </div>
-          {item.positions.map((position, index) => (
-            <div className="admin-position" key={position.id || index}>
-              <select
-                value={position.standardCategory}
-                onChange={(e) => changePosition(item.id, index, 'standardCategory', e.target.value)}
-              >
-                {ADMIN_CATEGORIES.map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-              <input
-                aria-label="원문 직렬명"
-                placeholder="원문 직렬명"
-                value={position.originalName}
-                onChange={(e) => changePosition(item.id, index, 'originalName', e.target.value)}
-              />
-              <input
-                aria-label="채용인원"
-                type="number"
-                min="0"
-                placeholder="인원"
-                value={position.headcount ?? ''}
-                onChange={(e) => changePosition(item.id, index, 'headcount', e.target.value)}
-              />
-              <input
-                aria-label="직렬 근무지역"
-                placeholder="근무지역"
-                value={position.workRegion || ''}
-                onChange={(e) => changePosition(item.id, index, 'workRegion', e.target.value)}
-              />
-              <button
-                className="danger-text"
-                type="button"
-                onClick={() => removePosition(item.id, index)}
-              >
-                삭제
+            <div className="admin-fields">
+              <label>
+                기관 유형
+                <select
+                  value={item.organizationType || 'PUBLIC'}
+                  onChange={(e) => change(item.id, 'organizationType', e.target.value)}
+                >
+                  <option value="PUBLIC">공공기관</option>
+                  <option value="PRIVATE">민간기업</option>
+                </select>
+              </label>
+              <label>
+                근무 형태
+                <select
+                  value={item.mobilityType || 'UNKNOWN'}
+                  onChange={(e) => change(item.id, 'mobilityType', e.target.value)}
+                >
+                  <option value="ROTATIONAL">순환근무</option>
+                  <option value="FIXED">지역고정</option>
+                  <option value="UNKNOWN">확인 필요</option>
+                </select>
+              </label>
+              <label>
+                근무지역
+                <input
+                  value={item.region || ''}
+                  onChange={(e) => change(item.id, 'region', e.target.value)}
+                />
+              </label>
+              <label>
+                고용형태
+                <input
+                  value={item.employmentType || ''}
+                  onChange={(e) => change(item.id, 'employmentType', e.target.value)}
+                />
+              </label>
+            </div>
+            <div className="admin-position-head">
+              <strong>채용 직렬</strong>
+              <button type="button" onClick={() => addPosition(item.id)}>
+                + 직렬 추가
               </button>
             </div>
-          ))}
-          <div className="admin-save">
-            <button disabled={busy === item.id} onClick={() => save(item)}>
-              {busy === item.id ? '저장 중...' : '검수 내용 저장'}
-            </button>
-          </div>
-        </article>
-      ))}
-      {!items.length && !message && <p className="empty">검수할 공고를 불러오는 중...</p>}
+            {item.positions.map((position, index) => (
+              <div className="admin-position" key={position.id || index}>
+                <select
+                  value={position.standardCategory}
+                  onChange={(e) =>
+                    changePosition(item.id, index, 'standardCategory', e.target.value)
+                  }
+                >
+                  {ADMIN_CATEGORIES.map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </select>
+                <input
+                  aria-label="원문 직렬명"
+                  placeholder="원문 직렬명"
+                  value={position.originalName}
+                  onChange={(e) => changePosition(item.id, index, 'originalName', e.target.value)}
+                />
+                <input
+                  aria-label="채용인원"
+                  type="number"
+                  min="0"
+                  placeholder="인원"
+                  value={position.headcount ?? ''}
+                  onChange={(e) => changePosition(item.id, index, 'headcount', e.target.value)}
+                />
+                <input
+                  aria-label="직렬 근무지역"
+                  placeholder="근무지역"
+                  value={position.workRegion || ''}
+                  onChange={(e) => changePosition(item.id, index, 'workRegion', e.target.value)}
+                />
+                <button
+                  className="danger-text"
+                  type="button"
+                  onClick={() => removePosition(item.id, index)}
+                >
+                  삭제
+                </button>
+              </div>
+            ))}
+            <div className="admin-save">
+              <button disabled={busy === item.id} onClick={() => save(item)}>
+                {busy === item.id ? '저장 중...' : '검수 내용 저장'}
+              </button>
+            </div>
+          </article>
+        ))}
+      {section === 'review' && !items.length && !message && (
+        <p className="empty">검수할 공고를 불러오는 중...</p>
+      )}
     </section>
   )
 }
@@ -4485,7 +4585,7 @@ export default function App() {
             </button>
             {user?.admin && (
               <button className={adminView ? 'active' : ''} onClick={openAdmin}>
-                관리자 검수
+                관리자 운영
               </button>
             )}
             {user ? (
@@ -4538,7 +4638,7 @@ export default function App() {
             }}
           />
         ) : adminView ? (
-          <AdminReviewPanel securePost={securePost} />
+          <AdminReviewPanel user={user} securePost={securePost} />
         ) : communityView ? (
           <CommunityBoard
             user={user}

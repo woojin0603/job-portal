@@ -2884,6 +2884,103 @@ nav button.active {
   max-width: 1180px;
   margin: 0 auto;
 }
+.admin-console-tabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 22px;
+  padding: 7px;
+  border: 1px solid #d4e0ed;
+  border-radius: 14px;
+  background: #f3f7fb;
+}
+.admin-console-tabs button {
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #52677f;
+  font-weight: 800;
+}
+.admin-console-tabs button:hover {
+  background: #fff;
+  color: #174f92;
+}
+.admin-console-tabs button.active {
+  border-color: #b8cde4;
+  background: #fff;
+  color: #165cae;
+  box-shadow: 0 3px 10px #203b5d12;
+}
+.admin-collection-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  margin-bottom: 20px;
+  padding: 22px;
+  border: 1px solid #ccdbea;
+  border-radius: 15px;
+  background: #fff;
+}
+.admin-collection-control h2,
+.admin-collection-control p {
+  margin: 0;
+}
+.admin-collection-control p {
+  margin-top: 6px;
+  color: #66788f;
+}
+.admin-collection-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.admin-collection-actions button {
+  border: 0;
+  border-radius: 8px;
+  background: #175eb5;
+  color: #fff;
+  padding: 11px 15px;
+  font-weight: 800;
+}
+.admin-collection-actions button.secondary {
+  border: 1px solid #b9cce1;
+  background: #fff;
+  color: #31577f;
+}
+.admin-collection-actions button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.admin-collection-control dl {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.admin-collection-control dl > div {
+  padding: 13px;
+  border-radius: 9px;
+  background: #f5f8fc;
+}
+.admin-collection-control dt {
+  color: #6d7d91;
+  font-size: 12px;
+}
+.admin-collection-control dd {
+  margin: 5px 0 0;
+  color: #183e70;
+  font-weight: 800;
+}
+.admin-collection-control .status-error {
+  grid-column: 1 / -1;
+  color: #b42318;
+}
+.admin-review > .community-page {
+  max-width: none;
+  margin: 0;
+}
 .operations-dashboard {
   margin: 0 0 22px;
   border: 1px solid #ccdbea;
@@ -3586,6 +3683,22 @@ nav button.active {
   .admin-crawl-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+  .admin-console-tabs {
+    display: flex;
+    overflow-x: auto;
+  }
+  .admin-console-tabs button {
+    min-width: 112px;
+  }
+  .admin-collection-control {
+    grid-template-columns: 1fr;
+  }
+  .admin-collection-actions {
+    flex-wrap: wrap;
+  }
+  .admin-collection-control dl {
+    grid-template-columns: 1fr;
   }
   .capability-sections {
     grid-template-columns: 1fr;
