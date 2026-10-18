@@ -74,6 +74,7 @@ exit
 | 매시간 7분 | 앱·HTTPS·TiDB·메모리·디스크·백업 상태 점검 |
 | 매일 03:30 | TiDB 논리 백업 생성, 최근 7일 보관 |
 | 매주 일요일 04:30 | 7일 이상 된 미사용 Docker 캐시와 오래된 로그 정리 |
+| 매주 일요일 05:00 | 최신 TiDB 백업을 암호화해 OCI Object Storage에 업로드 |
 
 등록 내용을 확인한다.
 
@@ -266,6 +267,59 @@ tail -n 80 backups/tidb-backup.log
 ```bash
 ls -l backups/tidb
 ```
+
+### 9.1 OCI Object Storage 외부 암호화 백업
+
+서버 디스크 장애에 대비해 매주 최신 백업을 AES-256으로 암호화한 후 비공개
+Object Storage 버킷에 업로드한다. 암호화되지 않은 SQL 파일은 외부로 전송하지 않는다.
+
+OCI 콘솔에서 다음 순서로 준비한다.
+
+1. `Storage → Object Storage & Archive Storage → Buckets`로 이동한다.
+2. `Create bucket`을 눌러 `public-job-hub-backups` 비공개 버킷을 만든다.
+3. 버킷의 `Lifecycle Policy Rules`에서 56일이 지난 객체를 삭제하는 규칙을 만든다.
+4. 버킷의 `Pre-Authenticated Requests`에서 새 요청을 만든다.
+5. 대상은 `Bucket`, 권한은 `Permit object writes`로 설정하고 객체 목록 허용은 끈다.
+6. 만료일은 1년 뒤로 정하고, 생성 직후 한 번만 표시되는 URL을 복사한다.
+7. 웹훅과 마찬가지로 이 URL을 채팅, Git, 화면 캡처에 노출하지 않는다.
+
+서버 `.env`에는 다음 두 값을 저장한다.
+
+```ini
+JOBHUB_BACKUP_OBJECT_STORAGE_URL=https://objectstorage.<region>.oraclecloud.com/p/.../o/
+JOBHUB_BACKUP_ENCRYPTION_PASSWORD=24자_이상의_별도_강력한_비밀번호
+```
+
+암호화 비밀번호를 잃으면 외부 백업을 복구할 수 없다. 반드시 서버 밖의 비밀번호
+관리자에 별도로 저장하며 Git이나 일반 메모장에는 기록하지 않는다.
+
+수동 업로드와 자동 작업 등록:
+
+```bash
+chmod 700 scripts/upload-backup-object-storage.sh scripts/install-offsite-backup-cron.sh
+./scripts/upload-backup-object-storage.sh
+./scripts/install-offsite-backup-cron.sh
+crontab -l
+```
+
+정상 결과에는 `Encrypted off-site backup uploaded`가 표시되고, OCI 버킷의 Objects
+목록에는 `.aes256` 파일이 생성된다. 실패와 이후 복구는 Discord로 통지된다.
+
+복구할 때는 OCI 콘솔에서 암호화 파일을 다운로드한 뒤 다음과 같이 복호화한다.
+
+```bash
+read -r -s -p "Backup encryption password: " BACKUP_PASSWORD
+echo
+export BACKUP_PASSWORD
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+  -in public-job-hub-tidb-날짜.sql.gz.aes256 \
+  -out public-job-hub-tidb-restored.sql.gz \
+  -pass env:BACKUP_PASSWORD
+unset BACKUP_PASSWORD
+gzip -t public-job-hub-tidb-restored.sql.gz
+```
+
+PAR URL이 만료되기 전에 새 쓰기 전용 요청을 만들고 `.env`의 URL을 교체한다.
 
 ## 10. 백업 복구 검증
 

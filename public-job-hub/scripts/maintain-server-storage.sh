@@ -39,6 +39,7 @@ docker builder prune --force --filter 'until=168h'
 
 compact_log "${PROJECT_DIR}/backups/tidb-backup.log"
 compact_log "${PROJECT_DIR}/backups/production-health.log"
+compact_log "${PROJECT_DIR}/backups/offsite-backup.log"
 
 echo "Docker storage after maintenance:"
 docker system df

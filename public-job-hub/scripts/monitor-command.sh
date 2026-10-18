@@ -19,6 +19,7 @@ case "${DISPLAY_NAME}" in
   production-health) DISPLAY_NAME="운영 상태 점검" ;;
   tidb-backup) DISPLAY_NAME="TiDB 백업" ;;
   storage-maintenance) DISPLAY_NAME="저장공간 정리" ;;
+  offsite-backup) DISPLAY_NAME="외부 암호화 백업" ;;
 esac
 
 if [[ ! "${STATE_KEY}" =~ ^[a-zA-Z0-9_-]+$ ]]; then
