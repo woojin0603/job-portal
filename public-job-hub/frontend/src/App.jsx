@@ -3175,6 +3175,7 @@ function AdminReviewPanel({ user, securePost }) {
   const [dashboard, setDashboard] = useState(null)
   const [operationsStatus, setOperationsStatus] = useState(null)
   const [statistics, setStatistics] = useState(null)
+  const [securityOverview, setSecurityOverview] = useState(null)
   const [busy, setBusy] = useState(null)
   const [message, setMessage] = useState('')
   const [crawlInfo, setCrawlInfo] = useState(null)
@@ -3190,14 +3191,25 @@ function AdminReviewPanel({ user, securePost }) {
         getJson('/api/admin/dashboard'),
         getJson('/api/admin/operations/status'),
         getJson('/api/admin/statistics'),
+        getJson('/api/admin/security/overview'),
       ])
-        .then(([reviews, report, dashboardReport, operationsReport, statisticsReport]) => {
-          setItems(reviews)
-          setQuality(report)
-          setDashboard(dashboardReport)
-          setOperationsStatus(operationsReport)
-          setStatistics(statisticsReport)
-        })
+        .then(
+          ([
+            reviews,
+            report,
+            dashboardReport,
+            operationsReport,
+            statisticsReport,
+            securityReport,
+          ]) => {
+            setItems(reviews)
+            setQuality(report)
+            setDashboard(dashboardReport)
+            setOperationsStatus(operationsReport)
+            setStatistics(statisticsReport)
+            setSecurityOverview(securityReport)
+          },
+        )
         .catch((e) => setMessage(e.message)),
     [],
   )
@@ -3412,6 +3424,10 @@ function AdminReviewPanel({ user, securePost }) {
         {[
           ['overview', '운영 현황'],
           ['statistics', '운영 통계'],
+          [
+            'security',
+            `운영 보안${securityOverview?.failedLogins24h || securityOverview?.passwordChangeRequired ? ' !' : ''}`,
+          ],
           ['incidents', `장애 대응${operationIssues.length ? ` ${operationIssues.length}` : ''}`],
           ['collection', '수집 관리'],
           [
@@ -3671,6 +3687,101 @@ function AdminReviewPanel({ user, securePost }) {
                 })}
                 {!statistics.sources.length && <p className="empty">집계할 공고가 없습니다.</p>}
               </div>
+            </section>
+          </div>
+        </section>
+      )}
+      {section === 'security' && securityOverview && (
+        <section className="admin-security-overview" aria-label="관리자 운영 보안">
+          <div className="operations-heading">
+            <div>
+              <h2>운영 보안</h2>
+              <span>{new Date(securityOverview.checkedAt).toLocaleString('ko-KR')} 기준</span>
+            </div>
+            <button type="button" onClick={loadReviews}>
+              새로고침
+            </button>
+          </div>
+          <div className="security-summary">
+            <div>
+              <span>관리자 계정</span>
+              <strong>{securityOverview.adminAccounts}</strong>
+              <small>등록된 운영 계정</small>
+            </div>
+            <div
+              className={
+                securityOverview.twoFactorEnabled < securityOverview.adminAccounts
+                  ? 'attention'
+                  : ''
+              }
+            >
+              <span>2단계 인증</span>
+              <strong>
+                {securityOverview.twoFactorEnabled}/{securityOverview.adminAccounts}
+              </strong>
+              <small>관리자 적용 계정</small>
+            </div>
+            <div className={securityOverview.passwordChangeRequired ? 'attention' : ''}>
+              <span>비밀번호 변경 필요</span>
+              <strong>{securityOverview.passwordChangeRequired}</strong>
+              <small>관리자 계정</small>
+            </div>
+            <div className={securityOverview.failedLogins24h ? 'attention' : ''}>
+              <span>로그인 실패</span>
+              <strong>{securityOverview.failedLogins24h}</strong>
+              <small>최근 24시간</small>
+            </div>
+            <div>
+              <span>로그인 성공</span>
+              <strong>{securityOverview.successfulLogins24h}</strong>
+              <small>최근 24시간</small>
+            </div>
+            <div className={securityOverview.failedAdminRequests24h ? 'attention' : ''}>
+              <span>관리 요청 실패</span>
+              <strong>{securityOverview.failedAdminRequests24h}</strong>
+              <small>최근 24시간</small>
+            </div>
+          </div>
+          <div className="security-detail-grid">
+            <section>
+              <h3>보안 설정 점검</h3>
+              <div className="security-check-list">
+                {securityOverview.checks.map((check) => (
+                  <article className={check.enabled ? 'enabled' : 'attention'} key={check.key}>
+                    <span>{check.enabled ? '적용' : '확인 필요'}</span>
+                    <div>
+                      <strong>{check.label}</strong>
+                      <small>{check.detail}</small>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>최근 7일 로그인 실패</h3>
+              <div className="security-failure-chart">
+                {securityOverview.loginFailures.map((point) => {
+                  const maximum = Math.max(
+                    1,
+                    ...securityOverview.loginFailures.map((item) => item.failures),
+                  )
+                  return (
+                    <div key={point.date}>
+                      <span>{point.date.slice(5).replace('-', '/')}</span>
+                      <i>
+                        <b
+                          style={{ height: `${Math.max(4, (point.failures / maximum) * 100)}%` }}
+                        />
+                      </i>
+                      <strong>{point.failures}</strong>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="security-privacy-note">
+                실패 출처 {securityOverview.distinctFailureSources24h}개 · IP 주소와 계정 식별자는
+                이 화면에 표시하지 않습니다.
+              </p>
             </section>
           </div>
         </section>
