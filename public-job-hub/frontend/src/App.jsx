@@ -3109,12 +3109,72 @@ function AdminOperationsLogs({ securePost }) {
   )
 }
 
+function AdminTrendChart({ daily }) {
+  const width = 760
+  const height = 250
+  const left = 42
+  const right = 18
+  const top = 18
+  const bottom = 38
+  const metrics = [
+    ['postings', '공고 수집', '#1768b7'],
+    ['users', '회원 가입', '#15825f'],
+    ['scraps', '스크랩', '#d0711d'],
+    ['inquiries', '문의', '#8b55b6'],
+  ]
+  const maximum = Math.max(1, ...daily.flatMap((point) => metrics.map(([key]) => point[key])))
+  const x = (index) => left + (index * (width - left - right)) / Math.max(1, daily.length - 1)
+  const y = (value) => top + (1 - value / maximum) * (height - top - bottom)
+  return (
+    <div className="admin-trend-chart">
+      <div className="chart-legend">
+        {metrics.map(([key, label, color]) => (
+          <span key={key}>
+            <i style={{ background: color }} />
+            {label}
+          </span>
+        ))}
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="최근 14일 운영 추이">
+        {[0, 0.5, 1].map((ratio) => (
+          <g key={ratio}>
+            <line x1={left} x2={width - right} y1={y(maximum * ratio)} y2={y(maximum * ratio)} />
+            <text x={left - 8} y={y(maximum * ratio) + 4} textAnchor="end">
+              {Math.round(maximum * ratio)}
+            </text>
+          </g>
+        ))}
+        {metrics.map(([key, label, color]) => (
+          <polyline
+            key={key}
+            aria-label={label}
+            fill="none"
+            stroke={color}
+            strokeWidth="3"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            points={daily.map((point, index) => `${x(index)},${y(point[key])}`).join(' ')}
+          />
+        ))}
+        {daily.map((point, index) => (
+          <text key={point.date} x={x(index)} y={height - 12} textAnchor="middle">
+            {index % 2 === 0 || index === daily.length - 1
+              ? point.date.slice(5).replace('-', '/')
+              : ''}
+          </text>
+        ))}
+      </svg>
+    </div>
+  )
+}
+
 function AdminReviewPanel({ user, securePost }) {
   const [section, setSection] = useState('overview')
   const [items, setItems] = useState([])
   const [quality, setQuality] = useState(null)
   const [dashboard, setDashboard] = useState(null)
   const [operationsStatus, setOperationsStatus] = useState(null)
+  const [statistics, setStatistics] = useState(null)
   const [busy, setBusy] = useState(null)
   const [message, setMessage] = useState('')
   const [crawlInfo, setCrawlInfo] = useState(null)
@@ -3129,12 +3189,14 @@ function AdminReviewPanel({ user, securePost }) {
         getJson('/api/admin/reviews/quality'),
         getJson('/api/admin/dashboard'),
         getJson('/api/admin/operations/status'),
+        getJson('/api/admin/statistics'),
       ])
-        .then(([reviews, report, dashboardReport, operationsReport]) => {
+        .then(([reviews, report, dashboardReport, operationsReport, statisticsReport]) => {
           setItems(reviews)
           setQuality(report)
           setDashboard(dashboardReport)
           setOperationsStatus(operationsReport)
+          setStatistics(statisticsReport)
         })
         .catch((e) => setMessage(e.message)),
     [],
@@ -3349,6 +3411,7 @@ function AdminReviewPanel({ user, securePost }) {
       <nav className="admin-console-tabs" aria-label="관리자 운영 메뉴">
         {[
           ['overview', '운영 현황'],
+          ['statistics', '운영 통계'],
           ['incidents', `장애 대응${operationIssues.length ? ` ${operationIssues.length}` : ''}`],
           ['collection', '수집 관리'],
           [
@@ -3537,6 +3600,79 @@ function AdminReviewPanel({ user, securePost }) {
             이 화면은 서버가 발행한 읽기 전용 상태만 표시하며 비밀번호와 접속 주소는 저장하지
             않습니다.
           </p>
+        </section>
+      )}
+      {section === 'statistics' && statistics && (
+        <section className="admin-statistics" aria-label="운영 통계와 추이">
+          <div className="operations-heading">
+            <div>
+              <h2>최근 {statistics.periodDays}일 운영 통계</h2>
+              <span>{new Date(statistics.checkedAt).toLocaleString('ko-KR')} 기준</span>
+            </div>
+            <button type="button" onClick={loadReviews}>
+              새로고침
+            </button>
+          </div>
+          <div className="statistics-summary">
+            <div>
+              <span>수집 공고</span>
+              <strong>{statistics.collectedInPeriod}</strong>
+              <small>최근 {statistics.periodDays}일</small>
+            </div>
+            <div>
+              <span>신규 회원</span>
+              <strong>{statistics.joinedInPeriod}</strong>
+              <small>가입 완료</small>
+            </div>
+            <div>
+              <span>신규 스크랩</span>
+              <strong>{statistics.scrapsInPeriod}</strong>
+              <small>사용자 관심 공고</small>
+            </div>
+            <div>
+              <span>신규 문의</span>
+              <strong>{statistics.inquiriesInPeriod}</strong>
+              <small>Q&amp;A 접수</small>
+            </div>
+            <div>
+              <span>진행 공고 비율</span>
+              <strong>{statistics.openRate}%</strong>
+              <small>전체 저장 공고 기준</small>
+            </div>
+            <div>
+              <span>문의 답변률</span>
+              <strong>{statistics.inquiryAnswerRate}%</strong>
+              <small>누적 문의 기준</small>
+            </div>
+          </div>
+          <div className="statistics-grid">
+            <section>
+              <h3>일별 활동 추이</h3>
+              <AdminTrendChart daily={statistics.daily} />
+            </section>
+            <section>
+              <h3>수집 출처별 공고</h3>
+              <div className="source-share-chart">
+                {statistics.sources.map((source) => {
+                  const maximum = Math.max(1, ...statistics.sources.map((item) => item.total))
+                  return (
+                    <div key={source.source}>
+                      <div>
+                        <strong>{source.source}</strong>
+                        <span>
+                          {source.total}건 · 진행 {source.open}건
+                        </span>
+                      </div>
+                      <div className="source-share-track">
+                        <i style={{ width: `${(source.total / maximum) * 100}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+                {!statistics.sources.length && <p className="empty">집계할 공고가 없습니다.</p>}
+              </div>
+            </section>
+          </div>
         </section>
       )}
       {message && (
