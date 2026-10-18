@@ -62,6 +62,16 @@ if [[ -n "${CADDY_CONTAINER}" ]]; then
   else
     fail "Public HTTPS site is not reachable."
   fi
+
+  COLLECTION_STATUS="$(curl --max-time 15 --retry 1 -fsS \
+      "https://${JOBHUB_DOMAIN}/api/operations/collection-status" 2>/dev/null || true)"
+  if [[ "${COLLECTION_STATUS}" =~ \"healthy\"[[:space:]]*:[[:space:]]*true ]]; then
+    ok "Recent recruitment collection status is healthy."
+  elif [[ -z "${COLLECTION_STATUS}" ]]; then
+    fail "Recruitment collection status could not be checked."
+  else
+    fail "A recent recruitment collection failed. Check the administrator dashboard."
+  fi
 fi
 
 if [[ -n "${APP_CONTAINER}" ]]; then

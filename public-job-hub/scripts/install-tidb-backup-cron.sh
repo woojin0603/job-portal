@@ -4,11 +4,12 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 BACKUP_SCRIPT="${SCRIPT_DIR}/backup-tidb.sh"
+MONITOR_SCRIPT="${SCRIPT_DIR}/monitor-command.sh"
 LOG_FILE="${PROJECT_DIR}/backups/tidb-backup.log"
 CRON_MARKER="# public-job-hub TiDB backup"
 CRON_SCHEDULE="${BACKUP_CRON_SCHEDULE:-30 3 * * *}"
 
-chmod 700 -- "${BACKUP_SCRIPT}"
+chmod 700 -- "${BACKUP_SCRIPT}" "${MONITOR_SCRIPT}" "${SCRIPT_DIR}/send-ops-alert.sh"
 mkdir -p -- "${PROJECT_DIR}/backups"
 
 EXISTING_CRONTAB="$(crontab -l 2>/dev/null || true)"
@@ -19,8 +20,8 @@ FILTERED_CRONTAB="$(printf '%s\n' "${EXISTING_CRONTAB}" \
 {
   printf '%s\n' "${FILTERED_CRONTAB}"
   printf 'CRON_TZ=Asia/Seoul\n'
-  printf '%s %q >> %q 2>&1 %s\n' \
-    "${CRON_SCHEDULE}" "${BACKUP_SCRIPT}" "${LOG_FILE}" "${CRON_MARKER}"
+  printf '%s %q backup tidb-backup %q >> %q 2>&1 %s\n' \
+    "${CRON_SCHEDULE}" "${MONITOR_SCRIPT}" "${BACKUP_SCRIPT}" "${LOG_FILE}" "${CRON_MARKER}"
 } | sed '/^[[:space:]]*$/d' | crontab -
 
 echo "Daily TiDB backup scheduled for 03:30 Asia/Seoul."
