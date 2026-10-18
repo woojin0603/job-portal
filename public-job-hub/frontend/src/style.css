@@ -2981,6 +2981,114 @@ nav button.active {
   max-width: none;
   margin: 0;
 }
+.incident-center {
+  border: 1px solid #ccdbea;
+  border-radius: 15px;
+  background: #fff;
+  padding: 22px;
+}
+.incident-center-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+.incident-center-head h2,
+.incident-center-head p {
+  margin: 0;
+}
+.incident-center-head .eyebrow {
+  margin-bottom: 5px;
+}
+.incident-center-head h2 + p {
+  margin-top: 6px;
+  color: #66788f;
+}
+.incident-center-head button,
+.incident-list button {
+  border: 0;
+  border-radius: 8px;
+  background: #175eb5;
+  color: #fff;
+  padding: 10px 13px;
+  font-weight: 800;
+}
+.incident-center button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.incident-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+.incident-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px 16px;
+  border: 1px solid #e5aa79;
+  border-left: 5px solid #d95d39;
+  border-radius: 10px;
+  background: #fff9f3;
+  padding: 15px;
+}
+.incident-list article > div,
+.incident-list article > p,
+.incident-list article > small {
+  grid-column: 1;
+}
+.incident-list article > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.incident-list article > div span {
+  border-radius: 999px;
+  background: #ffe7dc;
+  color: #a33a1d;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 900;
+}
+.incident-list p {
+  margin: 0;
+  color: #713b2a;
+  overflow-wrap: anywhere;
+}
+.incident-list small {
+  color: #806253;
+}
+.incident-list button {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+}
+.incident-empty {
+  margin-top: 18px;
+  border: 1px solid #b9dfca;
+  border-radius: 11px;
+  background: #f0faf5;
+  padding: 22px;
+  text-align: center;
+}
+.incident-empty strong {
+  color: #17683f;
+}
+.incident-empty p {
+  margin: 6px 0 0;
+  color: #628071;
+}
+.incident-policy {
+  margin-top: 14px;
+  border-radius: 10px;
+  background: #f4f7fb;
+  padding: 14px;
+}
+.incident-policy p {
+  margin: 5px 0 0;
+  color: #607286;
+  font-size: 12px;
+}
 .operations-dashboard {
   margin: 0 0 22px;
   border: 1px solid #ccdbea;
@@ -3785,6 +3893,14 @@ nav button.active {
   }
   .admin-collection-control {
     grid-template-columns: 1fr;
+  }
+  .incident-center-head,
+  .incident-list article {
+    display: flex;
+    flex-direction: column;
+  }
+  .incident-list button {
+    align-self: flex-start;
   }
   .admin-collection-actions {
     flex-wrap: wrap;

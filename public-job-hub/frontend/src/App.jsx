@@ -3155,15 +3155,19 @@ function AdminReviewPanel({ user, securePost }) {
     return () => window.clearInterval(timer)
   }, [loadReviews])
   async function startCrawl() {
+    setBusy('crawl')
     setMessage('')
     try {
       setCrawlInfo(await securePost('/api/admin/crawl'))
       setMessage('공고 수집을 시작했습니다. 완료될 때까지 이 화면에서 상태를 확인할 수 있습니다.')
     } catch (e) {
       setMessage(e.message)
+    } finally {
+      setBusy(null)
     }
   }
   async function retryPublicRecruitment() {
+    setBusy('public-recruitment')
     setMessage('')
     try {
       const apiStatus = await securePost('/api/admin/public-recruitment')
@@ -3176,6 +3180,8 @@ function AdminReviewPanel({ user, securePost }) {
       )
     } catch (e) {
       setMessage(e.message)
+    } finally {
+      setBusy(null)
     }
   }
   async function importQualifications(event) {
@@ -3281,6 +3287,39 @@ function AdminReviewPanel({ user, securePost }) {
       setBusy(null)
     }
   }
+  const operationIssues = [
+    ...(crawlInfo?.status?.error
+      ? [
+          {
+            key: 'crawl',
+            title: '전체 공고 수집 오류',
+            detail: crawlInfo.status.error,
+            action: '전체 수집을 다시 실행하고 완료 상태를 확인하세요.',
+          },
+        ]
+      : []),
+    ...(crawlInfo?.apiStatus?.error
+      ? [
+          {
+            key: 'public-api',
+            title: '공식 채용정보 처리 오류',
+            detail: crawlInfo.apiStatus.error,
+            action: '공식 공고 재처리 버튼으로 해당 수집만 다시 실행하세요.',
+          },
+        ]
+      : []),
+    ...(operationsStatus?.jobs || [])
+      .filter((job) => job.state !== 'healthy' || job.stale)
+      .map((job) => ({
+        key: job.key,
+        title: `${job.label} ${job.state === 'failed' ? '실패' : '점검 필요'}`,
+        detail: job.summary,
+        action:
+          job.state === 'failed'
+            ? 'Discord 알림의 오류 내용과 서버 로그를 확인한 뒤 해당 스크립트를 다시 실행하세요.'
+            : '예약 작업이 정상 등록되어 있는지 확인하거나 서버에서 해당 점검을 한 번 실행하세요.',
+      })),
+  ]
   return (
     <section className="admin-review">
       <div className="admin-title">
@@ -3310,6 +3349,7 @@ function AdminReviewPanel({ user, securePost }) {
       <nav className="admin-console-tabs" aria-label="관리자 운영 메뉴">
         {[
           ['overview', '운영 현황'],
+          ['incidents', `장애 대응${operationIssues.length ? ` ${operationIssues.length}` : ''}`],
           ['collection', '수집 관리'],
           [
             'review',
@@ -3504,6 +3544,60 @@ function AdminReviewPanel({ user, securePost }) {
           {message}
         </p>
       )}
+      {section === 'incidents' && (
+        <section className="incident-center" aria-label="운영 장애 대응">
+          <div className="incident-center-head">
+            <div>
+              <p className="eyebrow">INCIDENT RESPONSE</p>
+              <h2>장애 대응</h2>
+              <p>현재 감지된 오류와 오래된 점검 결과를 우선순위대로 확인합니다.</p>
+            </div>
+            <button type="button" disabled={busy != null} onClick={loadReviews}>
+              상태 다시 확인
+            </button>
+          </div>
+          {operationIssues.length ? (
+            <div className="incident-list">
+              {operationIssues.map((issue) => (
+                <article key={issue.key}>
+                  <div>
+                    <span>확인 필요</span>
+                    <strong>{issue.title}</strong>
+                  </div>
+                  <p>{issue.detail}</p>
+                  <small>{issue.action}</small>
+                  {issue.key === 'crawl' && (
+                    <button
+                      type="button"
+                      disabled={busy != null || crawlInfo?.running}
+                      onClick={startCrawl}
+                    >
+                      {busy === 'crawl' || crawlInfo?.running ? '수집 중…' : '전체 수집 재시도'}
+                    </button>
+                  )}
+                  {issue.key === 'public-api' && (
+                    <button type="button" disabled={busy != null} onClick={retryPublicRecruitment}>
+                      {busy === 'public-recruitment' ? '처리 중…' : '공식 공고 재처리'}
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="incident-empty">
+              <strong>현재 확인이 필요한 장애가 없습니다.</strong>
+              <p>실패가 발생하면 Discord 알림과 이 화면에 함께 표시됩니다.</p>
+            </div>
+          )}
+          <div className="incident-policy">
+            <strong>자동 처리 기준</strong>
+            <p>
+              실패 상태는 다음 예약 작업이 성공하면 자동으로 정상 처리됩니다. 서버 백업과 저장공간
+              작업은 보안을 위해 웹에서 직접 실행하지 않습니다.
+            </p>
+          </div>
+        </section>
+      )}
       {section === 'collection' && (
         <section className="admin-collection-control" aria-label="채용공고 수집 관리">
           <div>
@@ -3511,11 +3605,20 @@ function AdminReviewPanel({ user, securePost }) {
             <p>전체 출처를 수집하거나 공식 채용정보만 즉시 다시 처리할 수 있습니다.</p>
           </div>
           <div className="admin-collection-actions">
-            <button type="button" disabled={crawlInfo?.running} onClick={startCrawl}>
+            <button
+              type="button"
+              disabled={busy != null || crawlInfo?.running}
+              onClick={startCrawl}
+            >
               {crawlInfo?.running ? '전체 수집 중…' : '전체 공고 수집'}
             </button>
-            <button type="button" className="secondary" onClick={retryPublicRecruitment}>
-              공식 공고 재처리
+            <button
+              type="button"
+              className="secondary"
+              disabled={busy != null}
+              onClick={retryPublicRecruitment}
+            >
+              {busy === 'public-recruitment' ? '처리 중…' : '공식 공고 재처리'}
             </button>
           </div>
           <dl>
