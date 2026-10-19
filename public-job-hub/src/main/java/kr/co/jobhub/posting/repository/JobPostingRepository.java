@@ -29,17 +29,25 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
            "or lower(p.region) like lower(concat('%', :regionFull, '%'))) " +
            "and (:district = '' or lower(p.region) like lower(concat('%', :district, '%'))) " +
            "and (:mobility = '' or p.mobilityType = :mobility) " +
+           "and (:institutionScope = '' or (p.organizationType = 'PUBLIC' and (p.publicInstitutionType = :institutionScope " +
+           "or (:institutionScope = 'CENTRAL_PUBLIC' and p.mobilityType = 'ROTATIONAL') " +
+           "or (:institutionScope = 'LOCAL_PUBLIC' and p.mobilityType = 'FIXED')))) " +
+           "and (:organizationForm = '' or lower(p.organization) like lower(concat('%', :organizationForm, '%'))) " +
            "and (:jobCategory = '' or exists (select rp.id from RecruitmentPosition rp where rp.posting = p " +
            "and lower(rp.standardCategory) like lower(concat('%', :jobCategory, '%')))) " +
            "and (:mine = false or exists (select s.id from Scrap s where s.posting = p and s.user.id = :userId)) " +
-           "order by case when p.deadline >= :today then 0 when p.deadline is null then 1 else 2 end, " +
+           "order by case when :preferredJobCategory <> '' and exists (select pref.id from RecruitmentPosition pref where pref.posting = p and lower(pref.standardCategory) like lower(concat('%', :preferredJobCategory, '%'))) then 0 else 1 end, " +
+           "case when p.deadline >= :today then 0 when p.deadline is null then 1 else 2 end, " +
            "case when p.deadline >= :today then p.deadline else null end asc, " +
            "case when p.deadline < :today then p.deadline else null end desc, p.updatedAt desc")
     Page<JobPosting> search(@Param("q") String q, @Param("mine") boolean mine,
                             @Param("includeClosed") boolean includeClosed, @Param("today") LocalDate today,
                             @Param("region") String region, @Param("regionFull") String regionFull,
                             @Param("district") String district, @Param("mobility") String mobility,
+                            @Param("institutionScope") String institutionScope,
+                            @Param("organizationForm") String organizationForm,
                             @Param("jobCategory") String jobCategory,
+                            @Param("preferredJobCategory") String preferredJobCategory,
                             @Param("userId") Long userId, Pageable pageable);
 
     /** 마감된 공고를 최신 마감일순으로 검색하며 원본 데이터는 삭제하지 않는다. */

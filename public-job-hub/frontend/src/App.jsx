@@ -299,6 +299,22 @@ function institutionLabel(job) {
   return '공공기관'
 }
 
+function institutionClassification(job) {
+  const scope =
+    job.organizationType === 'PRIVATE'
+      ? '민간'
+      : job.publicInstitutionType === 'LOCAL_PUBLIC'
+        ? '지방'
+        : job.publicInstitutionType === 'CENTRAL_PUBLIC'
+          ? '중앙'
+          : '공공'
+  const organization = job.organization || ''
+  const form = ['공사', '공단', '재단', '병원', '연구원', '진흥원', '센터'].find((value) =>
+    organization.includes(value),
+  )
+  return form ? `${scope} · ${form}` : scope
+}
+
 function sourceIconUrl(sourceUrl) {
   try {
     return `${new URL(sourceUrl).origin}/favicon.ico`
@@ -379,6 +395,7 @@ function JobCard({
   const [iconFailed, setIconFailed] = useState(false)
   const iconUrl = sourceIconUrl(job.sourceUrl)
   const institutionType = institutionLabel(job)
+  const institutionClassificationText = institutionClassification(job)
   const visiblePositions = (job.positions || []).slice(0, 2)
   const hiddenPositionCount = Math.max(0, (job.positions?.length || 0) - visiblePositions.length)
   const [tracking, setTracking] = useState({
@@ -404,6 +421,14 @@ function JobCard({
           {expired && <span className="expired-tag">접수마감</span>}
         </div>
         <div className="card-tools">
+          <button
+            type="button"
+            className={job.scrapped ? 'scrap-tool active' : 'scrap-tool'}
+            disabled={busy}
+            onClick={() => onScrap(job.id)}
+          >
+            {job.scrapped ? '스크랩 완료' : '스크랩'}
+          </button>
           <button type="button" onClick={() => onShare(job)} aria-label="공고 공유">
             공유
           </button>
@@ -422,7 +447,7 @@ function JobCard({
             )}
           </span>
           <div>
-            <span>채용기관</span>
+            <span>{institutionClassificationText}</span>
             <strong className="organization-name" title={job.organization}>
               {job.organization}
             </strong>
@@ -470,9 +495,6 @@ function JobCard({
       </div>
       <div className="actions">
         <div className="job-info-actions">
-          <button className="preview-link" onClick={onOpenSource}>
-            원문보기 ↗
-          </button>
           <button className="preview-link" onClick={() => onSalary(job)}>
             연봉정보
           </button>
@@ -489,9 +511,6 @@ function JobCard({
               정보 오류 신고
             </button>
             <div className="career-actions">
-              <button disabled={busy} onClick={() => onScrap(job.id)}>
-                {job.scrapped ? '스크랩 해제' : '＋ 스크랩'}
-              </button>
               <button disabled={matchBusy} onClick={() => onMatch(job)}>
                 {matchBusy ? '분석 중...' : '내 스펙 매칭'}
               </button>
@@ -531,6 +550,90 @@ function JobCard({
             지원현황 저장
           </button>
         </div>
+      )}
+    </article>
+  )
+}
+
+function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
+  const [job, setJob] = useState(null)
+  const [preview, setPreview] = useState(null)
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    let active = true
+    Promise.all([getJson(`/api/postings/${id}`), getJson(`/api/postings/${id}/preview`)]).then(
+      ([posting, original]) => {
+        if (!active) return
+        setJob(posting)
+        setPreview(original)
+      },
+      (error) => active && setMessage(error.message),
+    )
+    return () => {
+      active = false
+    }
+  }, [id])
+
+  if (message) return <p className="error">{message}</p>
+  if (!job) return <p className="empty">공고 상세 내용을 불러오는 중...</p>
+  return (
+    <article className="posting-detail-page">
+      <div className="detail-toolbar">
+        <button onClick={onBack}>← 목록으로</button>
+        <div>
+          <button disabled={busy} onClick={() => onScrap(job.id)}>
+            {job.scrapped ? '스크랩 해제' : user ? '스크랩' : '로그인하고 스크랩'}
+          </button>
+          <button onClick={() => onShare(job)}>공유</button>
+          <a href={preview?.originalUrl || job.sourceUrl} target="_blank" rel="noreferrer">
+            원문 사이트 ↗
+          </a>
+        </div>
+      </div>
+      <header className="detail-heading">
+        <span className="institution-badge">{institutionLabel(job)}</span>
+        <h1>{job.title}</h1>
+        <p>{job.organization}</p>
+        <dl>
+          <div>
+            <dt>접수 기간</dt>
+            <dd>
+              {job.postedAt || '미확인'} ~ {job.deadline || '미확인'}
+            </dd>
+          </div>
+          <div>
+            <dt>근무 지역</dt>
+            <dd>{job.region || '공고문 확인'}</dd>
+          </div>
+          <div>
+            <dt>고용 형태</dt>
+            <dd>{job.employmentType || '공고문 확인'}</dd>
+          </div>
+        </dl>
+      </header>
+      {job.positions?.length > 0 && (
+        <section className="detail-positions">
+          <h2>채용 직렬</h2>
+          {job.positions.map((position, index) => (
+            <div key={`${position.originalName}-${index}`}>
+              <strong>{position.standardCategory || position.originalName}</strong>
+              <span>{position.originalName}</span>
+              {position.headcount && <span>{position.headcount}명</span>}
+              {position.requirements && <p>{position.requirements}</p>}
+            </div>
+          ))}
+        </section>
+      )}
+      {preview?.html && (
+        <section className="original-preview">
+          <h2>공고 상세 내용</h2>
+          <iframe
+            title="채용공고 상세 내용"
+            sandbox="allow-popups allow-popups-to-escape-sandbox"
+            srcDoc={preview.html}
+          />
+        </section>
       )}
     </article>
   )
@@ -2231,6 +2334,7 @@ function AuthDialog({ mode, onClose, onSubmit, onSwitch, onOpenLegal, busy, erro
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [preferredJobCategory, setPreferredJobCategory] = useState('')
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false)
   return (
@@ -2254,19 +2358,42 @@ function AuthDialog({ mode, onClose, onSubmit, onSwitch, onOpenLegal, busy, erro
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            onSubmit({ email, password, displayName, acceptedTerms, acceptedPrivacy })
+            onSubmit({
+              email,
+              password,
+              displayName,
+              preferredJobCategory,
+              acceptedTerms,
+              acceptedPrivacy,
+            })
           }}
         >
           {mode === 'register' && (
-            <label>
-              이름
-              <input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-                maxLength={80}
-              />
-            </label>
+            <>
+              <label>
+                이름
+                <input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  required
+                  maxLength={80}
+                />
+              </label>
+              <label>
+                희망 직무
+                <select
+                  value={preferredJobCategory}
+                  onChange={(e) => setPreferredJobCategory(e.target.value)}
+                  required
+                >
+                  <option value="">선택해 주세요</option>
+                  {ADMIN_CATEGORIES.map((category) => (
+                    <option key={category}>{category}</option>
+                  ))}
+                </select>
+                <small>선택한 직무의 공고를 목록에서 먼저 보여드립니다.</small>
+              </label>
+            </>
           )}
           <label>
             {mode === 'register' ? '이메일' : '이메일 또는 관리자 아이디'}
@@ -4668,6 +4795,7 @@ export default function App() {
   const [authReturn, setAuthReturn] = useState(null)
   const [authError, setAuthError] = useState('')
   const [authBusy, setAuthBusy] = useState(false)
+  const [pendingScrapId, setPendingScrapId] = useState(null)
   const [legalView, setLegalView] = useState(null)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [passwordError, setPasswordError] = useState('')
@@ -4681,6 +4809,7 @@ export default function App() {
   const [adminView, setAdminView] = useState(false)
   const [communityView, setCommunityView] = useState(false)
   const [landingView, setLandingView] = useState(true)
+  const [detailId, setDetailId] = useState(null)
   const [inquiryUnreadCount, setInquiryUnreadCount] = useState(0)
   const [postingChangeUnread, setPostingChangeUnread] = useState(0)
   const [queryInput, setQueryInput] = useState('')
@@ -4688,6 +4817,8 @@ export default function App() {
   const [regionProvince, setRegionProvince] = useState('')
   const [regionDistrict, setRegionDistrict] = useState('')
   const [mobility, setMobility] = useState('')
+  const [institutionScope, setInstitutionScope] = useState('')
+  const [organizationForm, setOrganizationForm] = useState('')
   const [jobCategory, setJobCategory] = useState('')
   const [showClosed, setShowClosed] = useState(false)
   const [filterOptions, setFilterOptions] = useState({
@@ -4747,6 +4878,22 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState(null)
   const [online, setOnline] = useState(navigator.onLine)
   const [updateAvailable, setUpdateAvailable] = useState(false)
+
+  /** 브라우저 주소와 화면 상태를 동기화해 새로고침·뒤로가기를 지원한다. */
+  const applyRoute = useCallback(() => {
+    const path = window.location.pathname
+    const postingMatch = path.match(/^\/postings\/(\d+)$/)
+    setDetailId(postingMatch ? Number(postingMatch[1]) : null)
+    setLandingView(path === '/')
+    setMine(path === '/mypage')
+    setCommunityView(path === '/community')
+    setAdminView(path === '/admin')
+  }, [])
+  useEffect(() => {
+    applyRoute()
+    window.addEventListener('popstate', applyRoute)
+    return () => window.removeEventListener('popstate', applyRoute)
+  }, [applyRoute])
 
   /** 브라우저의 설치 제안을 보관하고 온라인·오프라인 전환을 화면에 반영한다. */
   useEffect(() => {
@@ -4841,6 +4988,8 @@ export default function App() {
             : REGION_LEVELS.find((item) => item.code === regionProvince)?.label || '',
           district: mine ? '' : regionDistrict,
           mobility: mine ? '' : mobility,
+          institutionScope: mine ? '' : institutionScope,
+          organizationForm: mine ? '' : organizationForm,
           jobCategory: mine ? '' : jobCategory,
         })
         setData(await getJson(`/api/postings?${params}`, { signal }))
@@ -4860,6 +5009,8 @@ export default function App() {
       regionProvince,
       regionDistrict,
       mobility,
+      institutionScope,
+      organizationForm,
       jobCategory,
       showClosed,
     ],
@@ -4916,9 +5067,14 @@ export default function App() {
       )
       await refreshAuth()
       setAuthMode(null)
+      if (pendingScrapId) {
+        await securePost(`/api/postings/${pendingScrapId}/scrap`)
+        setPendingScrapId(null)
+      }
       if (authReturn === 'mypage') {
         setMine(true)
         setLandingView(false)
+        window.history.pushState({}, '', '/mypage')
       }
       setAuthReturn(null)
       await load()
@@ -4990,6 +5146,7 @@ export default function App() {
   /** 스크랩·지원 완료 상태를 토글한 뒤 최신 목록을 다시 읽는다. */
   async function mutate(id, action) {
     if (!user) {
+      if (action === 'scrap') setPendingScrapId(id)
       setAuthMode('login')
       return
     }
@@ -5169,35 +5326,18 @@ export default function App() {
       setAdminView(true)
       setMine(false)
       setCommunityView(false)
+      setDetailId(null)
+      window.history.pushState({}, '', '/admin')
     } catch (e) {
       setError(e.message)
     }
   }
-  /** 개별 채용 공고문 PDF를 우선해 작은 창으로 열고 통합 채용 홈페이지 이동을 피한다. */
-  async function openSource(job) {
-    const width = Math.min(1100, Math.max(720, window.screen.availWidth - 160))
-    const height = Math.min(820, Math.max(600, window.screen.availHeight - 120))
-    const left = Math.max(0, Math.round((window.screen.availWidth - width) / 2))
-    const top = Math.max(0, Math.round((window.screen.availHeight - height) / 2))
-    const popup = window.open(
-      'about:blank',
-      `job-posting-${job.id}`,
-      `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
-    )
-    if (!popup) {
-      setError('원문 창이 차단되었습니다. 브라우저에서 이 사이트의 팝업을 허용해 주세요.')
-      return
-    }
-    popup.document.title = '채용공고 원문 불러오는 중'
-    popup.document.body.innerHTML =
-      '<p style="font:16px sans-serif;padding:32px">채용공고 원문을 불러오는 중입니다...</p>'
-    popup.focus()
-    try {
-      const detail = await getJson(`/api/postings/${job.id}/preview`)
-      popup.location.replace(detail.originalUrl || job.sourceUrl)
-    } catch (e) {
-      popup.location.replace(job.sourceUrl)
-    }
+  /** 카드 선택 시 새로고침 가능한 내부 상세 페이지로 이동한다. */
+  function openSource(job) {
+    setDetailId(job.id)
+    setLandingView(false)
+    window.history.pushState({}, '', `/postings/${job.id}`)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   /** 마이페이지는 로그인한 회원에게만 열고 필터 변경 시 첫 페이지로 이동한다. */
   function navigate(nextMine) {
@@ -5211,7 +5351,9 @@ export default function App() {
     setScrapsOpen(false)
     setAdminView(false)
     setCommunityView(false)
+    setDetailId(null)
     setPage(0)
+    window.history.pushState({}, '', nextMine ? '/mypage' : '/jobs')
   }
   /** 서비스 배너를 누르면 검색·필터·개인 화면 상태를 모두 지우고 첫 화면으로 돌아간다. */
   function resetHome() {
@@ -5220,16 +5362,20 @@ export default function App() {
     setScrapsOpen(false)
     setAdminView(false)
     setCommunityView(false)
+    setDetailId(null)
     setQueryInput('')
     setQuery('')
     setRegionProvince('')
     setRegionDistrict('')
     setMobility('')
+    setInstitutionScope('')
+    setOrganizationForm('')
     setJobCategory('')
     setShowClosed(false)
     setPage(0)
     setMatchDialog(null)
     setError('')
+    window.history.pushState({}, '', '/')
   }
   /** 검색어를 확정하고 결과의 첫 페이지를 다시 조회한다. */
   function search(e) {
@@ -5255,7 +5401,9 @@ export default function App() {
           <nav>
             {installPrompt && <button onClick={installApp}>앱 설치</button>}
             <button
-              className={!landingView && !mine && !communityView && !adminView ? 'active' : ''}
+              className={
+                !landingView && !mine && !communityView && !adminView && !detailId ? 'active' : ''
+              }
               onClick={() => navigate(false)}
             >
               채용정보
@@ -5292,6 +5440,8 @@ export default function App() {
                 setCommunityView(true)
                 setMine(false)
                 setAdminView(false)
+                setDetailId(null)
+                window.history.pushState({}, '', '/community')
               }}
             >
               공지·Q&amp;A
@@ -5343,7 +5493,16 @@ export default function App() {
             </button>
           </div>
         )}
-        {landingView ? (
+        {detailId ? (
+          <PostingDetailPage
+            id={detailId}
+            user={user}
+            busy={busyId === detailId}
+            onBack={() => window.history.back()}
+            onScrap={(id) => mutate(id, 'scrap')}
+            onShare={shareJob}
+          />
+        ) : landingView ? (
           <LandingPage
             user={user}
             onPostings={() => navigate(false)}
@@ -5353,6 +5512,8 @@ export default function App() {
               setCommunityView(true)
               setMine(false)
               setAdminView(false)
+              setDetailId(null)
+              window.history.pushState({}, '', '/community')
             }}
           />
         ) : adminView ? (
@@ -5471,6 +5632,35 @@ export default function App() {
                     </select>
                   </label>
                   <label>
+                    기관 구분
+                    <select
+                      value={institutionScope}
+                      onChange={(e) => {
+                        setInstitutionScope(e.target.value)
+                        setPage(0)
+                      }}
+                    >
+                      <option value="">중앙·지방 전체</option>
+                      <option value="CENTRAL_PUBLIC">중앙공기업</option>
+                      <option value="LOCAL_PUBLIC">지방공기업</option>
+                    </select>
+                  </label>
+                  <label>
+                    기관 형태
+                    <select
+                      value={organizationForm}
+                      onChange={(e) => {
+                        setOrganizationForm(e.target.value)
+                        setPage(0)
+                      }}
+                    >
+                      <option value="">전체 형태</option>
+                      {['공사', '공단', '재단', '병원', '연구원', '진흥원', '센터'].map((value) => (
+                        <option key={value}>{value}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
                     채용 직렬
                     <select
                       value={jobCategory}
@@ -5480,9 +5670,11 @@ export default function App() {
                       }}
                     >
                       <option value="">전체 직렬</option>
-                      {filterOptions.jobCategories?.map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
+                      {filterOptions.jobCategories
+                        ?.filter((value) => ADMIN_CATEGORIES.includes(value))
+                        .map((value) => (
+                          <option key={value}>{value}</option>
+                        ))}
                     </select>
                   </label>
                   <label className="closed-posting-toggle">
@@ -5496,12 +5688,20 @@ export default function App() {
                     />
                     마감 공고도 확인
                   </label>
-                  {(regionProvince || regionDistrict || mobility || jobCategory || showClosed) && (
+                  {(regionProvince ||
+                    regionDistrict ||
+                    mobility ||
+                    institutionScope ||
+                    organizationForm ||
+                    jobCategory ||
+                    showClosed) && (
                     <button
                       onClick={() => {
                         setRegionProvince('')
                         setRegionDistrict('')
                         setMobility('')
+                        setInstitutionScope('')
+                        setOrganizationForm('')
                         setJobCategory('')
                         setShowClosed(false)
                         setPage(0)
@@ -5647,6 +5847,22 @@ export default function App() {
           <button onClick={() => setLegalView('contact')}>운영자 안내</button>
         </nav>
       </footer>
+      <div className="page-jump-buttons" aria-label="페이지 빠른 이동">
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="맨 위로"
+        >
+          ↑
+        </button>
+        <button
+          onClick={() =>
+            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })
+          }
+          aria-label="맨 아래로"
+        >
+          ↓
+        </button>
+      </div>
       {matchDialog && (
         <MatchDialog
           value={matchDialog}
@@ -5698,6 +5914,7 @@ export default function App() {
           onClose={() => {
             setAuthMode(null)
             setAuthError('')
+            setPendingScrapId(null)
           }}
           onSubmit={submitAuth}
           onSwitch={() => {

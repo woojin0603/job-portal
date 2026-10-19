@@ -44,6 +44,8 @@ public class AppUser {
     public Instant privacyAgreedAt;
     @Column(name = "consent_version", length = 20)
     public String consentVersion;
+    @Column(name = "preferred_job_category", length = 100)
+    public String preferredJobCategory;
 
     /** 회원 레코드가 처음 생성된 시각. */
     @Column(nullable = false)

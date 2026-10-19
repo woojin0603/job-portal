@@ -4,6 +4,7 @@
   color: #132136;
   background: #f5f8fc;
 }
+
 * {
   box-sizing: border-box;
 }
@@ -2775,6 +2776,385 @@ nav button.active {
   padding: 0 11px;
   font: inherit;
 }
+.auth-dialog select {
+  height: 42px;
+  border: 1px solid #cdd9e7;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 11px;
+  font: inherit;
+}
+
+/* 출시 화면은 과한 그라데이션과 경고색 면적을 줄이고 정보 위계를 선명하게 유지한다. */
+.card {
+  min-height: 390px;
+  border-width: 2px;
+  border-left-width: 5px;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgba(27, 45, 67, 0.08);
+}
+.card.institution-central {
+  border-color: #426b91;
+}
+.card.institution-local {
+  border-color: #ad7b32;
+}
+.card.institution-private {
+  border-color: #397b72;
+}
+.card.institution-public {
+  border-color: #718096;
+}
+.card.deadline-urgent,
+.card.deadline-urgent:hover {
+  background: #fff;
+  border-top-color: #c7665a;
+  box-shadow: 0 5px 16px rgba(98, 49, 43, 0.13);
+  transform: none;
+}
+.card.deadline-urgent .card-top {
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+.card.deadline-urgent h2 {
+  color: #253b53;
+}
+.card.deadline-urgent .date {
+  border-top: 1px solid #ead9d6;
+  background: #fff8f6;
+  padding: 8px;
+}
+.card.deadline-urgent .date strong {
+  color: #98483f;
+  font-weight: 700;
+}
+.urgent-tag {
+  background: #fff0ed;
+  color: #a1473e;
+  box-shadow: none;
+  font-weight: 700;
+}
+.card h2 {
+  color: #253b53;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.details strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+.date strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+.institution-badge {
+  font-weight: 700;
+}
+.primary-scrap {
+  border-color: #315d86 !important;
+  background: #315d86 !important;
+  color: #fff !important;
+  font-weight: 700;
+}
+.primary-scrap.active {
+  border-color: #7890a7 !important;
+  background: #eef3f7 !important;
+  color: #39536c !important;
+}
+.career-actions {
+  grid-template-columns: 1fr;
+}
+
+.page-jump-buttons {
+  position: fixed;
+  right: 22px;
+  bottom: 24px;
+  z-index: 30;
+  display: grid;
+  gap: 7px;
+}
+.page-jump-buttons button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #cad5df;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  color: #294a69;
+  box-shadow: 0 4px 14px rgba(31, 49, 68, 0.16);
+  font-size: 18px;
+}
+
+.posting-detail-page {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+}
+.detail-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.detail-toolbar > div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.detail-toolbar button,
+.detail-toolbar a {
+  border: 1px solid #cbd6e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #294f73;
+  padding: 10px 13px;
+  text-decoration: none;
+  font: inherit;
+}
+.detail-heading,
+.detail-positions,
+.original-preview {
+  margin-bottom: 16px;
+  border: 1px solid #dce3e9;
+  border-radius: 12px;
+  background: #fff;
+  padding: 24px;
+}
+.detail-heading h1 {
+  margin: 14px 0 8px;
+  color: #22384f;
+  font-size: clamp(24px, 3vw, 34px);
+}
+.detail-heading > p {
+  color: #526579;
+  font-size: 17px;
+}
+.detail-heading dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.detail-heading dl div {
+  border-radius: 8px;
+  background: #f3f6f8;
+  padding: 12px;
+}
+.detail-heading dt {
+  color: #718096;
+  font-size: 12px;
+}
+.detail-heading dd {
+  margin: 5px 0 0;
+  color: #293d50;
+  font-weight: 700;
+}
+.detail-positions h2,
+.original-preview h2 {
+  margin-top: 0;
+  color: #293f55;
+}
+.detail-positions > div {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid #edf0f2;
+  padding: 12px 0;
+}
+.detail-positions p {
+  flex-basis: 100%;
+  margin: 0;
+  color: #536779;
+  line-height: 1.6;
+}
+.original-preview iframe {
+  width: 100%;
+  height: 75vh;
+  border: 1px solid #d5dde5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+@media (max-width: 700px) {
+  .detail-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .detail-heading dl {
+    grid-template-columns: 1fr;
+  }
+  .page-jump-buttons {
+    right: 12px;
+    bottom: 14px;
+  }
+}
+
+/* 차분한 공공서비스 톤: 구조는 유지하고 장식적인 파랑·그라데이션을 줄인다. */
+:root {
+  color: #242a27;
+  background: #f3f4f1;
+}
+body {
+  background: #f3f4f1;
+}
+header {
+  border-bottom-color: #d9ddd8;
+  background: #fbfcfa;
+}
+.brand {
+  color: #263b31;
+  font-weight: 800;
+}
+.bar > span,
+.sub,
+.meta,
+.status {
+  color: #69736d;
+}
+nav button {
+  color: #4d5852;
+  font-weight: 600;
+}
+nav button:hover,
+nav button.active,
+nav a:hover {
+  color: #24533e;
+}
+.eyebrow {
+  color: #557264;
+  font-weight: 700;
+}
+.landing-card {
+  border: 1px solid #d7ddd8;
+  border-radius: 12px;
+  color: #283b32;
+  box-shadow: 0 5px 18px rgba(48, 62, 54, 0.06);
+}
+.landing-card:hover {
+  border-color: #8fa397;
+  box-shadow: 0 8px 22px rgba(48, 62, 54, 0.1);
+  transform: translateY(-2px);
+}
+.landing-card > span,
+.landing-card.mypage > span,
+.landing-card.notice > span {
+  border-radius: 10px;
+  background: #edf1ed;
+  color: #3d5b4c;
+}
+.search,
+.filter-row select,
+.filter-row button,
+.filter-row .closed-posting-toggle {
+  border-color: #d2d8d3;
+}
+.search button,
+.auth-dialog .primary,
+.tracking-box button {
+  background: #344b3f;
+}
+.closed-posting-toggle input {
+  accent-color: #456653;
+}
+
+/* 카드 상단 표시는 절반가량만 채색해 상태를 빠르게 구분한다. */
+.card {
+  border-color: #cfd5d0;
+  border-left-color: #789184;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(39, 52, 45, 0.07);
+}
+.card:hover {
+  box-shadow: 0 7px 18px rgba(39, 52, 45, 0.1);
+}
+.card-top {
+  align-items: flex-start;
+}
+.card-labels {
+  flex: 0 1 62%;
+  min-width: 150px;
+  margin: -15px 0 3px -15px;
+  border-radius: 8px 0 8px 0;
+  background: #e1eee6;
+  padding: 9px 10px 9px 15px;
+  color: #28533d;
+}
+.card.deadline-urgent .card-labels {
+  margin: -15px 0 3px -15px;
+  border-radius: 8px 0 8px 0;
+  background: #b9564d;
+  padding: 9px 10px 9px 15px;
+  color: #fff;
+}
+.card-labels .institution-badge,
+.card-labels .institution-badge.institution-central,
+.card-labels .institution-badge.institution-local,
+.card-labels .institution-badge.institution-private,
+.card-labels .institution-badge.institution-public {
+  border-color: currentColor;
+  background: transparent;
+  color: inherit;
+}
+.card.deadline-urgent .urgent-tag {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+.card.deadline-urgent,
+.card.deadline-urgent:hover {
+  border-top-color: #cfd5d0;
+  box-shadow: 0 4px 14px rgba(73, 43, 40, 0.09);
+}
+.card h2,
+.card.deadline-urgent h2 {
+  color: #28352f;
+}
+.pills span,
+.position-list > span {
+  border-color: #d8ded9;
+  background: #f3f6f3;
+  color: #46574e;
+}
+.card-tools button {
+  border: 1px solid #d8ddd9;
+  background: #fff;
+  color: #5b665f;
+  font-weight: 600;
+}
+
+/* 스크랩은 강조 색 대신 일반 기능 버튼으로 표현한다. */
+.primary-scrap,
+.primary-scrap.active {
+  border-color: #cbd2cd !important;
+  background: #fff !important;
+  color: #3f4a44 !important;
+  font-weight: 600;
+}
+.primary-scrap:hover,
+.primary-scrap.active:hover {
+  border-color: #8f9b94 !important;
+  background: #f5f6f4 !important;
+}
+.preview-link {
+  color: #4c6257 !important;
+  font-weight: 600;
+}
+.page-jump-buttons button {
+  border-color: #cbd2cd;
+  color: #3d5548;
+  box-shadow: 0 3px 12px rgba(39, 52, 45, 0.12);
+}
+.source-share-track i,
+.security-failure-chart b {
+  background: #607a6c;
+}
+
+@media (max-width: 700px) {
+  .card-labels,
+  .card.deadline-urgent .card-labels {
+    flex-basis: 68%;
+  }
+}
 .auth-dialog .primary {
   height: 44px;
   background: #173f76;
@@ -4325,5 +4705,79 @@ nav button.active {
   }
   .site-footer {
     flex-direction: column;
+  }
+}
+
+/* 파일 후반의 개별 화면 스타일보다 우선하는 최종 색상 토큰. */
+.auth-dialog .primary,
+.update-banner,
+.profile-submit button,
+.detail-toolbar button:first-child {
+  background: #344b3f;
+  color: #fff;
+}
+.update-banner {
+  box-shadow: 0 6px 18px rgba(39, 52, 45, 0.16);
+}
+.detail-toolbar button,
+.detail-toolbar a {
+  border-color: #cbd2cd;
+  color: #41554a;
+}
+
+/* 카드 기관별 테두리색을 없애고 모든 카드에 같은 중립 테두리를 적용한다. */
+.card,
+.card.institution-central,
+.card.institution-local,
+.card.institution-private,
+.card.institution-public,
+.card.deadline-urgent,
+.card.deadline-urgent:hover {
+  border-color: #d6dad7;
+  border-left-color: #d6dad7;
+}
+.card.saved,
+.card.applied {
+  box-shadow: 0 3px 12px rgba(39, 52, 45, 0.07);
+}
+
+.card-tools {
+  gap: 5px;
+}
+.card-tools .scrap-tool,
+.card-tools .scrap-tool.active {
+  border: 0;
+  background: transparent;
+  color: #4f5c55;
+}
+.card-tools .scrap-tool.active {
+  font-weight: 700;
+}
+.job-info-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+.job-info-actions .preview-link {
+  min-width: 0;
+  padding: 7px 3px !important;
+  border: 1px solid #d8ddd9 !important;
+  border-radius: 6px;
+  background: #fff !important;
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+}
+.organization-row > div > span {
+  color: #557064;
+  font-weight: 700;
+}
+
+@media (max-width: 410px) {
+  .job-info-actions .preview-link {
+    font-size: 10px;
+    letter-spacing: -0.04em;
   }
 }

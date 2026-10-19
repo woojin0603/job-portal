@@ -138,11 +138,16 @@ public class PostingController {
                             @RequestParam(defaultValue = "") String regionFull,
                             @RequestParam(defaultValue = "") String district,
                             @RequestParam(defaultValue = "") String mobility,
+                            @RequestParam(defaultValue = "") String institutionScope,
+                            @RequestParam(defaultValue = "") String organizationForm,
                             @RequestParam(defaultValue = "") String jobCategory, Principal principal) {
-        long userId = principal == null ? 0L : user(principal).id;
+        AppUser currentUser = principal == null ? null : user(principal);
+        long userId = currentUser == null ? 0L : currentUser.id;
+        String preferredJobCategory = currentUser == null || currentUser.preferredJobCategory == null
+                || !jobCategory.isBlank() || mine ? "" : currentUser.preferredJobCategory;
         int safePage = Math.max(0, page);
         var result = postings.search(q, mine, includeClosed, LocalDate.now(ZoneId.of("Asia/Seoul")), region, regionFull,
-                district, mobility, jobCategory, userId,
+                district, mobility, institutionScope, organizationForm, jobCategory, preferredJobCategory, userId,
                 PageRequest.of(safePage, 12));
         Map<Long, Scrap> saved = scraps.findByUserId(userId).stream()
                 .collect(Collectors.toMap(s -> s.posting.getId(), Function.identity()));
@@ -212,6 +217,15 @@ public class PostingController {
                 positions.findByPostingIdOrderById(p.id).stream()
                         .map(rp -> new PositionDto(rp.standardCategory, rp.originalName, rp.headcount,
                                 rp.workRegion, rp.requirements)).toList());
+    }
+
+    /** 새로고침 가능한 공고 상세 화면에 카드와 동일한 공고 정보를 제공한다. */
+    @GetMapping("/postings/{id}")
+    public PostingDto detail(@PathVariable Long id, Principal principal) {
+        JobPosting posting = postings.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Scrap saved = principal == null ? null : scraps.findByUserIdAndPostingId(user(principal).id, id).orElse(null);
+        return postingDto(posting, saved);
     }
 
     /** 공고의 알리오 기관코드로 가장 최근 신입사원 초임 공시를 조회한다. */

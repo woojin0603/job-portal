@@ -25,6 +25,7 @@ public class AuthController {
     public record RegisterRequest(@Email @NotBlank String email,
                                   @NotBlank @Size(min = 10, max = 100) String password,
                                   @NotBlank @Size(max = 80) String displayName,
+                                  @NotBlank @Size(max = 100) String preferredJobCategory,
                                   boolean acceptedTerms, boolean acceptedPrivacy) {
     }
     public record ConsentRequest(boolean acceptedTerms, boolean acceptedPrivacy) {}
@@ -34,7 +35,8 @@ public class AuthController {
 
     /** 비밀번호 해시를 제외하고 화면에 공개할 회원 정보. */
     public record Profile(Long id, String email, String displayName, boolean admin,
-                          boolean mustChangePassword, boolean consentRequired) {
+                          boolean mustChangePassword, boolean consentRequired,
+                          String preferredJobCategory) {
     }
 
     /** 로그인 여부를 동일한 JSON 구조로 반환하기 위한 응답. */
@@ -86,6 +88,7 @@ public class AuthController {
         user.email = email;
         user.passwordHash = passwords.encode(request.password());
         user.displayName = request.displayName().trim();
+        user.preferredJobCategory = request.preferredJobCategory().trim();
         user.termsAgreedAt = java.time.Instant.now();
         user.privacyAgreedAt = user.termsAgreedAt;
         user.consentVersion = CONSENT_VERSION;
@@ -136,7 +139,7 @@ public class AuthController {
         boolean consentRequired = user.termsAgreedAt == null || user.privacyAgreedAt == null
                 || !CONSENT_VERSION.equals(user.consentVersion);
         return new Profile(user.id, user.email, user.displayName, admin,
-                user.mustChangePassword, consentRequired);
+                user.mustChangePassword, consentRequired, user.preferredJobCategory);
     }
 
     private void requireConsent(boolean terms, boolean privacy) {
