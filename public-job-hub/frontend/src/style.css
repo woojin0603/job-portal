@@ -2970,11 +2970,28 @@ nav button.active {
 }
 .original-preview iframe {
   width: 100%;
-  min-height: 420px;
+  height: min(82vh, 980px);
+  min-height: 620px;
   border: 1px solid #d5dde5;
   border-radius: 8px;
   background: #fff;
-  overflow: hidden;
+}
+.original-preview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.original-preview-heading h2 {
+  margin: 0;
+}
+.original-preview-heading a {
+  border: 1px solid #cbd2cd;
+  border-radius: 7px;
+  padding: 8px 11px;
+  color: #41554a;
+  font-size: 13px;
 }
 
 @media (max-width: 700px) {
@@ -2984,6 +3001,10 @@ nav button.active {
   }
   .detail-heading dl {
     grid-template-columns: 1fr;
+  }
+  .original-preview iframe {
+    height: 75vh;
+    min-height: 520px;
   }
   .page-jump-buttons {
     right: 12px;

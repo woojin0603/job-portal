@@ -630,18 +630,18 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
           ))}
         </section>
       )}
-      {preview?.html && (
+      {preview?.originalUrl && (
         <section className="original-preview">
-          <h2>공고 상세 내용</h2>
+          <div className="original-preview-heading">
+            <h2>공고 원문</h2>
+            <a href={preview.originalUrl} target="_blank" rel="noreferrer">
+              새 창에서 원문 보기 ↗
+            </a>
+          </div>
           <iframe
-            title="채용공고 상세 내용"
-            sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-            srcDoc={preview.html}
-            onLoad={(event) => {
-              const frame = event.currentTarget
-              const height = frame.contentDocument?.documentElement?.scrollHeight
-              if (height) frame.style.height = `${Math.min(Math.max(height + 24, 420), 5000)}px`
-            }}
+            title="채용공고 원문"
+            sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-downloads"
+            src={preview.originalUrl}
           />
         </section>
       )}
