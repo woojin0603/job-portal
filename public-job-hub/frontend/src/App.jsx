@@ -634,7 +634,7 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
         <section className="original-preview">
           <div className="original-preview-heading">
             <h2>공고 원문</h2>
-            <a href={preview.originalUrl} target="_blank" rel="noreferrer">
+            <a href={preview.sourceUrl} target="_blank" rel="noreferrer">
               새 창에서 원문 보기 ↗
             </a>
           </div>

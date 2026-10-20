@@ -350,7 +350,15 @@ public class PostingController {
             }
             Element content = original.clone();
             content.select("script, iframe, object, embed, form, meta, base").remove();
-            content.select(".loading, .loader, .spinner, .spinner-border, .btn-close, .close").remove();
+            content.select(".loading, .loader, .spinner, .spinner-border, .btn-close, .close, "
+                    + "[class*=close], [title*=닫기], [aria-label*=닫기], img[alt*=닫기], button").remove();
+            for (Element decoration : List.copyOf(content.getAllElements())) {
+                String ownText = decoration.ownText().trim();
+                if (decoration.children().isEmpty()
+                        && Set.of("X", "x", "×", "✕", "✖").contains(ownText)) {
+                    decoration.remove();
+                }
+            }
             for (Element element : content.getAllElements()) {
                 for (var attribute : List.copyOf(element.attributes().asList())) {
                     String key = attribute.getKey().toLowerCase();
