@@ -635,8 +635,13 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
           <h2>공고 상세 내용</h2>
           <iframe
             title="채용공고 상세 내용"
-            sandbox="allow-popups allow-popups-to-escape-sandbox"
+            sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
             srcDoc={preview.html}
+            onLoad={(event) => {
+              const frame = event.currentTarget
+              const height = frame.contentDocument?.documentElement?.scrollHeight
+              if (height) frame.style.height = `${Math.min(Math.max(height + 24, 420), 5000)}px`
+            }}
           />
         </section>
       )}
@@ -5719,8 +5724,7 @@ export default function App() {
                 <div className="meta">
                   <span>검색 결과 {data.total}건</span>
                   <span>
-                    중앙 공공기관 · 지방공기업 · 민간기업을 기관 소속 기준으로 구분합니다.
-                    이내
+                    중앙 공공기관 · 지방공기업 · 민간기업을 기관 소속 기준으로 구분합니다. 이내
                   </span>
                 </div>
               </>

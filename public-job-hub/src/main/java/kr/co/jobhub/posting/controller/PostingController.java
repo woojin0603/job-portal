@@ -342,12 +342,15 @@ public class PostingController {
             if (postingPdf(doc) != null) {
                 originalUrl = "/api/postings/" + p.id + "/document";
             }
-            Element original = doc.selectFirst("#contentRV, main, article");
+            // JOB-ALIO는 상세 본문을 #contentRV 안의 #txt에 넣고, 바깥에는 모달 제목·로더·닫기 버튼을 둔다.
+            // 모달 전체가 아니라 실제 본문을 우선 선택해 외부 화면 장식을 서비스 상세 페이지에 섞지 않는다.
+            Element original = doc.selectFirst("#contentRV #txt, #contentRV .modal-body, main, article, #contentRV");
             if (original == null) {
                 original = doc.body();
             }
             Element content = original.clone();
             content.select("script, iframe, object, embed, form, meta, base").remove();
+            content.select(".loading, .loader, .spinner, .spinner-border, .btn-close, .close").remove();
             for (Element element : content.getAllElements()) {
                 for (var attribute : List.copyOf(element.attributes().asList())) {
                     String key = attribute.getKey().toLowerCase();
@@ -371,24 +374,19 @@ public class PostingController {
                     element.attr("target", "_blank").attr("rel", "noopener noreferrer");
                 }
             }
-            StringBuilder styles = new StringBuilder();
-            for (Element link : doc.select("head link[rel=stylesheet]")) {
-                String href = link.absUrl("href");
-                if (href.startsWith("https://") || href.startsWith("http://")) {
-                    styles.append("<link rel=\"stylesheet\" href=\"")
-                            .append(org.jsoup.nodes.Entities.escape(href)).append("\">");
-                }
-            }
             String html = "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\">"
                     + "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; "
-                    + "img-src https: http: data:; style-src https: http: 'unsafe-inline'; "
-                    + "font-src https: http: data:;\">"
-                    + styles
-                    + "<style>html,body{margin:0;padding:0;background:white;}"
-                    + "body{overflow-x:auto;}#contentRV,#contentRV #txt{width:auto!important;min-width:0!important;"
-                    + "max-width:none!important;margin:0!important;padding:12px!important;}"
-                    + "img{max-width:100%;height:auto;}table{max-width:100%;}"
-                    + ".hidden,.hide,[style*='display:none'],[style*='display: none']{display:block!important;}"
+                    + "img-src https: http: data:; style-src 'unsafe-inline';\">"
+                    + "<style>html,body{margin:0;padding:0;background:#fff;color:#28352f;"
+                    + "font-family:Arial,'Noto Sans KR',sans-serif;font-size:15px;line-height:1.65;}"
+                    + "body{overflow-x:hidden;padding:4px;}*{box-sizing:border-box;}"
+                    + "h1,h2,h3,h4{color:#263b31;line-height:1.35;}"
+                    + "img{display:block;max-width:100%;height:auto;margin:12px auto;}"
+                    + "table{width:100%!important;max-width:100%;border-collapse:collapse!important;table-layout:auto;}"
+                    + "th,td{border:1px solid #d9dfda!important;padding:9px 11px!important;vertical-align:top;"
+                    + "word-break:keep-all;overflow-wrap:anywhere;}th{background:#f1f4f1!important;color:#344b3f;}"
+                    + "ul,ol{padding-left:24px;}a{color:#355f4b;text-decoration:underline;}"
+                    + ".hidden,.hide,[style*='display:none'],[style*='display: none']{display:none!important;}"
                     + "a[href]{cursor:pointer!important;pointer-events:auto!important;}</style></head><body>"
                     + content.outerHtml() + "</body></html>";
             return new Preview(p.title, p.organization, p.sourceUrl, originalUrl, html);
