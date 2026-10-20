@@ -295,7 +295,7 @@ function summarizeList(value, limit = 2) {
 function institutionLabel(job) {
   if (job.organizationType === 'PRIVATE') return '민간기업'
   if (job.publicInstitutionType === 'LOCAL_PUBLIC') return '지방공기업'
-  if (job.publicInstitutionType === 'CENTRAL_PUBLIC') return '중앙공기업'
+  if (job.publicInstitutionType === 'CENTRAL_PUBLIC') return '중앙 공공기관'
   return '공공기관'
 }
 
@@ -417,7 +417,12 @@ function JobCard({
       <div className="card-top">
         <div className="card-labels">
           <span className={`institution-badge ${institutionClass}`}>{institutionType}</span>
-          {urgent && <span className="urgent-tag">마감임박</span>}
+          {!expired && daysLeft !== null && (
+            <span className={urgent ? 'deadline-tag urgent-tag' : 'deadline-tag'}>
+              {daysLeft === 0 ? 'D-Day' : `D-${daysLeft}`}
+            </span>
+          )}
+          {!expired && daysLeft === null && <span className="deadline-tag">마감일 미정</span>}
           {expired && <span className="expired-tag">접수마감</span>}
         </div>
         <div className="card-tools">
@@ -5641,7 +5646,7 @@ export default function App() {
                       }}
                     >
                       <option value="">중앙·지방 전체</option>
-                      <option value="CENTRAL_PUBLIC">중앙공기업</option>
+                      <option value="CENTRAL_PUBLIC">중앙 공공기관</option>
                       <option value="LOCAL_PUBLIC">지방공기업</option>
                     </select>
                   </label>
@@ -5714,7 +5719,7 @@ export default function App() {
                 <div className="meta">
                   <span>검색 결과 {data.total}건</span>
                   <span>
-                    파란색: 중앙공기업 · 주황색: 지방공기업 · 청록색: 민간기업 · 빨간 강조: 마감 2일
+                    중앙 공공기관 · 지방공기업 · 민간기업을 기관 소속 기준으로 구분합니다.
                     이내
                   </span>
                 </div>

@@ -10,6 +10,7 @@ import kr.co.jobhub.compensation.domain.InstitutionCompensation;
 import kr.co.jobhub.compensation.repository.InstitutionCompensationRepository;
 import kr.co.jobhub.posting.domain.*;
 import kr.co.jobhub.posting.repository.*;
+import kr.co.jobhub.posting.service.PublicInstitutionClassifier;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -154,12 +155,8 @@ public class PostingController {
         List<PostingDto> items = result.getContent().stream()
                 .map(p -> {
                     Scrap s = saved.get(p.id);
-                    String publicInstitutionType = p.publicInstitutionType;
-                    // 서비스에서는 법적 설립 주체보다 사용자가 요청한 실제 근무 이동 범위를 우선한다.
-                    if ("PUBLIC".equals(p.organizationType)) {
-                        publicInstitutionType = "ROTATIONAL".equals(p.mobilityType) ? "CENTRAL_PUBLIC"
-                                : "FIXED".equals(p.mobilityType) ? "LOCAL_PUBLIC" : null;
-                    }
+                    String publicInstitutionType = PublicInstitutionClassifier.resolve(
+                            p.organizationType, p.publicInstitutionType, p.source, p.alioInstitutionCode);
                     return new PostingDto(p.id, p.source, p.title, p.organization, p.region,
                             p.alioInstitutionCode,
                             p.employmentType, p.organizationType, publicInstitutionType,
@@ -204,11 +201,8 @@ public class PostingController {
     }
 
     private PostingDto postingDto(JobPosting p, Scrap s) {
-        String publicInstitutionType = p.publicInstitutionType;
-        if ("PUBLIC".equals(p.organizationType)) {
-            publicInstitutionType = "ROTATIONAL".equals(p.mobilityType) ? "CENTRAL_PUBLIC"
-                    : "FIXED".equals(p.mobilityType) ? "LOCAL_PUBLIC" : null;
-        }
+        String publicInstitutionType = PublicInstitutionClassifier.resolve(
+                p.organizationType, p.publicInstitutionType, p.source, p.alioInstitutionCode);
         return new PostingDto(p.id, p.source, p.title, p.organization, p.region, p.alioInstitutionCode,
                 p.employmentType, p.organizationType, publicInstitutionType,
                 p.mobilityType == null ? "UNKNOWN" : p.mobilityType, p.postedAt, p.deadline, p.sourceUrl,

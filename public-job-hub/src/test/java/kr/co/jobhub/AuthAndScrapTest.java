@@ -51,7 +51,9 @@ class AuthAndScrapTest {
     /** 가입·로그인·CSRF 거부와 서로 다른 두 회원의 스크랩 분리를 확인한다. */
     @Test
     void registrationAndScrapsBelongToSignedInUser() throws Exception {
-        String body = "{\"email\":\"first@example.com\",\"password\":\"password123\",\"displayName\":\"첫 사용자\"}";
+        String body = "{\"email\":\"first@example.com\",\"password\":\"password123\"," +
+                "\"displayName\":\"첫 사용자\",\"preferredJobCategory\":\"행정·사무\"," +
+                "\"acceptedTerms\":true,\"acceptedPrivacy\":true}";
         mvc.perform(post("/api/auth/register").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated());
         mvc.perform(post("/api/auth/register").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
@@ -63,7 +65,9 @@ class AuthAndScrapTest {
                 .param("username", "first@example.com").param("password", "wrong-password"))
                 .andExpect(status().isUnauthorized());
         mvc.perform(post("/api/auth/register").with(csrf()).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"second@example.com\",\"password\":\"password123\",\"displayName\":\"둘째 사용자\"}"))
+                .content("{\"email\":\"second@example.com\",\"password\":\"password123\"," +
+                        "\"displayName\":\"둘째 사용자\",\"preferredJobCategory\":\"전산·IT\"," +
+                        "\"acceptedTerms\":true,\"acceptedPrivacy\":true}"))
                 .andExpect(status().isCreated());
         long id = postings.findBySourceAndSourceId("TEST", "test-1").orElseThrow().id;
         mvc.perform(post("/api/postings/{id}/scrap", id).with(csrf()))

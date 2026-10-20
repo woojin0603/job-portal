@@ -21,6 +21,9 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/auth")
 public class AuthController {
     private static final String CONSENT_VERSION = "2026-10-18";
+    private static final java.util.Set<String> JOB_CATEGORIES = java.util.Set.of(
+            "행정·사무", "전산·IT", "회계·재무", "토목", "건축",
+            "전기", "기계", "연구", "의료·보건", "사회복지");
     /** 회원가입 입력값. 서버에서 이메일 형식과 비밀번호 길이를 검증한다. */
     public record RegisterRequest(@Email @NotBlank String email,
                                   @NotBlank @Size(min = 10, max = 100) String password,
@@ -88,7 +91,11 @@ public class AuthController {
         user.email = email;
         user.passwordHash = passwords.encode(request.password());
         user.displayName = request.displayName().trim();
-        user.preferredJobCategory = request.preferredJobCategory().trim();
+        String preferredJobCategory = request.preferredJobCategory().trim();
+        if (!JOB_CATEGORIES.contains(preferredJobCategory)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "희망 직무를 목록에서 선택해 주세요.");
+        }
+        user.preferredJobCategory = preferredJobCategory;
         user.termsAgreedAt = java.time.Instant.now();
         user.privacyAgreedAt = user.termsAgreedAt;
         user.consentVersion = CONSENT_VERSION;

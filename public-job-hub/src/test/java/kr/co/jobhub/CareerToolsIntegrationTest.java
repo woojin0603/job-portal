@@ -69,7 +69,9 @@ class CareerToolsIntegrationTest {
             positions.save(position);
         }
         mvc.perform(post("/api/auth/register").with(csrf()).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"tools@example.com\",\"password\":\"password123\",\"displayName\":\"도구 사용자\"}"));
+                .content("{\"email\":\"tools@example.com\",\"password\":\"password123\"," +
+                        "\"displayName\":\"도구 사용자\",\"preferredJobCategory\":\"전산·IT\"," +
+                        "\"acceptedTerms\":true,\"acceptedPrivacy\":true}"));
     }
 
     @Test
@@ -98,7 +100,7 @@ class CareerToolsIntegrationTest {
                         .param("district", "수원시").param("jobCategory", "전산·IT"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(1))
-                .andExpect(jsonPath("$.items[0].publicInstitutionType").value("LOCAL_PUBLIC"))
+                .andExpect(jsonPath("$.items[0].publicInstitutionType").value("CENTRAL_PUBLIC"))
                 .andExpect(jsonPath("$.items[0].positions[0].originalName").value("전산직"));
 
         mvc.perform(get("/api/postings").param("region", "경기").param("regionFull", "경기도")
@@ -119,7 +121,8 @@ class CareerToolsIntegrationTest {
 
         mvc.perform(post("/api/tools/preferences").with(user("tools@example.com")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"keywords\":\"전산\",\"regions\":\"수원\",\"mobilityTypes\":\"FIXED\",\"enabled\":true}"))
+                        .content("{\"keywords\":\"전산\",\"regions\":\"수원\",\"mobilityTypes\":\"FIXED\"," +
+                                "\"enabled\":true,\"newPostingAlerts\":true,\"deadlineAlerts\":true}"))
                 .andExpect(status().isOk());
         mvc.perform(get("/api/tools/alerts").with(user("tools@example.com")))
                 .andExpect(status().isOk())

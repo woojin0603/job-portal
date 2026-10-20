@@ -8,6 +8,7 @@ import kr.co.jobhub.posting.domain.RecruitmentPosition;
 import kr.co.jobhub.posting.repository.JobPostingRepository;
 import kr.co.jobhub.posting.repository.RecruitmentCompetitionRepository;
 import kr.co.jobhub.posting.repository.RecruitmentPositionRepository;
+import kr.co.jobhub.posting.service.PublicInstitutionClassifier;
 import kr.co.jobhub.posting.service.PostingChangeService;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -304,6 +305,8 @@ public class PublicRecruitmentApiService {
         posting.region = preferApiValue(text(item, "workRgnNmLst"), posting.region);
         posting.employmentType = preferApiValue(text(item, "hireTypeNmLst"), posting.employmentType);
         posting.organizationType = "PUBLIC";
+        // ALIO는 중앙정부가 지정한 공공기관 공시 시스템이다. 근무지나 순환근무 여부로 지방공기업을 추정하지 않는다.
+        posting.publicInstitutionType = PublicInstitutionClassifier.CENTRAL_PUBLIC;
         posting.mobilityType = posting.mobilityType == null ? "UNKNOWN" : posting.mobilityType;
         posting.postedAt = postedAt;
         posting.deadline = deadline != null ? deadline : posting.deadline;

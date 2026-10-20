@@ -3155,6 +3155,323 @@ nav a:hover {
     flex-basis: 68%;
   }
 }
+
+/* 장식보다 정보 전달을 우선하는 담백한 공공서비스 스타일. 요소 배치는 변경하지 않는다. */
+:root {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  color: #252a27;
+  background: #f5f5f3;
+}
+body {
+  background: #f5f5f3;
+  color: #252a27;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+header {
+  border-bottom: 1px solid #dfe2de;
+  background: #fff;
+}
+.brand {
+  color: #23372d;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+nav,
+nav button,
+nav a {
+  font-weight: 500;
+}
+h1,
+.landing-intro h1 {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+.eyebrow {
+  color: #5b6c63;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+}
+.sub,
+.meta,
+.status,
+.landing-intro > p:last-child {
+  color: #68716c;
+}
+
+.landing-card {
+  border: 1px solid #d9ddda;
+  border-radius: 8px;
+  background: #fff;
+  color: #29362f;
+  box-shadow: none;
+  transition: border-color 0.15s ease;
+}
+.landing-card:hover {
+  border-color: #98a69e;
+  box-shadow: none;
+  transform: none;
+}
+.landing-card > span,
+.landing-card.mypage > span,
+.landing-card.notice > span {
+  border: 1px solid #dde2de;
+  border-radius: 6px;
+  background: #f4f6f4;
+  color: #435a4e;
+}
+.landing-card strong {
+  font-weight: 650;
+}
+
+.search,
+.filter-row select,
+.filter-row button,
+.filter-row .closed-posting-toggle,
+.auth-dialog input,
+.auth-dialog select {
+  border-color: #d5dad6;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: none;
+}
+.search:focus-within,
+.filter-row select:focus,
+.auth-dialog input:focus,
+.auth-dialog select:focus {
+  border-color: #71877b;
+  outline: 2px solid rgba(72, 99, 84, 0.11);
+  outline-offset: 0;
+}
+.search button,
+.auth-dialog .primary,
+.profile-submit button,
+.tracking-box button {
+  border-radius: 5px;
+  background: #334b3e;
+  font-weight: 600;
+  box-shadow: none;
+}
+.filter-row label {
+  color: #5e6862;
+  font-weight: 600;
+}
+
+.card,
+.card.institution-central,
+.card.institution-local,
+.card.institution-private,
+.card.institution-public,
+.card.deadline-urgent,
+.card.deadline-urgent:hover {
+  border: 1px solid #d8dcda;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+  transform: none;
+}
+.card:hover {
+  border-color: #aeb8b2;
+  box-shadow: none;
+  transform: none;
+}
+.card.saved,
+.card.applied {
+  border-color: #9caaa2;
+  box-shadow: none;
+}
+.card-labels,
+.card.deadline-urgent .card-labels {
+  border-radius: 7px 0 6px 0;
+}
+.card h2,
+.card.deadline-urgent h2 {
+  color: #252c28;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+}
+.organization-name,
+.details strong,
+.position-list > span strong {
+  font-weight: 600;
+}
+.pills span,
+.position-list > span {
+  border-color: #e0e3e1;
+  border-radius: 4px;
+  background: #f6f7f5;
+  color: #4c5650;
+  font-weight: 400;
+}
+.institution-badge,
+.deadline-tag,
+.urgent-tag,
+.expired-tag {
+  font-weight: 600;
+}
+.deadline-tag {
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 3px 7px;
+  background: rgba(255, 255, 255, 0.28);
+  color: inherit;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.card-tools button,
+.job-info-actions .preview-link,
+.actions button,
+.applied-form button,
+.filter-row button,
+.pagination button {
+  border-radius: 5px;
+  font-weight: 500;
+  box-shadow: none;
+}
+/* 본문 길이가 달라도 연봉·경쟁률·채용분석 버튼 묶음은 카드 하단의 같은 위치에 둔다. */
+.card > .actions {
+  margin-top: auto;
+  padding-top: 12px;
+}
+.card-tools button:hover,
+.job-info-actions .preview-link:hover,
+.actions button:hover,
+.filter-row button:hover {
+  border-color: #aab3ae !important;
+  background: #f4f5f3 !important;
+  color: #303a35 !important;
+}
+.pagination button.active {
+  border-color: #334b3e;
+  background: #334b3e;
+}
+.scrap-list-toggle,
+.password-change-button {
+  border-color: #cfd5d1;
+  border-radius: 6px;
+  color: #46534c;
+  font-weight: 500;
+}
+.scrap-list-toggle:hover,
+.scrap-list-toggle.active {
+  border-color: #465f51;
+  background: #465f51;
+}
+.auth-dialog,
+.update-banner,
+.offline-notice {
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(30, 39, 34, 0.1);
+}
+.site-footer {
+  border-top-color: #dfe2de;
+  background: #f8f8f6;
+  color: #626b66;
+}
+
+/* 최종 색상 팔레트: 따뜻한 중립색과 낮은 채도의 녹색만 기본 강조색으로 사용한다. */
+:root {
+  --surface-page: #f4f5f2;
+  --surface-card: #ffffff;
+  --surface-soft: #f7f8f6;
+  --text-main: #252b27;
+  --text-muted: #69716c;
+  --line-default: #d8ddd9;
+  --line-strong: #aab5ae;
+  --accent: #315842;
+  --accent-hover: #274936;
+  --accent-soft: #e1ece5;
+  --urgent: #a74e48;
+}
+body,
+:root {
+  background: var(--surface-page);
+  color: var(--text-main);
+}
+header,
+.card,
+.landing-card,
+.search,
+.filter-row select,
+.filter-row button,
+.filter-row .closed-posting-toggle {
+  background: var(--surface-card);
+}
+header,
+.site-footer {
+  border-color: var(--line-default);
+}
+.sub,
+.meta,
+.status,
+.bar > span,
+.landing-card small {
+  color: var(--text-muted);
+}
+.brand,
+nav button:hover,
+nav button.active,
+nav a:hover,
+.eyebrow,
+.actions a,
+.pagination a,
+.preview-link {
+  color: var(--accent) !important;
+}
+.search button,
+.auth-dialog .primary,
+.profile-submit button,
+.tracking-box button,
+.pagination button.active,
+.scrap-list-toggle.active,
+.scrap-list-toggle:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff !important;
+}
+.search button:hover,
+.auth-dialog .primary:hover,
+.profile-submit button:hover,
+.tracking-box button:hover {
+  background: var(--accent-hover);
+}
+.card-labels {
+  background: var(--accent-soft);
+  color: #294c39;
+}
+.card.deadline-urgent .card-labels {
+  background: var(--urgent);
+  color: #fff;
+}
+.card,
+.landing-card,
+.search,
+.filter-row select,
+.filter-row button,
+.filter-row .closed-posting-toggle,
+.pagination button,
+.job-info-actions .preview-link,
+.actions button {
+  border-color: var(--line-default) !important;
+}
+.card:hover,
+.landing-card:hover {
+  border-color: var(--line-strong) !important;
+}
+.pills span,
+.position-list > span,
+.landing-card > span,
+.landing-card.mypage > span,
+.landing-card.notice > span {
+  border-color: #e0e4e1;
+  background: var(--surface-soft);
+  color: #4d5851;
+}
+.site-footer {
+  background: #f7f8f5;
+}
 .auth-dialog .primary {
   height: 44px;
   background: #173f76;
@@ -4779,5 +5096,51 @@ nav a:hover {
   .job-info-actions .preview-link {
     font-size: 10px;
     letter-spacing: -0.04em;
+  }
+}
+
+/* 카드 정보 위계를 단순화하고 상태색이 본문보다 강하게 보이지 않도록 조정한다. */
+.card-labels {
+  flex-basis: 62%;
+  padding-block: 7px;
+}
+.card.deadline-urgent .card-labels {
+  flex-basis: 62%;
+  min-width: 150px;
+  padding-block: 7px;
+  background: #a94f47;
+}
+.card h2,
+.card.deadline-urgent h2 {
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.42;
+  letter-spacing: -0.018em;
+}
+.organization-row > div > span {
+  font-size: 12px;
+  font-weight: 600;
+}
+.organization-name,
+.details strong {
+  font-weight: 650;
+}
+.pills span,
+.position-list > span {
+  font-weight: 450;
+  line-height: 1.45;
+}
+.position-list > span strong {
+  font-weight: 600;
+}
+.card-tools button,
+.job-info-actions .preview-link {
+  font-weight: 550;
+}
+
+@media (max-width: 700px) {
+  .card-labels,
+  .card.deadline-urgent .card-labels {
+    flex-basis: 68%;
   }
 }

@@ -7,6 +7,7 @@ import kr.co.jobhub.posting.domain.JobPosting;
 import kr.co.jobhub.posting.domain.RecruitmentPosition;
 import kr.co.jobhub.posting.repository.JobPostingRepository;
 import kr.co.jobhub.posting.repository.RecruitmentPositionRepository;
+import kr.co.jobhub.posting.service.PublicInstitutionClassifier;
 import kr.co.jobhub.posting.service.PostingChangeService;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -563,11 +564,9 @@ public class CrawlService {
         p.region = preferCollectedValue(c.region, p.region);
         p.employmentType = preferCollectedValue(c.type, p.employmentType);
         p.organizationType = c.organizationType;
-        // 이 서비스의 중앙/지방 구분은 순환근무 여부를 기준으로 하며 불명확하면 임의 분류하지 않는다.
-        p.publicInstitutionType = "PUBLIC".equals(c.organizationType())
-                ? "ROTATIONAL".equals(c.mobilityType()) ? "CENTRAL_PUBLIC"
-                : "FIXED".equals(c.mobilityType()) ? "LOCAL_PUBLIC" : null
-                : null;
+        // 중앙·지방 소속은 출처 설정의 기관 분류를 사용하고, 순환·고정 근무 여부와 섞지 않는다.
+        p.publicInstitutionType = PublicInstitutionClassifier.fromConfiguredSource(
+                c.organizationType(), c.publicInstitutionType());
         p.mobilityType = c.mobilityType;
         p.postedAt = c.posted;
         p.deadline = c.deadline != null ? c.deadline : p.deadline;

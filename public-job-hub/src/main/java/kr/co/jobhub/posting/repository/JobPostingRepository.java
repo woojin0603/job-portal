@@ -29,9 +29,11 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
            "or lower(p.region) like lower(concat('%', :regionFull, '%'))) " +
            "and (:district = '' or lower(p.region) like lower(concat('%', :district, '%'))) " +
            "and (:mobility = '' or p.mobilityType = :mobility) " +
-           "and (:institutionScope = '' or (p.organizationType = 'PUBLIC' and (p.publicInstitutionType = :institutionScope " +
-           "or (:institutionScope = 'CENTRAL_PUBLIC' and p.mobilityType = 'ROTATIONAL') " +
-           "or (:institutionScope = 'LOCAL_PUBLIC' and p.mobilityType = 'FIXED')))) " +
+           "and (:institutionScope = '' or (p.organizationType = 'PUBLIC' and (" +
+           "(:institutionScope = 'CENTRAL_PUBLIC' and (p.publicInstitutionType = 'CENTRAL_PUBLIC' " +
+           "or p.alioInstitutionCode is not null or p.source in ('PUBLIC-DATA-RECRUITMENT', 'JOB-ALIO'))) " +
+           "or (:institutionScope = 'LOCAL_PUBLIC' and p.publicInstitutionType = 'LOCAL_PUBLIC' " +
+           "and p.alioInstitutionCode is null and p.source not in ('PUBLIC-DATA-RECRUITMENT', 'JOB-ALIO'))))) " +
            "and (:organizationForm = '' or lower(p.organization) like lower(concat('%', :organizationForm, '%'))) " +
            "and (:jobCategory = '' or exists (select rp.id from RecruitmentPosition rp where rp.posting = p " +
            "and lower(rp.standardCategory) like lower(concat('%', :jobCategory, '%')))) " +
