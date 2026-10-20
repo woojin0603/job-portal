@@ -66,7 +66,8 @@ public class PostingController {
     }
 
     /** 외부 상세 페이지의 구조와 이미지를 유지하는 격리 프레임용 HTML. */
-    public record Preview(String title, String organization, String sourceUrl, String originalUrl, String html) {
+    public record Preview(String title, String organization, String sourceUrl, String publisherUrl,
+                          String originalUrl, String html) {
     }
 
     /** 알리오 공시 기준 신입사원 초임. 금액 단위는 천원이다. */
@@ -339,6 +340,7 @@ public class PostingController {
             // 기관 채용사이트 주소는 개별 공고가 아닌 통합 홈페이지인 경우가 많다.
             // 따라서 실제 공고문 PDF를 우선하고, 없으면 JOB-ALIO 개별 상세 페이지를 사용한다.
             String originalUrl = p.sourceUrl;
+            String publisherUrl = publisherPostingUrl(doc, p.sourceUrl);
             if (postingPdf(doc) != null) {
                 originalUrl = "/api/postings/" + p.id + "/document";
             }
@@ -397,7 +399,7 @@ public class PostingController {
                     + ".hidden,.hide,[style*='display:none'],[style*='display: none']{display:none!important;}"
                     + "a[href]{cursor:pointer!important;pointer-events:auto!important;}</style></head><body>"
                     + content.outerHtml() + "</body></html>";
-            return new Preview(p.title, p.organization, p.sourceUrl, originalUrl, html);
+            return new Preview(p.title, p.organization, p.sourceUrl, publisherUrl, originalUrl, html);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "원문을 가져오지 못했습니다.");
         }
@@ -445,5 +447,31 @@ public class PostingController {
             }
         }
         return null;
+    }
+
+    /** JOB-ALIO 상세 화면의 '원문 URL' 항목에서 실제 채용기관 공고 주소를 찾는다. */
+    private String publisherPostingUrl(Document doc, String fallback) {
+        for (Element label : doc.getElementsContainingOwnText("원문 URL")) {
+            Element scope = label;
+            for (int depth = 0; depth < 5 && scope != null; depth++, scope = scope.parent()) {
+                for (Element link : scope.select("a[href]")) {
+                    String candidate = link.absUrl("href");
+                    if (isPublicHttpUrl(candidate) && !candidate.equals(fallback)) {
+                        return candidate;
+                    }
+                }
+            }
+        }
+        return fallback;
+    }
+
+    private boolean isPublicHttpUrl(String candidate) {
+        try {
+            URI uri = URI.create(candidate);
+            return uri.getHost() != null
+                    && ("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()));
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
     }
 }
