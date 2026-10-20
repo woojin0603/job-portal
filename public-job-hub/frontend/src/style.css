@@ -2968,6 +2968,27 @@ nav button.active {
   color: #536779;
   line-height: 1.6;
 }
+.detail-positions .detail-position-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 0;
+  padding: 0;
+}
+.detail-position-chips > span {
+  border: 1px solid #d6ddd8;
+  border-radius: 7px;
+  background: #f4f6f4;
+  color: #3e5147;
+  padding: 8px 11px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.detail-position-chips .detail-position-more {
+  border-style: dashed;
+  background: #fff;
+  color: #6b756f;
+}
 .original-preview iframe {
   width: 100%;
   height: min(82vh, 980px);

@@ -315,6 +315,21 @@ function institutionClassification(job) {
   return form ? `${scope} · ${form}` : scope
 }
 
+function compactPositionLabel(position, fallbackRegion) {
+  const source = position.standardCategory || position.originalName || '직렬 미확인'
+  const categories = [
+    ...new Set(
+      String(source)
+        .split(/[,，.·/|>]+/)
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  ]
+  const category = categories.slice(0, 3).join(', ')
+  const region = summarizeList(position.workRegion || fallbackRegion, 1)
+  return region ? `${category} (${region})` : category
+}
+
 function sourceIconUrl(sourceUrl) {
   try {
     return `${new URL(sourceUrl).origin}/favicon.ico`
@@ -582,6 +597,10 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
 
   if (message) return <p className="error">{message}</p>
   if (!job) return <p className="empty">공고 상세 내용을 불러오는 중...</p>
+  const compactPositions = [
+    ...new Set(job.positions?.map((position) => compactPositionLabel(position, job.region)) || []),
+  ]
+  const visibleCompactPositions = compactPositions.slice(0, 12)
   return (
     <article className="posting-detail-page">
       <div className="detail-toolbar">
@@ -591,7 +610,11 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
             {job.scrapped ? '스크랩 해제' : user ? '스크랩' : '로그인하고 스크랩'}
           </button>
           <button onClick={() => onShare(job)}>공유</button>
-          <a href={preview?.originalUrl || job.sourceUrl} target="_blank" rel="noreferrer">
+          <a
+            href={preview?.publisherUrl || preview?.sourceUrl || job.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
             원문 사이트 ↗
           </a>
         </div>
@@ -620,14 +643,16 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
       {job.positions?.length > 0 && (
         <section className="detail-positions">
           <h2>채용 직렬</h2>
-          {job.positions.map((position, index) => (
-            <div key={`${position.originalName}-${index}`}>
-              <strong>{position.standardCategory || position.originalName}</strong>
-              <span>{position.originalName}</span>
-              {position.headcount && <span>{position.headcount}명</span>}
-              {position.requirements && <p>{position.requirements}</p>}
-            </div>
-          ))}
+          <div className="detail-position-chips">
+            {visibleCompactPositions.map((position) => (
+              <span key={position}>{position}</span>
+            ))}
+            {compactPositions.length > visibleCompactPositions.length && (
+              <span className="detail-position-more">
+                외 {compactPositions.length - visibleCompactPositions.length}개
+              </span>
+            )}
+          </div>
         </section>
       )}
       {preview?.originalUrl && (
