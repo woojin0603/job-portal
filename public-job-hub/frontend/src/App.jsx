@@ -638,11 +638,15 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
               새 창에서 원문 보기 ↗
             </a>
           </div>
-          <iframe
-            title="채용공고 원문"
-            sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-downloads"
-            src={preview.originalUrl}
-          />
+          {preview.originalUrl.startsWith('/api/') ? (
+            <iframe title="채용공고 PDF 원문" src={preview.originalUrl} />
+          ) : (
+            <iframe
+              title="채용공고 원문 내용"
+              sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              srcDoc={preview.html}
+            />
+          )}
         </section>
       )}
     </article>
