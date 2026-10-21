@@ -343,6 +343,71 @@ h1 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
+.posting-view-switch {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 12px 0 16px;
+}
+.posting-view-switch span {
+  margin-right: 4px;
+  color: #647069;
+  font-size: 13px;
+}
+.posting-view-switch button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid #cfd7d2;
+  border-radius: 8px;
+  background: #fff;
+  color: #3b4842;
+  font-weight: 600;
+}
+.posting-view-switch button.active {
+  border-color: #2f5b4e;
+  background: #2f5b4e;
+  color: #fff;
+}
+.posting-list {
+  overflow: hidden;
+  border-top: 1px solid #d8dfdb;
+}
+.posting-list-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 54px;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid #e1e6e3;
+  background: #fff;
+  color: #26332d;
+  text-align: left;
+}
+.posting-list-row:hover,
+.posting-list-row:focus-visible {
+  background: #f5f7f5;
+}
+.posting-list-organization {
+  flex: 0 0 auto;
+  color: #244f43;
+  font-weight: 700;
+}
+.posting-list-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.posting-list-deadline,
+.posting-list-row time {
+  flex: 0 0 auto;
+  color: #68746e;
+  font-size: 13px;
+  font-weight: 600;
+}
 /* 공고 카드와 스크랩·지원 완료 상태별 외곽선 색상. */
 .card {
   min-height: 410px;
@@ -5313,6 +5378,20 @@ nav a:hover,
 }
 
 @media (max-width: 700px) {
+  .posting-view-switch {
+    justify-content: stretch;
+  }
+  .posting-view-switch button {
+    flex: 1;
+  }
+  .posting-list-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 3px 6px;
+  }
+  .posting-list-row time {
+    grid-column: 2 / -1;
+  }
   .admin-logo-toolbar {
     align-items: stretch;
     flex-direction: column;

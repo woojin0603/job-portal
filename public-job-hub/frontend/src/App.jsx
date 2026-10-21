@@ -334,6 +334,28 @@ function sourceIconUrl(job) {
   return job?.id ? `/api/postings/${job.id}/logo` : ''
 }
 
+function postingDeadlineLabel(deadline) {
+  if (!deadline) return '마감일 미정'
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const end = new Date(`${deadline}T00:00:00`)
+  const days = Math.ceil((end.getTime() - today.getTime()) / 86400000)
+  if (days < 0) return '마감'
+  return days === 0 ? 'D-Day' : `D-${days}`
+}
+
+/** 게시판형 목록은 기관·제목·남은 기간·마감일만 한 줄에 표시한다. */
+function PostingListRow({ job, onOpen }) {
+  return (
+    <button type="button" className="posting-list-row" onClick={onOpen}>
+      <strong className="posting-list-organization">[{job.organization || '기관 미확인'}]</strong>
+      <span className="posting-list-title">{job.title}</span>
+      <span className="posting-list-deadline">({postingDeadlineLabel(job.deadline)})</span>
+      <time dateTime={job.deadline || undefined}>/ {job.deadline || '마감일 미정'}</time>
+    </button>
+  )
+}
+
 /** 현재 페이지가 속한 5개 묶음과 맨 앞·뒤 이동을 함께 제공한다. */
 function Pagination({ page, totalPages, onChange }) {
   if (!totalPages || totalPages <= 1) return null
@@ -5024,6 +5046,9 @@ export default function App() {
   const [organizationForm, setOrganizationForm] = useState('')
   const [jobCategory, setJobCategory] = useState('')
   const [showClosed, setShowClosed] = useState(false)
+  const [postingViewMode, setPostingViewMode] = useState(
+    () => window.localStorage.getItem('jobhub-posting-view') || 'card',
+  )
   const [filterOptions, setFilterOptions] = useState({
     regions: [],
     mobilityTypes: [],
@@ -5087,6 +5112,11 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState(null)
   const [online, setOnline] = useState(navigator.onLine)
   const [updateAvailable, setUpdateAvailable] = useState(false)
+
+  function changePostingView(mode) {
+    setPostingViewMode(mode)
+    window.localStorage.setItem('jobhub-posting-view', mode)
+  }
 
   /** 브라우저 주소와 화면 상태를 동기화해 새로고침·뒤로가기를 지원한다. */
   const applyRoute = useCallback(() => {
@@ -5950,6 +5980,27 @@ export default function App() {
                 </div>
               </>
             )}
+            {(!mine || scrapsOpen) && (
+              <div className="posting-view-switch" role="group" aria-label="공고 표시 방식">
+                <span>표시 방식</span>
+                <button
+                  type="button"
+                  className={postingViewMode === 'card' ? 'active' : ''}
+                  aria-pressed={postingViewMode === 'card'}
+                  onClick={() => changePostingView('card')}
+                >
+                  카드형
+                </button>
+                <button
+                  type="button"
+                  className={postingViewMode === 'list' ? 'active' : ''}
+                  aria-pressed={postingViewMode === 'list'}
+                  onClick={() => changePostingView('list')}
+                >
+                  게시판형
+                </button>
+              </div>
+            )}
             {!mine && !online && (
               <p className="offline-notice" role="status">
                 오프라인 상태입니다. 앱 화면은 열리지만 공고 조회·로그인·스크랩에는 인터넷 연결이
@@ -5978,27 +6029,31 @@ export default function App() {
               ) : (
                 <section
                   key={`scraps-${page}`}
-                  className="grid scrap-list-grid page-transition"
+                  className={`${postingViewMode === 'card' ? 'grid scrap-list-grid' : 'posting-list'} page-transition`}
                   aria-label="스크랩한 채용공고 목록"
                 >
-                  {data.items.map((job) => (
-                    <JobCard
-                      key={job.id}
-                      job={job}
-                      busy={busyId === job.id}
-                      onOpenSource={() => openSource(job)}
-                      onSalary={openSalary}
-                      onCompetition={openCompetition}
-                      onScrap={(id) => mutate(id, 'scrap')}
-                      onTrack={saveTracking}
-                      onMatch={analyzeMatch}
-                      onShare={shareJob}
-                      onInsight={openInsight}
-                      onReport={openReport}
-                      matchBusy={matchBusyId === job.id}
-                      memberActions={Boolean(user)}
-                    />
-                  ))}
+                  {data.items.map((job) =>
+                    postingViewMode === 'list' ? (
+                      <PostingListRow key={job.id} job={job} onOpen={() => openSource(job)} />
+                    ) : (
+                      <JobCard
+                        key={job.id}
+                        job={job}
+                        busy={busyId === job.id}
+                        onOpenSource={() => openSource(job)}
+                        onSalary={openSalary}
+                        onCompetition={openCompetition}
+                        onScrap={(id) => mutate(id, 'scrap')}
+                        onTrack={saveTracking}
+                        onMatch={analyzeMatch}
+                        onShare={shareJob}
+                        onInsight={openInsight}
+                        onReport={openReport}
+                        matchBusy={matchBusyId === job.id}
+                        memberActions={Boolean(user)}
+                      />
+                    ),
+                  )}
                 </section>
               ))}
             {mine && scrapsOpen && !loading && data.items.length === 0 && (
@@ -6040,27 +6095,31 @@ export default function App() {
               ) : (
                 <section
                   key={`jobs-${page}`}
-                  className="grid page-transition"
+                  className={`${postingViewMode === 'card' ? 'grid' : 'posting-list'} page-transition`}
                   aria-label="채용공고 목록"
                 >
-                  {data.items.map((job) => (
-                    <JobCard
-                      key={job.id}
-                      job={job}
-                      busy={busyId === job.id}
-                      onOpenSource={() => openSource(job)}
-                      onSalary={openSalary}
-                      onCompetition={openCompetition}
-                      onScrap={(id) => mutate(id, 'scrap')}
-                      onTrack={saveTracking}
-                      onMatch={analyzeMatch}
-                      onShare={shareJob}
-                      onInsight={openInsight}
-                      onReport={openReport}
-                      matchBusy={matchBusyId === job.id}
-                      memberActions={Boolean(user)}
-                    />
-                  ))}
+                  {data.items.map((job) =>
+                    postingViewMode === 'list' ? (
+                      <PostingListRow key={job.id} job={job} onOpen={() => openSource(job)} />
+                    ) : (
+                      <JobCard
+                        key={job.id}
+                        job={job}
+                        busy={busyId === job.id}
+                        onOpenSource={() => openSource(job)}
+                        onSalary={openSalary}
+                        onCompetition={openCompetition}
+                        onScrap={(id) => mutate(id, 'scrap')}
+                        onTrack={saveTracking}
+                        onMatch={analyzeMatch}
+                        onShare={shareJob}
+                        onInsight={openInsight}
+                        onReport={openReport}
+                        matchBusy={matchBusyId === job.id}
+                        memberActions={Boolean(user)}
+                      />
+                    ),
+                  )}
                 </section>
               ))}
             {!mine && !loading && data.items.length === 0 && (
