@@ -330,12 +330,8 @@ function compactPositionLabel(position, fallbackRegion) {
   return region ? `${category} (${region})` : category
 }
 
-function sourceIconUrl(sourceUrl) {
-  try {
-    return `${new URL(sourceUrl).origin}/favicon.ico`
-  } catch {
-    return ''
-  }
+function sourceIconUrl(job) {
+  return job?.id ? `/api/postings/${job.id}/logo` : ''
 }
 
 /** 현재 페이지가 속한 5개 묶음과 맨 앞·뒤 이동을 함께 제공한다. */
@@ -408,7 +404,7 @@ function JobCard({
   const urgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 2
   const expired = daysLeft !== null && daysLeft < 0
   const [iconFailed, setIconFailed] = useState(false)
-  const iconUrl = sourceIconUrl(job.sourceUrl)
+  const iconUrl = sourceIconUrl(job)
   const institutionType = institutionLabel(job)
   const institutionClassificationText = institutionClassification(job)
   const visiblePositions = (job.positions || []).slice(0, 2)
@@ -461,7 +457,7 @@ function JobCard({
         <div className="organization-row">
           <span className={`source-symbol ${iconFailed || !iconUrl ? 'fallback' : ''}`}>
             {!iconFailed && iconUrl ? (
-              <img src={iconUrl} alt="" onError={() => setIconFailed(true)} />
+              <img src={iconUrl} alt="" loading="lazy" onError={() => setIconFailed(true)} />
             ) : (
               job.organization?.trim()?.charAt(0) || 'J'
             )}
@@ -4865,7 +4861,13 @@ export default function App() {
     mobilityTypes: [],
     jobCategories: [],
   })
-  const [page, setPage] = useState(0)
+  const [page, setPage] = useState(() => {
+    const requested = Number.parseInt(
+      new URLSearchParams(window.location.search).get('page') || '1',
+      10,
+    )
+    return Number.isFinite(requested) && requested > 0 ? requested - 1 : 0
+  })
   const [data, setData] = useState({
     items: [],
     total: 0,
@@ -4921,18 +4923,31 @@ export default function App() {
   /** 브라우저 주소와 화면 상태를 동기화해 새로고침·뒤로가기를 지원한다. */
   const applyRoute = useCallback(() => {
     const path = window.location.pathname
+    const requestedPage = Number.parseInt(
+      new URLSearchParams(window.location.search).get('page') || '1',
+      10,
+    )
     const postingMatch = path.match(/^\/postings\/(\d+)$/)
     setDetailId(postingMatch ? Number(postingMatch[1]) : null)
     setLandingView(path === '/')
     setMine(path === '/mypage')
     setCommunityView(path === '/community')
     setAdminView(path === '/admin')
+    if (path === '/jobs' || path === '/mypage') {
+      setPage(Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage - 1 : 0)
+    }
   }, [])
   useEffect(() => {
     applyRoute()
     window.addEventListener('popstate', applyRoute)
     return () => window.removeEventListener('popstate', applyRoute)
   }, [applyRoute])
+  useEffect(() => {
+    if (window.location.pathname !== '/jobs' && window.location.pathname !== '/mypage') return
+    const url = new URL(window.location.href)
+    url.searchParams.set('page', String(page + 1))
+    window.history.replaceState({}, '', `${url.pathname}${url.search}`)
+  }, [page])
 
   /** 브라우저의 설치 제안을 보관하고 온라인·오프라인 전환을 화면에 반영한다. */
   useEffect(() => {
@@ -5113,7 +5128,7 @@ export default function App() {
       if (authReturn === 'mypage') {
         setMine(true)
         setLandingView(false)
-        window.history.pushState({}, '', '/mypage')
+        window.history.pushState({}, '', '/mypage?page=1')
       }
       setAuthReturn(null)
       await load()
@@ -5392,7 +5407,7 @@ export default function App() {
     setCommunityView(false)
     setDetailId(null)
     setPage(0)
-    window.history.pushState({}, '', nextMine ? '/mypage' : '/jobs')
+    window.history.pushState({}, '', nextMine ? '/mypage?page=1' : '/jobs?page=1')
   }
   /** 서비스 배너를 누르면 검색·필터·개인 화면 상태를 모두 지우고 첫 화면으로 돌아간다. */
   function resetHome() {
@@ -5421,6 +5436,15 @@ export default function App() {
     e.preventDefault()
     setQuery(queryInput.trim())
     setPage(0)
+  }
+  function changePage(nextPage) {
+    const safePage = Math.max(0, nextPage)
+    const url = new URL(window.location.href)
+    url.pathname = mine ? '/mypage' : '/jobs'
+    url.searchParams.set('page', String(safePage + 1))
+    window.history.pushState({}, '', `${url.pathname}${url.search}`)
+    setPage(safePage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   const status = data.crawlStatus
   const districtOptions = districtsIn(regionProvince)
@@ -5784,7 +5808,11 @@ export default function App() {
               (loading ? (
                 <p className="empty">불러오는 중...</p>
               ) : (
-                <section className="grid scrap-list-grid" aria-label="스크랩한 채용공고 목록">
+                <section
+                  key={`scraps-${page}`}
+                  className="grid scrap-list-grid page-transition"
+                  aria-label="스크랩한 채용공고 목록"
+                >
                   {data.items.map((job) => (
                     <JobCard
                       key={job.id}
@@ -5809,7 +5837,7 @@ export default function App() {
               <p className="empty">스크랩한 공고가 없습니다.</p>
             )}
             {mine && scrapsOpen && (
-              <Pagination page={page} totalPages={data.totalPages} onChange={setPage} />
+              <Pagination page={page} totalPages={data.totalPages} onChange={changePage} />
             )}
             {mine && user && (
               <div className="mypage-dashboard">
@@ -5842,7 +5870,11 @@ export default function App() {
               (loading ? (
                 <p className="empty">불러오는 중...</p>
               ) : (
-                <section className="grid" aria-label="채용공고 목록">
+                <section
+                  key={`jobs-${page}`}
+                  className="grid page-transition"
+                  aria-label="채용공고 목록"
+                >
                   {data.items.map((job) => (
                     <JobCard
                       key={job.id}
@@ -5870,7 +5902,7 @@ export default function App() {
                   : '공고가 없습니다.'}
               </p>
             )}
-            {!mine && <Pagination page={page} totalPages={data.totalPages} onChange={setPage} />}
+            {!mine && <Pagination page={page} totalPages={data.totalPages} onChange={changePage} />}
           </>
         )}
       </main>

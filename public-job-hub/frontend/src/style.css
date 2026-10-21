@@ -3033,6 +3033,31 @@ nav button.active {
   }
 }
 
+/* opacity와 transform만 사용해 저사양 기기에서도 부담이 적은 페이지 전환을 제공한다. */
+.page-transition,
+.posting-detail-page {
+  animation: page-enter 170ms ease-out both;
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-transition,
+  .posting-detail-page {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 /* 차분한 공공서비스 톤: 구조는 유지하고 장식적인 파랑·그라데이션을 줄인다. */
 :root {
   color: #242a27;

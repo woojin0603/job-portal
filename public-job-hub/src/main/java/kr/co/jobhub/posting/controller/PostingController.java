@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.net.URI;
 import java.security.Principal;
 import java.util.function.Function;
@@ -92,6 +93,7 @@ public class PostingController {
     private final InstitutionCompensationRepository compensations;
     private final RecruitmentCompetitionRepository competitions;
     private final Set<String> sourceHosts;
+    private final Map<Long, URI> institutionLogoUrls = new ConcurrentHashMap<>();
 
     /** 공고·회원·스크랩 저장소와 수집 상태 제공자를 주입받는다. */
     public PostingController(JobPostingRepository postings, ScrapRepository scraps,
@@ -128,6 +130,38 @@ public class PostingController {
     @GetMapping("/crawl-status")
     public CrawlService.Status crawlStatus() {
         return crawler.status();
+    }
+
+    /** JOB-ALIO 공통 아이콘 대신 각 채용기관 원문 사이트의 파비콘으로 이동시킨다. */
+    @GetMapping("/postings/{id}/logo")
+    public ResponseEntity<Void> institutionLogo(@PathVariable Long id) {
+        URI cached = institutionLogoUrls.get(id);
+        if (cached != null) {
+            return ResponseEntity.status(HttpStatus.FOUND).location(cached).build();
+        }
+        JobPosting posting = postings.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        try {
+            URI source = URI.create(posting.sourceUrl);
+            if (!"https".equalsIgnoreCase(source.getScheme()) || source.getHost() == null
+                    || !sourceHosts.contains(source.getHost().toLowerCase())) {
+                return ResponseEntity.notFound().build();
+            }
+            Document doc = Jsoup.connect(posting.sourceUrl).userAgent("Mozilla/5.0 PublicJobHub/0.3")
+                    .followRedirects(false).maxBodySize(3_000_000).timeout(10000).get();
+            String publisherUrl = publisherPostingUrl(doc, posting.sourceUrl);
+            if (publisherUrl.equals(posting.sourceUrl)
+                    && source.getHost().toLowerCase().endsWith("alio.go.kr")) {
+                return ResponseEntity.notFound().build();
+            }
+            URI publisher = URI.create(publisherUrl);
+            URI favicon = new URI(publisher.getScheme(), null, publisher.getHost(), publisher.getPort(),
+                    "/favicon.ico", null, null);
+            institutionLogoUrls.put(id, favicon);
+            return ResponseEntity.status(HttpStatus.FOUND).location(favicon).build();
+        } catch (Exception ignored) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /** 검색어·마이페이지 여부·페이지 번호에 맞는 공고 12건을 반환한다. */
