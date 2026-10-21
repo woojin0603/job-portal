@@ -19,6 +19,10 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
             String organization, String title, LocalDate postedAt, LocalDate deadline);
     List<JobPosting> findByAlioInstitutionCodeOrderByPostedAtDesc(String alioInstitutionCode);
 
+    /** 관리자 로고 관리 화면에 기관별 공고 수와 대표 공고 ID를 제공한다. */
+    @Query("select p.organization, count(p.id), min(p.id) from JobPosting p group by p.organization")
+    List<Object[]> organizationLogoCandidates();
+
     /**
      * 공개 중인 공고를 제목·기관명으로 검색하고 20건씩 페이지로 나눈다.
      * mine이 참이면 지정 회원이 스크랩한 공고만 DB 쿼리 단계에서 필터링한다.

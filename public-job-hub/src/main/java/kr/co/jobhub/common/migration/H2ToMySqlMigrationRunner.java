@@ -22,7 +22,7 @@ import java.util.*;
 @ConditionalOnProperty(name = "jobhub.migration.h2-to-mysql", havingValue = "true")
 public class H2ToMySqlMigrationRunner implements ApplicationRunner {
     private static final List<String> TABLES = List.of(
-            "app_users", "login_histories", "job_postings", "qualification_catalog", "institution_compensations", "notices", "data_retention_policies", "admin_audit_logs",
+            "app_users", "login_histories", "job_postings", "institution_logos", "qualification_catalog", "institution_compensations", "notices", "data_retention_policies", "admin_audit_logs",
             "user_profiles", "job_alert_preferences", "favorite_organizations", "posting_change_cursors",
             "user_notification_states", "push_subscriptions",
             "scraps", "inquiries", "recruitment_positions", "recruitment_competitions", "posting_changes", "posting_reports");

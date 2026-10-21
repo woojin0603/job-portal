@@ -94,6 +94,7 @@ public class PostingController {
     private final CrawlService crawler;
     private final InstitutionCompensationRepository compensations;
     private final RecruitmentCompetitionRepository competitions;
+    private final InstitutionLogoRepository institutionLogos;
     private final Set<String> sourceHosts;
     private final Map<Long, Optional<URI>> institutionLogoUrls = new ConcurrentHashMap<>();
 
@@ -102,6 +103,7 @@ public class PostingController {
                          AppUserRepository users, RecruitmentPositionRepository positions, CrawlService crawler,
                          InstitutionCompensationRepository compensations,
                          RecruitmentCompetitionRepository competitions,
+                         InstitutionLogoRepository institutionLogos,
                          @Value("${jobhub.crawl.sources}") String configuredSources) {
         this.postings = postings;
         this.scraps = scraps;
@@ -110,6 +112,7 @@ public class PostingController {
         this.crawler = crawler;
         this.compensations = compensations;
         this.competitions = competitions;
+        this.institutionLogos = institutionLogos;
         this.sourceHosts = java.util.Arrays.stream(configuredSources.split(","))
                 .map(raw -> raw.split("\\|", -1))
                 .filter(parts -> parts.length >= 2)
@@ -137,13 +140,17 @@ public class PostingController {
     /** JOB-ALIO 공통 아이콘 대신 각 채용기관이 선언한 대표 아이콘으로 이동시킨다. */
     @GetMapping("/postings/{id}/logo")
     public ResponseEntity<Void> institutionLogo(@PathVariable Long id) {
+        JobPosting posting = postings.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var manualLogo = institutionLogos.findByOrganizationIgnoreCase(posting.organization);
+        if (manualLogo.isPresent()) {
+            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(manualLogo.get().logoUrl)).build();
+        }
         Optional<URI> cached = institutionLogoUrls.get(id);
         if (cached != null) {
             return cached.map(uri -> ResponseEntity.status(HttpStatus.FOUND).location(uri).<Void>build())
                     .orElseGet(() -> ResponseEntity.notFound().build());
         }
-        JobPosting posting = postings.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         try {
             URI source = URI.create(posting.sourceUrl);
             if (!"https".equalsIgnoreCase(source.getScheme()) || source.getHost() == null

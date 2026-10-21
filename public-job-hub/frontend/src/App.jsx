@@ -3578,6 +3578,172 @@ function AdminTrendChart({ daily }) {
   )
 }
 
+function AdminInstitutionLogos({ securePost }) {
+  const [items, setItems] = useState([])
+  const [query, setQuery] = useState('')
+  const [failed, setFailed] = useState(() => new Set())
+  const [editing, setEditing] = useState(null)
+  const [logoUrl, setLogoUrl] = useState('')
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const load = useCallback(() => {
+    setBusy(true)
+    getJson('/api/admin/institution-logos')
+      .then(setItems)
+      .catch((error) => setMessage(error.message))
+      .finally(() => setBusy(false))
+  }, [])
+
+  useEffect(load, [load])
+
+  const visible = items.filter((item) =>
+    item.organization.toLowerCase().includes(query.trim().toLowerCase()),
+  )
+  const missingCount = items.filter((item) => failed.has(item.organization)).length
+
+  async function save(event) {
+    event.preventDefault()
+    setBusy(true)
+    setMessage('')
+    try {
+      await securePost(
+        '/api/admin/institution-logos',
+        JSON.stringify({ organization: editing, logoUrl }),
+        'application/json',
+      )
+      setFailed((current) => {
+        const next = new Set(current)
+        next.delete(editing)
+        return next
+      })
+      setEditing(null)
+      setLogoUrl('')
+      setMessage('기관 로고를 저장했습니다.')
+      load()
+    } catch (error) {
+      setMessage(error.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove(organization) {
+    setBusy(true)
+    try {
+      await securePost(
+        '/api/admin/institution-logos/delete',
+        JSON.stringify({ organization, logoUrl: '' }),
+        'application/json',
+      )
+      setMessage('수동 로고를 삭제했습니다. 자동 탐색 로고가 다시 적용됩니다.')
+      load()
+    } catch (error) {
+      setMessage(error.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="admin-logo-manager" aria-label="기관 로고 관리">
+      <div className="operations-heading">
+        <div>
+          <h2>기관 로고 관리</h2>
+          <span>
+            수집 기관 {items.length}곳 · 현재 화면에서 자동 로고 누락 {missingCount}곳
+          </span>
+        </div>
+        <button type="button" disabled={busy} onClick={load}>
+          다시 확인
+        </button>
+      </div>
+      <div className="admin-logo-toolbar">
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="기관명 검색"
+          aria-label="기관명 검색"
+        />
+        <span>로고가 깨진 기관은 ‘등록 필요’로 표시됩니다.</span>
+      </div>
+      {message && <p className="status">{message}</p>}
+      <div className="admin-logo-list">
+        {visible.map((item) => {
+          const missing = failed.has(item.organization)
+          const source = item.manual
+            ? item.logoUrl
+            : `/api/postings/${item.representativePostingId}/logo`
+          return (
+            <article key={item.organization} className={missing ? 'missing' : ''}>
+              <div className="admin-logo-preview">
+                <img
+                  src={source}
+                  alt=""
+                  loading="lazy"
+                  onLoad={() =>
+                    setFailed((current) => {
+                      const next = new Set(current)
+                      next.delete(item.organization)
+                      return next
+                    })
+                  }
+                  onError={() => setFailed((current) => new Set(current).add(item.organization))}
+                />
+              </div>
+              <div className="admin-logo-info">
+                <strong>{item.organization}</strong>
+                <span>{item.postingCount}개 공고</span>
+                <small>{item.manual ? '운영자 등록' : missing ? '등록 필요' : '자동 탐색'}</small>
+              </div>
+              <div className="admin-logo-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(item.organization)
+                    setLogoUrl(item.logoUrl || '')
+                  }}
+                >
+                  {item.manual ? '수정' : '직접 등록'}
+                </button>
+                {item.manual && (
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => remove(item.organization)}
+                  >
+                    삭제
+                  </button>
+                )}
+              </div>
+            </article>
+          )
+        })}
+      </div>
+      {editing && (
+        <form className="admin-logo-form" onSubmit={save}>
+          <strong>{editing} 로고 등록</strong>
+          <p>기관 공식 홈페이지의 HTTPS 이미지 주소를 입력하세요.</p>
+          <input
+            type="url"
+            required
+            pattern="https://.*"
+            value={logoUrl}
+            onChange={(event) => setLogoUrl(event.target.value)}
+            placeholder="https://기관주소/logo.png"
+          />
+          <div>
+            <button disabled={busy}>저장</button>
+            <button type="button" className="secondary" onClick={() => setEditing(null)}>
+              취소
+            </button>
+          </div>
+        </form>
+      )}
+    </section>
+  )
+}
+
 function AdminReviewPanel({ user, securePost }) {
   const [section, setSection] = useState('overview')
   const [items, setItems] = useState([])
@@ -3840,6 +4006,7 @@ function AdminReviewPanel({ user, securePost }) {
           ],
           ['incidents', `장애 대응${operationIssues.length ? ` ${operationIssues.length}` : ''}`],
           ['collection', '수집 관리'],
+          ['logos', '기관 로고'],
           [
             'review',
             `공고 검수${dashboard?.qualityAttention ? ` ${dashboard.qualityAttention}` : ''}`,
@@ -4301,6 +4468,7 @@ function AdminReviewPanel({ user, securePost }) {
           )}
         </section>
       )}
+      {section === 'logos' && <AdminInstitutionLogos securePost={securePost} />}
       {section === 'collection' && crawlInfo?.apiStatus?.validation?.pagesScanned > 0 && (
         <section className="collection-audit" aria-label="최근 공고 수집 검증 결과">
           <div className="collection-audit-head">
