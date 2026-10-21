@@ -33,7 +33,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.net.URI;
+import java.net.InetAddress;
 import java.security.Principal;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -93,7 +95,7 @@ public class PostingController {
     private final InstitutionCompensationRepository compensations;
     private final RecruitmentCompetitionRepository competitions;
     private final Set<String> sourceHosts;
-    private final Map<Long, URI> institutionLogoUrls = new ConcurrentHashMap<>();
+    private final Map<Long, Optional<URI>> institutionLogoUrls = new ConcurrentHashMap<>();
 
     /** 공고·회원·스크랩 저장소와 수집 상태 제공자를 주입받는다. */
     public PostingController(JobPostingRepository postings, ScrapRepository scraps,
@@ -132,12 +134,13 @@ public class PostingController {
         return crawler.status();
     }
 
-    /** JOB-ALIO 공통 아이콘 대신 각 채용기관 원문 사이트의 파비콘으로 이동시킨다. */
+    /** JOB-ALIO 공통 아이콘 대신 각 채용기관이 선언한 대표 아이콘으로 이동시킨다. */
     @GetMapping("/postings/{id}/logo")
     public ResponseEntity<Void> institutionLogo(@PathVariable Long id) {
-        URI cached = institutionLogoUrls.get(id);
+        Optional<URI> cached = institutionLogoUrls.get(id);
         if (cached != null) {
-            return ResponseEntity.status(HttpStatus.FOUND).location(cached).build();
+            return cached.map(uri -> ResponseEntity.status(HttpStatus.FOUND).location(uri).<Void>build())
+                    .orElseGet(() -> ResponseEntity.notFound().build());
         }
         JobPosting posting = postings.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -152,15 +155,100 @@ public class PostingController {
             String publisherUrl = publisherPostingUrl(doc, posting.sourceUrl);
             if (publisherUrl.equals(posting.sourceUrl)
                     && source.getHost().toLowerCase().endsWith("alio.go.kr")) {
+                institutionLogoUrls.put(id, Optional.empty());
                 return ResponseEntity.notFound().build();
             }
             URI publisher = URI.create(publisherUrl);
-            URI favicon = new URI(publisher.getScheme(), null, publisher.getHost(), publisher.getPort(),
-                    "/favicon.ico", null, null);
-            institutionLogoUrls.put(id, favicon);
-            return ResponseEntity.status(HttpStatus.FOUND).location(favicon).build();
+            if (!isSafePublisherHost(publisher)) {
+                institutionLogoUrls.put(id, Optional.empty());
+                return ResponseEntity.notFound().build();
+            }
+            URI logo = discoverInstitutionLogo(publisher);
+            institutionLogoUrls.put(id, Optional.of(logo));
+            return ResponseEntity.status(HttpStatus.FOUND).location(logo).build();
         } catch (Exception ignored) {
+            institutionLogoUrls.put(id, Optional.empty());
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    /** 기관 페이지가 명시한 아이콘과 로고를 우선 사용하고 마지막에 표준 favicon 경로를 사용한다. */
+    private URI discoverInstitutionLogo(URI publisher) throws Exception {
+        Document publisherPage;
+        try {
+            publisherPage = Jsoup.connect(publisher.toString())
+                    .userAgent("Mozilla/5.0 PublicJobHub/0.3")
+                    .followRedirects(false)
+                    .maxBodySize(2_000_000)
+                    .timeout(7000)
+                    .get();
+        } catch (Exception ignored) {
+            return rootFavicon(publisher);
+        }
+
+        String[] selectors = {
+                "link[rel~=(?i)icon][href]",
+                "link[rel~=(?i)apple-touch-icon][href]",
+                "meta[property=(?i)og:image][content]",
+                "img[class~=(?i).*logo.*][src]",
+                "img[id~=(?i).*logo.*][src]",
+                "header img[src]"
+        };
+        for (String selector : selectors) {
+            for (Element element : publisherPage.select(selector)) {
+                String attribute = element.hasAttr("href") ? "href"
+                        : element.hasAttr("content") ? "content" : "src";
+                String candidate = element.absUrl(attribute);
+                if (candidate.isBlank()) {
+                    candidate = publisher.resolve(element.attr(attribute)).toString();
+                }
+                if (isSafeLogoUrl(candidate, publisher.getHost())) {
+                    return URI.create(candidate);
+                }
+            }
+        }
+        return rootFavicon(publisher);
+    }
+
+    private URI rootFavicon(URI publisher) throws Exception {
+        return new URI(publisher.getScheme(), null, publisher.getHost(), publisher.getPort(),
+                "/favicon.ico", null, null);
+    }
+
+    private boolean isSafeLogoUrl(String candidate, String publisherHost) {
+        try {
+            URI logo = URI.create(candidate);
+            if (logo.getHost() == null || logo.getScheme() == null) return false;
+            if (!"https".equalsIgnoreCase(logo.getScheme()) && !"http".equalsIgnoreCase(logo.getScheme())) {
+                return false;
+            }
+            String host = logo.getHost().toLowerCase();
+            String institutionHost = publisherHost.toLowerCase();
+            return host.equals(institutionHost)
+                    || host.endsWith("." + institutionHost)
+                    || institutionHost.endsWith("." + host);
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    /** 서버가 로컬·사설망 주소를 기관 사이트로 요청하지 않도록 제한한다. */
+    private boolean isSafePublisherHost(URI publisher) {
+        if (publisher.getHost() == null || publisher.getScheme() == null
+                || (!"https".equalsIgnoreCase(publisher.getScheme())
+                && !"http".equalsIgnoreCase(publisher.getScheme()))) {
+            return false;
+        }
+        try {
+            for (InetAddress address : InetAddress.getAllByName(publisher.getHost())) {
+                if (address.isAnyLocalAddress() || address.isLoopbackAddress()
+                        || address.isLinkLocalAddress() || address.isSiteLocalAddress()) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception ignored) {
+            return false;
         }
     }
 
