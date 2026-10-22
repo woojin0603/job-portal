@@ -1239,7 +1239,7 @@ nav button.active {
 .mypage-tabs button.active {
   border-color: #315f50;
   background: #315f50;
-  color: #fff;
+  color: #fff !important;
 }
 .mypage-tabs b {
   min-width: 21px;
@@ -1250,7 +1250,8 @@ nav button.active {
   font-size: 11px;
 }
 .mypage-tabs button.active b {
-  background: #ffffffdd;
+  background: #ffffff2b;
+  color: #fff;
 }
 .mypage-dashboard.compact > * {
   grid-column: 1 / -1;
@@ -3681,11 +3682,19 @@ h1,
   background: #334b3e;
 }
 .scrap-list-toggle,
-.password-change-button {
+.password-change-button,
+.account-delete-button {
   border-color: #cfd5d1;
   border-radius: 6px;
-  color: #46534c;
   font-weight: 500;
+}
+.scrap-list-toggle,
+.password-change-button {
+  color: #46534c;
+}
+.account-delete-button {
+  background: #fff;
+  color: #a33b2c !important;
 }
 .scrap-list-toggle:hover,
 .scrap-list-toggle.active {

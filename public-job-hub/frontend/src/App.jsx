@@ -5824,11 +5824,6 @@ export default function App() {
               )}
             </button>
             {user && (
-              <button className={capabilityOpen ? 'active' : ''} onClick={openCapabilities}>
-                내 역량
-              </button>
-            )}
-            {user && (
               <NotificationCenter
                 user={user}
                 securePost={securePost}
@@ -5836,7 +5831,6 @@ export default function App() {
                 refreshVersion={notificationRefresh}
               />
             )}
-            {user && <button onClick={() => setSecurityOpen(true)}>보안</button>}
             <button
               className={communityView ? 'active' : ''}
               onClick={() => {
@@ -5935,9 +5929,7 @@ export default function App() {
               <div>
                 <p className="eyebrow">공공기관 채용정보</p>
                 <h1>{mine ? '마이페이지' : '최신 채용공고 현황'}</h1>
-                <p className="sub">
-                  {mine ? '내 스펙과 맞춤 알림을 관리하세요.' : '마감 임박순 · 12개씩 조회'}
-                </p>
+                {mine && <p className="sub">내 스펙과 맞춤 알림을 관리하세요.</p>}
                 {mine && (
                   <div className="mypage-heading-actions">
                     <button
@@ -6117,9 +6109,6 @@ export default function App() {
                 </div>
                 <div className="meta">
                   <span>검색 결과 {data.total}건</span>
-                  <span>
-                    중앙 공공기관 · 지방공기업 · 민간기업을 기관 소속 기준으로 구분합니다. 이내
-                  </span>
                 </div>
               </>
             )}
@@ -6150,11 +6139,10 @@ export default function App() {
                 필요합니다.
               </p>
             )}
-            {!mine && status && (
+            {!mine && status?.lastSuccess && (
               <p className="status">
-                {status.lastSuccess
-                  ? `마지막 수집: ${new Date(status.lastSuccess).toLocaleString('ko-KR')} · 처리 ${status.lastCount}건`
-                  : '첫 자정 수집을 기다리는 중입니다.'}
+                마지막 수집: {new Date(status.lastSuccess).toLocaleString('ko-KR')} · 처리{' '}
+                {status.lastCount}건
                 {status.error && (
                   <span className="status-error"> · 일부 공고 수집을 확인하고 있습니다.</span>
                 )}
