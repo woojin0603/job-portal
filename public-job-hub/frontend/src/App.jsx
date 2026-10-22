@@ -363,6 +363,16 @@ function PostingListRow({ job, onOpen }) {
   )
 }
 
+function PostingListHeader() {
+  return (
+    <div className="posting-list-header" aria-hidden="true">
+      <span>채용기관</span>
+      <span>공고명</span>
+      <span>마감일</span>
+    </div>
+  )
+}
+
 /** 현재 페이지가 속한 5개 묶음과 맨 앞·뒤 이동을 함께 제공한다. */
 function Pagination({ page, totalPages, onChange }) {
   if (!totalPages || totalPages <= 1) return null
@@ -6040,6 +6050,7 @@ export default function App() {
                   className={`${postingViewMode === 'card' ? 'grid scrap-list-grid' : 'posting-list'} page-transition`}
                   aria-label="스크랩한 채용공고 목록"
                 >
+                  {postingViewMode === 'list' && <PostingListHeader />}
                   {data.items.map((job) =>
                     postingViewMode === 'list' ? (
                       <PostingListRow key={job.id} job={job} onOpen={() => openSource(job)} />
@@ -6106,6 +6117,7 @@ export default function App() {
                   className={`${postingViewMode === 'card' ? 'grid' : 'posting-list'} page-transition`}
                   aria-label="채용공고 목록"
                 >
+                  {postingViewMode === 'list' && <PostingListHeader />}
                   {data.items.map((job) =>
                     postingViewMode === 'list' ? (
                       <PostingListRow key={job.id} job={job} onOpen={() => openSource(job)} />

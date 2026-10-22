@@ -375,6 +375,22 @@ h1 {
   border-radius: 12px;
   background: #fff;
 }
+.posting-list-header {
+  display: grid;
+  grid-template-columns: minmax(150px, 240px) minmax(0, 1fr) 196px;
+  align-items: center;
+  min-height: 44px;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #cfd8d3;
+  background: #eef2ef;
+  color: #526059;
+  font-size: 13px;
+  font-weight: 750;
+}
+.posting-list-header span:last-child {
+  text-align: center;
+}
 .posting-list-row {
   display: grid;
   grid-template-columns: minmax(150px, 240px) minmax(0, 1fr) 72px 112px;
@@ -5423,6 +5439,17 @@ nav a:hover,
     gap: 6px 10px;
     min-height: 86px;
     padding: 12px 13px;
+  }
+  .posting-list-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 40px;
+    padding: 8px 13px;
+  }
+  .posting-list-header span:first-child {
+    display: none;
+  }
+  .posting-list-header span:last-child {
+    min-width: 68px;
   }
   .posting-list-organization {
     grid-column: 1 / -1;
