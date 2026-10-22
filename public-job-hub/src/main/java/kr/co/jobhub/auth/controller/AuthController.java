@@ -28,7 +28,7 @@ public class AuthController {
     public record RegisterRequest(@Email @NotBlank String email,
                                   @NotBlank @Size(min = 10, max = 100) String password,
                                   @NotBlank @Size(max = 80) String displayName,
-                                  @NotBlank @Size(max = 100) String preferredJobCategory,
+                                  @Size(max = 100) String preferredJobCategory,
                                   boolean acceptedTerms, boolean acceptedPrivacy) {
     }
     public record ConsentRequest(boolean acceptedTerms, boolean acceptedPrivacy) {}
@@ -91,8 +91,9 @@ public class AuthController {
         user.email = email;
         user.passwordHash = passwords.encode(request.password());
         user.displayName = request.displayName().trim();
-        String preferredJobCategory = request.preferredJobCategory().trim();
-        if (!JOB_CATEGORIES.contains(preferredJobCategory)) {
+        String preferredJobCategory = request.preferredJobCategory() == null
+                ? "" : request.preferredJobCategory().trim();
+        if (!preferredJobCategory.isBlank() && !JOB_CATEGORIES.contains(preferredJobCategory)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "희망 직무를 목록에서 선택해 주세요.");
         }
         user.preferredJobCategory = preferredJobCategory;

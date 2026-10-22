@@ -346,11 +346,18 @@ function postingDeadlineLabel(deadline) {
 
 /** 게시판형 목록은 기관·제목·남은 기간·마감일만 한 줄에 표시한다. */
 function PostingListRow({ job, onOpen }) {
+  const deadlineLabel = postingDeadlineLabel(job.deadline)
+  const urgent = deadlineLabel === 'D-Day' || /^D-[12]$/.test(deadlineLabel)
   return (
-    <button type="button" className="posting-list-row" onClick={onOpen}>
+    <button
+      type="button"
+      className={`posting-list-row ${urgent ? 'urgent' : ''}`}
+      onClick={onOpen}
+      aria-label={`${job.organization} ${job.title}, ${deadlineLabel}, 마감일 ${job.deadline || '미정'}`}
+    >
       <strong className="posting-list-organization">[{job.organization || '기관 미확인'}]</strong>
       <span className="posting-list-title">{job.title}</span>
-      <span className="posting-list-deadline">({postingDeadlineLabel(job.deadline)})</span>
+      <span className="posting-list-deadline">({deadlineLabel})</span>
       <time dateTime={job.deadline || undefined}>/ {job.deadline || '마감일 미정'}</time>
     </button>
   )
@@ -2441,14 +2448,15 @@ function AuthDialog({ mode, onClose, onSubmit, onSwitch, onOpenLegal, busy, erro
                 <select
                   value={preferredJobCategory}
                   onChange={(e) => setPreferredJobCategory(e.target.value)}
-                  required
                 >
-                  <option value="">선택해 주세요</option>
+                  <option value="">선택안함</option>
                   {ADMIN_CATEGORIES.map((category) => (
                     <option key={category}>{category}</option>
                   ))}
                 </select>
-                <small>선택한 직무의 공고를 목록에서 먼저 보여드립니다.</small>
+                <small>
+                  직무를 선택하면 해당 공고를 먼저 보여드리며, 나중에 선택할 수도 있습니다.
+                </small>
               </label>
             </>
           )}
@@ -5047,7 +5055,7 @@ export default function App() {
   const [jobCategory, setJobCategory] = useState('')
   const [showClosed, setShowClosed] = useState(false)
   const [postingViewMode, setPostingViewMode] = useState(
-    () => window.localStorage.getItem('jobhub-posting-view') || 'card',
+    () => window.localStorage.getItem('jobhub-posting-view') || 'list',
   )
   const [filterOptions, setFilterOptions] = useState({
     regions: [],
