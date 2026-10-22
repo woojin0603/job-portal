@@ -1928,7 +1928,7 @@ function FavoriteOrganizationsPanel({ securePost, onOpen }) {
   )
 }
 
-function ApplicationDashboard({ applications, onOpen }) {
+function ApplicationDashboard({ applications, onOpen, onEditSpec }) {
   const [stageFilter, setStageFilter] = useState('')
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const today = new Date()
@@ -2042,17 +2042,29 @@ function ApplicationDashboard({ applications, onOpen }) {
       <div className="application-dashboard-grid">
         <div className="application-list">
           <h3>{stageFilter ? STAGE_LABELS[stageFilter] : '전체 지원 현황'}</h3>
-          {visible.map((item) => (
-            <button type="button" key={item.id} onClick={() => onOpen(item)}>
-              <span>{item.organization}</span>
-              <strong>{item.title}</strong>
-              <small>
-                {STAGE_LABELS[item.stage] || '관심 공고'} · 다음 일정 {item.nextStepDate || '미정'}{' '}
-                · 마감 {item.deadline || '미정'}
-              </small>
-              {item.memo && <em>{item.memo}</em>}
-            </button>
-          ))}
+          {visible.map((item) => {
+            const hasSpec = Object.values(item.applicationSpec || {}).some((value) => value?.trim())
+            return (
+              <article key={item.id}>
+                <button type="button" className="application-open" onClick={() => onOpen(item)}>
+                  <span>{item.organization}</span>
+                  <strong>{item.title}</strong>
+                  <small>
+                    {STAGE_LABELS[item.stage] || '관심 공고'} · 다음 일정{' '}
+                    {item.nextStepDate || '미정'} · 마감 {item.deadline || '미정'}
+                  </small>
+                  {item.memo && <em>{item.memo}</em>}
+                </button>
+                <button
+                  type="button"
+                  className="application-spec-button"
+                  onClick={() => onEditSpec(item)}
+                >
+                  {hasSpec ? '제출 스펙 수정' : '제출 스펙 기록'}
+                </button>
+              </article>
+            )
+          })}
           {visible.length === 0 && <p className="empty">해당 단계의 공고가 없습니다.</p>}
         </div>
         <section className="alerts-calendar application-calendar" aria-label="지원 일정 달력">
@@ -2113,6 +2125,100 @@ function ApplicationDashboard({ applications, onOpen }) {
         </section>
       </div>
     </section>
+  )
+}
+
+function ApplicationSpecDialog({ item, profile, busy, onSave, onClose }) {
+  const summarize = (values, formatter) =>
+    (values || [])
+      .filter((value) => Object.values(value || {}).some(Boolean))
+      .map(formatter)
+      .filter(Boolean)
+      .join('\n')
+  const defaults = {
+    certifications: summarize(profile.certifications, (value) =>
+      [value.name, value.grade, value.acquiredDate || value.acquiredMonth]
+        .filter(Boolean)
+        .join(' · '),
+    ),
+    careers: summarize(profile.careers, (value) =>
+      [
+        value.companyName,
+        value.position,
+        value.duties,
+        [value.startMonth, value.endMonth].filter(Boolean).join('~'),
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    ),
+    activities: summarize(profile.activities, (value) =>
+      [value.name, value.description, [value.startMonth, value.endMonth].filter(Boolean).join('~')]
+        .filter(Boolean)
+        .join(' · '),
+    ),
+    degrees: summarize(profile.degrees, (value) =>
+      [value.schoolName, value.major, value.degreeType, value.status].filter(Boolean).join(' · '),
+    ),
+    notes: '',
+  }
+  const saved = item.applicationSpec || {}
+  const [form, setForm] = useState({ ...defaults, ...saved })
+  const change = (field) => (event) => setForm({ ...form, [field]: event.target.value })
+  const copyProfile = () => setForm({ ...form, ...defaults, notes: form.notes })
+  return (
+    <div
+      className="overlay"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section className="application-spec-dialog" role="dialog" aria-modal="true">
+        <button className="close" type="button" onClick={onClose} aria-label="닫기">
+          ×
+        </button>
+        <p className="eyebrow">APPLICATION PROFILE</p>
+        <h2>지원 공고별 제출 스펙</h2>
+        <strong>{item.organization}</strong>
+        <p className="application-spec-title">{item.title}</p>
+        <div className="application-spec-guide">
+          이 공고에 실제로 제출한 내용만 기록하세요. 자격증 번호·학위번호·전화번호·주민번호는
+          입력하지 마세요.
+        </div>
+        <button type="button" className="copy-profile" onClick={copyProfile}>
+          내 스펙에서 불러오기
+        </button>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            onSave(item.id, form)
+          }}
+        >
+          {[
+            ['certifications', '제출 자격증', '예: 정보처리기사 · 2026-03-15'],
+            ['careers', '제출 경력', '예: ○○회사 · 사원 · 시스템 운영 · 2024-01~2025-12'],
+            ['activities', '제출 대외활동', '예: 활동명 · 담당 내용 · 활동기간'],
+            ['degrees', '제출 학위', '예: ○○대학교 · 컴퓨터공학 · 학사 · 졸업'],
+            ['notes', '공고별 메모', '예: 해당 공고에는 어학 성적을 제외하고 제출'],
+          ].map(([field, label, placeholder]) => (
+            <label key={field}>
+              {label}
+              <textarea
+                value={form[field] || ''}
+                onChange={change(field)}
+                maxLength={field === 'notes' ? 3000 : 5000}
+                placeholder={placeholder}
+              />
+            </label>
+          ))}
+          <div className="application-spec-actions">
+            <button className="primary" disabled={busy}>
+              {busy ? '저장 중…' : '제출 스펙 저장'}
+            </button>
+            <button type="button" className="secondary" onClick={onClose}>
+              취소
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
   )
 }
 
@@ -5114,6 +5220,9 @@ export default function App() {
   const [notificationRefresh, setNotificationRefresh] = useState(0)
   const [alerts, setAlerts] = useState([])
   const [applications, setApplications] = useState([])
+  const [mypageSection, setMypageSection] = useState('applications')
+  const [applicationSpecDialog, setApplicationSpecDialog] = useState(null)
+  const [applicationSpecBusy, setApplicationSpecBusy] = useState(false)
   const [toolsBusy, setToolsBusy] = useState(false)
   const [toolsMessage, setToolsMessage] = useState('')
   const [matchDialog, setMatchDialog] = useState(null)
@@ -5512,6 +5621,22 @@ export default function App() {
       setError(e.message)
     } finally {
       setBusyId(null)
+    }
+  }
+  async function saveApplicationSpec(id, value) {
+    setApplicationSpecBusy(true)
+    try {
+      await securePost(
+        `/api/tools/postings/${id}/application-profile`,
+        JSON.stringify(value),
+        'application/json',
+      )
+      setApplications(await getJson('/api/tools/applications'))
+      setApplicationSpecDialog(null)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setApplicationSpecBusy(false)
     }
   }
   async function analyzeMatch(job) {
@@ -6082,31 +6207,66 @@ export default function App() {
               <Pagination page={page} totalPages={data.totalPages} onChange={changePage} />
             )}
             {mine && user && (
-              <div className="mypage-dashboard">
-                <ApplicationDashboard applications={applications} onOpen={openSource} />
-                <FavoriteOrganizationsPanel securePost={securePost} onOpen={openSource} />
-                <PostingChangesPanel
-                  securePost={securePost}
-                  onOpen={openSource}
-                  onUnreadChange={setPostingChangeUnread}
-                />
-                <CareerToolsPanel
-                  preference={preference}
-                  alerts={alerts}
-                  busy={toolsBusy}
-                  message={toolsMessage}
-                  onChange={setPreference}
-                  onSave={savePreference}
-                  onRead={readAlerts}
-                  onOpen={openSource}
-                />
-                <ProfileEditor
-                  profile={profile}
-                  busy={profileBusy}
-                  message={profileMessage}
-                  onSave={saveProfile}
-                />
-              </div>
+              <>
+                <nav className="mypage-tabs" aria-label="마이페이지 메뉴">
+                  {[
+                    ['applications', '지원 현황', applications.length],
+                    ['favorites', '관심 기관', null],
+                    ['alerts', '맞춤 알림', alerts.filter((item) => item.fresh).length],
+                    ['changes', '공고 변경', postingChangeUnread],
+                    ['profile', '내 스펙', null],
+                  ].map(([value, label, count]) => (
+                    <button
+                      type="button"
+                      key={value}
+                      className={mypageSection === value ? 'active' : ''}
+                      onClick={() => setMypageSection(value)}
+                    >
+                      {label}
+                      {count > 0 && <b>{count}</b>}
+                    </button>
+                  ))}
+                </nav>
+                <div className="mypage-dashboard compact">
+                  {mypageSection === 'applications' && (
+                    <ApplicationDashboard
+                      applications={applications}
+                      onOpen={openSource}
+                      onEditSpec={setApplicationSpecDialog}
+                    />
+                  )}
+                  {mypageSection === 'favorites' && (
+                    <FavoriteOrganizationsPanel securePost={securePost} onOpen={openSource} />
+                  )}
+                  {mypageSection === 'changes' && (
+                    <PostingChangesPanel
+                      securePost={securePost}
+                      onOpen={openSource}
+                      onUnreadChange={setPostingChangeUnread}
+                    />
+                  )}
+                  {mypageSection === 'alerts' && (
+                    <CareerToolsPanel
+                      preference={preference}
+                      alerts={alerts}
+                      busy={toolsBusy}
+                      message={toolsMessage}
+                      onChange={setPreference}
+                      onSave={savePreference}
+                      onRead={readAlerts}
+                      onOpen={openSource}
+                    />
+                  )}
+                  {mypageSection === 'profile' && (
+                    <ProfileEditor
+                      profile={profile}
+                      busy={profileBusy}
+                      message={profileMessage}
+                      onSave={saveProfile}
+                    />
+                  )}
+                </div>
+              </>
             )}
             {!mine &&
               (loading ? (
@@ -6204,6 +6364,15 @@ export default function App() {
           busy={reportBusy}
           onClose={() => setReportDialog(null)}
           onSubmit={submitReport}
+        />
+      )}
+      {applicationSpecDialog && (
+        <ApplicationSpecDialog
+          item={applicationSpecDialog}
+          profile={profile}
+          busy={applicationSpecBusy}
+          onSave={saveApplicationSpec}
+          onClose={() => setApplicationSpecDialog(null)}
         />
       )}
       {securityOpen && (

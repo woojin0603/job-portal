@@ -31,8 +31,14 @@ public class CareerToolsController {
 
     public record ApplicationRequest(String stage, LocalDate nextStepDate, @Size(max = 2000) String memo) {}
     public record ApplicationState(String stage, LocalDate nextStepDate, String memo) {}
+    public record ApplicationSpec(@Size(max = 5000) String certifications,
+                                  @Size(max = 5000) String careers,
+                                  @Size(max = 5000) String activities,
+                                  @Size(max = 5000) String degrees,
+                                  @Size(max = 3000) String notes) {}
     public record ApplicationItem(Long id, String title, String organization, LocalDate deadline,
-                                  String sourceUrl, String stage, LocalDate nextStepDate, String memo) {}
+                                  String sourceUrl, String stage, LocalDate nextStepDate, String memo,
+                                  ApplicationSpec applicationSpec) {}
     public record PreferenceRequest(@Size(max = 500) String keywords, @Size(max = 500) String regions,
                                     @Size(max = 100) String mobilityTypes, boolean enabled,
                                     boolean newPostingAlerts, boolean deadlineAlerts,
@@ -113,8 +119,43 @@ public class CareerToolsController {
                         scrap.posting.sourceUrl,
                         scrap.stage == null ? "SAVED" : scrap.stage,
                         scrap.nextStepDate,
-                        scrap.memo == null ? "" : scrap.memo))
+                        scrap.memo == null ? "" : scrap.memo,
+                        readApplicationSpec(scrap.applicationProfile)))
                 .toList();
+    }
+
+    /** 해당 공고에 실제 제출한 스펙을 개인 기본 스펙과 분리해 저장한다. */
+    @PostMapping("/postings/{id}/application-profile")
+    public ApplicationSpec applicationProfile(@PathVariable Long id,
+                                               @Valid @RequestBody ApplicationSpec request,
+                                               Principal principal) {
+        AppUser user = user(principal);
+        JobPosting posting = postings.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Scrap scrap = scraps.findByUserIdAndPostingId(user.id, id).orElseGet(() -> {
+            Scrap created = new Scrap();
+            created.user = user;
+            created.posting = posting;
+            return created;
+        });
+        ApplicationSpec cleaned = new ApplicationSpec(clean(request.certifications()), clean(request.careers()),
+                clean(request.activities()), clean(request.degrees()), clean(request.notes()));
+        try {
+            scrap.applicationProfile = json.writeValueAsString(cleaned);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "지원 스펙을 저장하지 못했습니다.");
+        }
+        scraps.save(scrap);
+        return cleaned;
+    }
+
+    private ApplicationSpec readApplicationSpec(String value) {
+        if (value == null || value.isBlank()) return new ApplicationSpec("", "", "", "", "");
+        try {
+            return json.readValue(value, ApplicationSpec.class);
+        } catch (Exception ignored) {
+            return new ApplicationSpec("", "", "", "", "");
+        }
     }
 
     @GetMapping("/preferences")

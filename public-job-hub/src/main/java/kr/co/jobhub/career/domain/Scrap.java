@@ -46,4 +46,9 @@ public class Scrap {
 
     @Column(length = 2000)
     public String memo;
+
+    /** 공고별로 실제 제출한 자격증·경력·학위·활동의 스냅샷. */
+    @Lob
+    @Column(name = "application_profile")
+    public String applicationProfile;
 }
