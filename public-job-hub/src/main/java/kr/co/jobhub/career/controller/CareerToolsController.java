@@ -36,7 +36,7 @@ public class CareerToolsController {
                                   @Size(max = 5000) String activities,
                                   @Size(max = 5000) String degrees,
                                   @Size(max = 3000) String notes) {}
-    public record ApplicationItem(Long id, String title, String organization, LocalDate deadline,
+    public record ApplicationItem(Long id, String title, String postingTitle, String organization, LocalDate deadline,
                                   String sourceUrl, String stage, LocalDate nextStepDate, String memo,
                                   ApplicationSpec applicationSpec) {}
     public record PreferenceRequest(@Size(max = 500) String keywords, @Size(max = 500) String regions,
@@ -113,6 +113,7 @@ public class CareerToolsController {
                                 Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(scrap -> new ApplicationItem(
                         scrap.posting.id,
+                        scrap.posting.title,
                         scrap.posting.title,
                         scrap.posting.organization,
                         scrap.posting.deadline,

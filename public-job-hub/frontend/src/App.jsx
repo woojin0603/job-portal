@@ -2118,7 +2118,12 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
               <article key={item.id}>
                 <button type="button" className="application-open" onClick={() => onOpen(item)}>
                   <div className="application-posting-name">
-                    <strong>{item.title}</strong>
+                    <span
+                      className="application-title-text"
+                      title={item.title || item.postingTitle}
+                    >
+                      {item.title || item.postingTitle || '공고명 확인 필요'}
+                    </span>
                     <small>{item.organization}</small>
                   </div>
                   <div className="application-status-info">
