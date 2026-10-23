@@ -1597,7 +1597,10 @@ function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
           ...item,
           key: `alert-${item.id}-${item.reason}`,
           postingId: item.id,
-          category: '스크랩 마감',
+          category:
+            item.reason?.startsWith('마감') || item.reason === '오늘 마감'
+              ? '스크랩 마감'
+              : '전형 일정',
           important: item.remainingDays != null && item.remainingDays <= 3,
           detail: item.region || '지역 미정',
           occurredAt: item.deadline ? `${item.deadline}T00:00:00` : null,
@@ -2019,6 +2022,12 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
         { ...item, eventType: STAGE_LABELS[item.stage] || '전형 일정' },
       ]
     }
+    ;(item.schedules || []).forEach((schedule) => {
+      eventsByDate[schedule.date] = [
+        ...(eventsByDate[schedule.date] || []),
+        { ...item, eventType: schedule.label, schedule },
+      ]
+    })
   })
   const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : []
   const dateKey = (day) =>
@@ -2039,15 +2048,18 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
       if (item.deadline) values.push({ date: item.deadline, label: '지원 마감' })
       if (item.nextStepDate)
         values.push({ date: item.nextStepDate, label: STAGE_LABELS[item.stage] || '채용 전형' })
+      ;(item.schedules || []).forEach((schedule) =>
+        values.push({ date: schedule.date, label: schedule.label, evidence: schedule.evidence }),
+      )
       return values.map((event) => ({ ...event, item }))
     })
     if (!events.length) return
-    const body = events.flatMap(({ date, label, item }, index) => [
+    const body = events.flatMap(({ date, label, evidence, item }, index) => [
       'BEGIN:VEVENT',
       `UID:jobhub-${item.id}-${date}-${index}@public-job-hub`,
       `DTSTART;VALUE=DATE:${date.replaceAll('-', '')}`,
       `SUMMARY:${escapeIcs(`[${label}] ${item.organization} ${item.title}`)}`,
-      `DESCRIPTION:${escapeIcs(item.memo || 'JOB HUB KOREA 지원 일정')}`,
+      `DESCRIPTION:${escapeIcs(evidence || item.memo || 'JOB HUB KOREA 지원 일정')}`,
       `URL:${escapeIcs(item.sourceUrl)}`,
       'END:VEVENT',
     ])
@@ -2114,6 +2126,10 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
           </div>
           {visible.map((item) => {
             const hasSpec = Object.values(item.applicationSpec || {}).some((value) => value?.trim())
+            const today = new Date().toISOString().slice(0, 10)
+            const nextAutoSchedule = (item.schedules || []).find(
+              (schedule) => schedule.date >= today,
+            )
             return (
               <article key={item.id}>
                 <button type="button" className="application-open" onClick={() => onOpen(item)}>
@@ -2130,6 +2146,11 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                     <strong>{STAGE_LABELS[item.stage] || '지원 완료'}</strong>
                     <small>다음 일정 {item.nextStepDate || '미정'}</small>
                     <small>마감 {item.deadline || '미정'}</small>
+                    {nextAutoSchedule && (
+                      <small className="auto-schedule">
+                        자동 확인 · {nextAutoSchedule.label} {nextAutoSchedule.date}
+                      </small>
+                    )}
                     {item.memo && <em>{item.memo}</em>}
                   </div>
                 </button>
@@ -2207,6 +2228,7 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                     {item.eventType} · {item.organization}
                   </span>
                   <b>{item.title}</b>
+                  {item.schedule?.tentative && <small>공고상 예정 일정 · 원문 재확인 필요</small>}
                 </button>
               ))}
             </div>

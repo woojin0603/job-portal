@@ -36,9 +36,11 @@ public class CareerToolsController {
                                   @Size(max = 5000) String activities,
                                   @Size(max = 5000) String degrees,
                                   @Size(max = 3000) String notes) {}
+    public record ScheduleItem(Long id, String type, String label, LocalDate date,
+                               boolean tentative, String evidence, String sourceUrl) {}
     public record ApplicationItem(Long id, String title, String postingTitle, String organization, LocalDate deadline,
                                   String sourceUrl, String stage, LocalDate nextStepDate, String memo,
-                                  ApplicationSpec applicationSpec) {}
+                                  ApplicationSpec applicationSpec, List<ScheduleItem> schedules) {}
     public record PreferenceRequest(@Size(max = 500) String keywords, @Size(max = 500) String regions,
                                     @Size(max = 100) String mobilityTypes, boolean enabled,
                                     boolean newPostingAlerts, boolean deadlineAlerts,
@@ -62,18 +64,21 @@ public class CareerToolsController {
     private final UserProfileRepository profiles;
     private final JobAlertPreferenceRepository preferences;
     private final RecruitmentPositionRepository positions;
+    private final RecruitmentScheduleRepository schedules;
     private final ObjectMapper json;
 
     public CareerToolsController(AppUserRepository users, JobPostingRepository postings,
                                  ScrapRepository scraps, UserProfileRepository profiles,
                                  JobAlertPreferenceRepository preferences,
-                                 RecruitmentPositionRepository positions, ObjectMapper json) {
+                                 RecruitmentPositionRepository positions,
+                                 RecruitmentScheduleRepository schedules, ObjectMapper json) {
         this.users = users;
         this.postings = postings;
         this.scraps = scraps;
         this.profiles = profiles;
         this.preferences = preferences;
         this.positions = positions;
+        this.schedules = schedules;
         this.json = json;
     }
 
@@ -121,7 +126,9 @@ public class CareerToolsController {
                         scrap.stage == null ? "SAVED" : scrap.stage,
                         scrap.nextStepDate,
                         scrap.memo == null ? "" : scrap.memo,
-                        readApplicationSpec(scrap.applicationProfile)))
+                        readApplicationSpec(scrap.applicationProfile),
+                        schedules.findByPostingIdOrderByEventDateAsc(scrap.posting.id).stream()
+                                .map(this::scheduleItem).toList()))
                 .toList();
     }
 
@@ -195,7 +202,7 @@ public class CareerToolsController {
                 .map(scrap -> scrap.posting.id)
                 .collect(java.util.stream.Collectors.toSet());
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        return postings.findAll().stream()
+        List<AlertItem> result = new ArrayList<>(postings.findAll().stream()
                 .filter(p -> scrappedPostingIds.contains(p.id))
                 .filter(p -> p.deadline == null || !p.deadline.isBefore(today))
                 .filter(p -> {
@@ -213,7 +220,31 @@ public class CareerToolsController {
                     return new AlertItem(p.id, p.title, p.organization, p.region, p.deadline, p.mobilityType,
                             p.sourceUrl, fresh, remaining, reason);
                 })
-                .toList();
+                .toList());
+        if (!scrappedPostingIds.isEmpty()) {
+            Map<Long, JobPosting> postingById = postings.findAllById(scrappedPostingIds).stream()
+                    .collect(java.util.stream.Collectors.toMap(p -> p.id, p -> p));
+            List<Long> ids = new ArrayList<>(scrappedPostingIds);
+            schedules.findByPostingIdInAndEventDateGreaterThanEqualOrderByEventDateAsc(ids, today).stream()
+                    .filter(value -> deadlineDays.contains((int) java.time.temporal.ChronoUnit.DAYS.between(today, value.eventDate)))
+                    .forEach(value -> {
+                        JobPosting p = postingById.get(value.posting.getId());
+                        if (p == null) return;
+                        long remaining = java.time.temporal.ChronoUnit.DAYS.between(today, value.eventDate);
+                        String timing = remaining == 0 ? "오늘" : remaining + "일 전";
+                        result.add(new AlertItem(p.id, p.title, p.organization, p.region, value.eventDate,
+                                p.mobilityType, value.sourceUrl,
+                                pref.lastViewedAt == null || value.detectedAt.isAfter(pref.lastViewedAt),
+                                remaining, value.label + " · " + timing));
+                    });
+        }
+        return result.stream().sorted(Comparator.comparing(AlertItem::deadline,
+                Comparator.nullsLast(Comparator.naturalOrder()))).limit(60).toList();
+    }
+
+    private ScheduleItem scheduleItem(RecruitmentSchedule value) {
+        return new ScheduleItem(value.id, value.scheduleType, value.label, value.eventDate,
+                value.tentative, value.evidence, value.sourceUrl);
     }
 
     @PostMapping("/alerts/read")

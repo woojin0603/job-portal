@@ -1686,6 +1686,14 @@ nav button.active {
   color: #315f50 !important;
   font-size: 13px !important;
 }
+.application-status-info .auto-schedule {
+  margin-top: 2px;
+  border-radius: 4px;
+  background: #edf5f0;
+  color: #28604a;
+  padding: 3px 5px;
+  font-weight: 750;
+}
 .application-list .application-open span {
   color: #365f4f;
   font-size: 12px;
