@@ -105,7 +105,7 @@ public class CareerToolsController {
     @GetMapping("/applications")
     public List<ApplicationItem> applications(Principal principal) {
         AppUser user = user(principal);
-        return scraps.findByUserId(user.id).stream()
+        return scraps.findWithPostingByUserId(user.id).stream()
                 .sorted(Comparator
                         .comparing((Scrap scrap) -> scrap.nextStepDate,
                                 Comparator.nullsLast(Comparator.naturalOrder()))
