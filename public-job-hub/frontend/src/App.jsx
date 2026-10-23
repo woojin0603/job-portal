@@ -1928,7 +1928,7 @@ function FavoriteOrganizationsPanel({ securePost, onOpen }) {
   )
 }
 
-function ApplicationDashboard({ applications, onOpen, onEditSpec }) {
+function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess }) {
   const [stageFilter, setStageFilter] = useState('')
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const today = new Date()
@@ -2041,7 +2041,19 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec }) {
       </div>
       <div className="application-dashboard-grid">
         <div className="application-list">
-          <h3>{stageFilter ? STAGE_LABELS[stageFilter] : '전체 지원 현황'}</h3>
+          <div className="application-list-heading">
+            <h3>{stageFilter ? STAGE_LABELS[stageFilter] : '전체 지원 현황'}</h3>
+            {stageFilter === 'DOCUMENT_PASSED' && (
+              <button
+                type="button"
+                className="success-share-button"
+                disabled={!visible.length}
+                onClick={() => onShareSuccess(visible)}
+              >
+                합격자 게시판에 공유
+              </button>
+            )}
+          </div>
           {visible.map((item) => {
             const hasSpec = Object.values(item.applicationSpec || {}).some((value) => value?.trim())
             return (
@@ -5102,6 +5114,176 @@ function ArchivedPostings({ handlers, jobCategories }) {
   )
 }
 
+function SuccessShareDialog({ applications, busy, onSave, onClose }) {
+  const [postingId, setPostingId] = useState(String(applications[0]?.id || ''))
+  const selected = applications.find((item) => String(item.id) === postingId)
+  const [title, setTitle] = useState(selected ? `${selected.organization} 서류 합격 후기` : '')
+  const [content, setContent] = useState('')
+  const [shareProfile, setShareProfile] = useState(false)
+  return (
+    <div className="match-overlay" role="presentation" onMouseDown={onClose}>
+      <section
+        className="application-spec-dialog success-share-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="success-share-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <h2 id="success-share-title">서류 합격 경험 공유</h2>
+        <p>작성자 이름은 공개되지 않습니다. 개인을 식별할 수 있는 내용은 입력하지 마세요.</p>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            onSave({ postingId: Number(postingId), title, content, shareProfile })
+          }}
+        >
+          <label>
+            합격 공고
+            <select
+              value={postingId}
+              onChange={(event) => {
+                const nextId = event.target.value
+                const next = applications.find((item) => String(item.id) === nextId)
+                setPostingId(nextId)
+                if (next) setTitle(`${next.organization} 서류 합격 후기`)
+              }}
+            >
+              {applications.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.organization} · {item.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            제목
+            <input
+              value={title}
+              maxLength={120}
+              required
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </label>
+          <label>
+            합격 후기
+            <textarea
+              value={content}
+              maxLength={5000}
+              required
+              placeholder="준비 과정, 도움이 된 경험 등을 적어주세요. 이름·연락처·수험번호는 제외해 주세요."
+              onChange={(e) => setContent(e.target.value)}
+            />
+          </label>
+          <label className="success-profile-consent">
+            <input
+              type="checkbox"
+              checked={shareProfile}
+              onChange={(e) => setShareProfile(e.target.checked)}
+            />
+            이 공고에 기록한 제출 스펙도 익명으로 공유
+          </label>
+          <div className="dialog-actions">
+            <button type="button" onClick={onClose}>
+              취소
+            </button>
+            <button className="primary" disabled={busy}>
+              공유하기
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  )
+}
+
+function SuccessBoard({ user, onOpen, onDelete }) {
+  const [stories, setStories] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const load = useCallback(() => {
+    setLoading(true)
+    getJson('/api/success-stories')
+      .then(setStories)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
+  useEffect(load, [load, user])
+  const profile = (value) => {
+    if (!value) return null
+    try {
+      return JSON.parse(value)
+    } catch {
+      return null
+    }
+  }
+  return (
+    <section className="success-board">
+      <div className="success-board-heading">
+        <p className="eyebrow">DOCUMENT PASS STORIES</p>
+        <h1>합격자 게시판</h1>
+        <p>실제 서류 합격자가 익명으로 공유한 준비 경험입니다.</p>
+      </div>
+      {error && <p className="error">{error}</p>}
+      {loading ? (
+        <p className="empty">합격 후기를 불러오는 중...</p>
+      ) : (
+        <div className="success-story-list">
+          {stories.map((story) => {
+            const spec = profile(story.sharedProfile)
+            return (
+              <article key={story.id}>
+                <div className="success-story-meta">
+                  <span>서류 합격</span>
+                  <time>{new Date(story.createdAt).toLocaleDateString('ko-KR')}</time>
+                </div>
+                <h2>{story.title}</h2>
+                <button
+                  className="success-posting-link"
+                  onClick={() => onOpen({ id: story.postingId })}
+                >
+                  {story.organization} · {story.postingTitle}
+                </button>
+                <p>{story.content}</p>
+                {spec && Object.values(spec).some(Boolean) && (
+                  <details>
+                    <summary>공유한 제출 스펙 보기</summary>
+                    {Object.entries({
+                      certifications: '자격증',
+                      careers: '경력',
+                      activities: '대외활동',
+                      degrees: '학위',
+                      notes: '기타',
+                    }).map(([key, label]) =>
+                      spec[key] ? (
+                        <p key={key}>
+                          <strong>{label}</strong>
+                          {spec[key]}
+                        </p>
+                      ) : null,
+                    )}
+                  </details>
+                )}
+                {story.mine && (
+                  <button
+                    className="success-delete"
+                    onClick={async () => {
+                      await onDelete(story.id)
+                      load()
+                    }}
+                  >
+                    삭제
+                  </button>
+                )}
+              </article>
+            )
+          })}
+          {!stories.length && <p className="empty">아직 공유된 서류 합격 후기가 없습니다.</p>}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function LandingPage({ user, onPostings, onMyPage, onCommunity }) {
   return (
     <section className="landing-page">
@@ -5157,6 +5339,7 @@ export default function App() {
   const [scrapsOpen, setScrapsOpen] = useState(false)
   const [adminView, setAdminView] = useState(false)
   const [communityView, setCommunityView] = useState(false)
+  const [successView, setSuccessView] = useState(false)
   const [landingView, setLandingView] = useState(true)
   const [detailId, setDetailId] = useState(null)
   const [inquiryUnreadCount, setInquiryUnreadCount] = useState(0)
@@ -5223,6 +5406,8 @@ export default function App() {
   const [mypageSection, setMypageSection] = useState('applications')
   const [applicationSpecDialog, setApplicationSpecDialog] = useState(null)
   const [applicationSpecBusy, setApplicationSpecBusy] = useState(false)
+  const [successShareDialog, setSuccessShareDialog] = useState(null)
+  const [successShareBusy, setSuccessShareBusy] = useState(false)
   const [toolsBusy, setToolsBusy] = useState(false)
   const [toolsMessage, setToolsMessage] = useState('')
   const [matchDialog, setMatchDialog] = useState(null)
@@ -5257,6 +5442,7 @@ export default function App() {
     setLandingView(path === '/')
     setMine(path === '/mypage')
     setCommunityView(path === '/community')
+    setSuccessView(path === '/success-stories')
     setAdminView(path === '/admin')
     if (path === '/jobs' || path === '/mypage') {
       setPage(Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage - 1 : 0)
@@ -5431,6 +5617,29 @@ export default function App() {
       },
       body,
     })
+  }
+  async function secureDelete(url) {
+    const token = csrf || (await getJson('/api/auth/csrf'))
+    const response = await fetch(url, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+      headers: { [token.headerName]: token.token },
+    })
+    if (!response.ok) throw new Error('게시물을 삭제하지 못했습니다.')
+  }
+  async function shareSuccessStory(value) {
+    setSuccessShareBusy(true)
+    try {
+      await securePost('/api/success-stories', JSON.stringify(value), 'application/json')
+      setSuccessShareDialog(null)
+      setSuccessView(true)
+      setMine(false)
+      window.history.pushState({}, '', '/success-stories')
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSuccessShareBusy(false)
+    }
   }
   /** 회원가입 후 자동 로그인하거나 기존 계정으로 로그인한다. */
   async function submitAuth(form) {
@@ -5721,6 +5930,7 @@ export default function App() {
       setAdminView(true)
       setMine(false)
       setCommunityView(false)
+      setSuccessView(false)
       setDetailId(null)
       window.history.pushState({}, '', '/admin')
     } catch (e) {
@@ -5746,6 +5956,7 @@ export default function App() {
     setScrapsOpen(false)
     setAdminView(false)
     setCommunityView(false)
+    setSuccessView(false)
     setDetailId(null)
     setPage(0)
     window.history.pushState({}, '', nextMine ? '/mypage?page=1' : '/jobs?page=1')
@@ -5757,6 +5968,7 @@ export default function App() {
     setScrapsOpen(false)
     setAdminView(false)
     setCommunityView(false)
+    setSuccessView(false)
     setDetailId(null)
     setQueryInput('')
     setQuery('')
@@ -5806,11 +6018,27 @@ export default function App() {
             {installPrompt && <button onClick={installApp}>앱 설치</button>}
             <button
               className={
-                !landingView && !mine && !communityView && !adminView && !detailId ? 'active' : ''
+                !landingView && !mine && !communityView && !successView && !adminView && !detailId
+                  ? 'active'
+                  : ''
               }
               onClick={() => navigate(false)}
             >
               채용정보
+            </button>
+            <button
+              className={successView ? 'active' : ''}
+              onClick={() => {
+                setLandingView(false)
+                setSuccessView(true)
+                setMine(false)
+                setCommunityView(false)
+                setAdminView(false)
+                setDetailId(null)
+                window.history.pushState({}, '', '/success-stories')
+              }}
+            >
+              합격자 게시판
             </button>
             <button className={mine && !landingView ? 'active' : ''} onClick={() => navigate(true)}>
               마이페이지
@@ -5836,6 +6064,7 @@ export default function App() {
               onClick={() => {
                 setLandingView(false)
                 setCommunityView(true)
+                setSuccessView(false)
                 setMine(false)
                 setAdminView(false)
                 setDetailId(null)
@@ -5908,6 +6137,7 @@ export default function App() {
             onCommunity={() => {
               setLandingView(false)
               setCommunityView(true)
+              setSuccessView(false)
               setMine(false)
               setAdminView(false)
               setDetailId(null)
@@ -5916,6 +6146,12 @@ export default function App() {
           />
         ) : adminView ? (
           <AdminReviewPanel user={user} securePost={securePost} />
+        ) : successView ? (
+          <SuccessBoard
+            user={user}
+            onOpen={openSource}
+            onDelete={(id) => secureDelete(`/api/success-stories/${id}`)}
+          />
         ) : communityView ? (
           <CommunityBoard
             user={user}
@@ -6221,6 +6457,7 @@ export default function App() {
                       applications={applications}
                       onOpen={openSource}
                       onEditSpec={setApplicationSpecDialog}
+                      onShareSuccess={setSuccessShareDialog}
                     />
                   )}
                   {mypageSection === 'favorites' && (
@@ -6352,6 +6589,14 @@ export default function App() {
           busy={reportBusy}
           onClose={() => setReportDialog(null)}
           onSubmit={submitReport}
+        />
+      )}
+      {successShareDialog && (
+        <SuccessShareDialog
+          applications={successShareDialog}
+          busy={successShareBusy}
+          onSave={shareSuccessStory}
+          onClose={() => setSuccessShareDialog(null)}
         />
       )}
       {applicationSpecDialog && (
