@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 /** 모든 API 요청에서 JSON 응답을 읽고 HTTP 오류를 화면에서 처리할 예외로 변환한다. */
 async function getJson(url, options = {}) {
@@ -455,6 +456,7 @@ function JobCard({
     memo: job.applicationMemo || '',
   })
   const [trackingOpen, setTrackingOpen] = useState(false)
+  const [confirmedScrap, setConfirmedScrap] = useState(Boolean(job.scrapped))
   useEffect(() => {
     setTracking({
       stage: job.applicationStage === 'REJECTED' ? 'SUBMITTED' : job.applicationStage || 'SAVED',
@@ -462,6 +464,7 @@ function JobCard({
       memo: job.applicationMemo || '',
     })
   }, [job.applicationStage, job.nextStepDate, job.applicationMemo])
+  useEffect(() => setConfirmedScrap(Boolean(job.scrapped)), [job.scrapped])
   return (
     <article
       className={`card ${institutionClass} ${urgent ? 'deadline-urgent' : ''} ${expired ? 'posting-expired' : ''} ${job.applied ? 'applied' : job.scrapped ? 'saved' : ''}`}
@@ -482,10 +485,7 @@ function JobCard({
             type="button"
             className={job.scrapped ? 'scrap-tool active' : 'scrap-tool'}
             disabled={busy}
-            onClick={async () => {
-              if (!job.scrapped) await onScrap(job.id)
-              setTrackingOpen(true)
-            }}
+            onClick={() => setTrackingOpen(true)}
           >
             <span className="scrap-star" aria-hidden="true">
               ★
@@ -581,87 +581,94 @@ function JobCard({
           </>
         )}
       </div>
-      {trackingOpen && (
-        <div className="match-overlay tracking-overlay" onMouseDown={() => setTrackingOpen(false)}>
-          <section
-            className="tracking-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-label="스크랩 및 지원 일정 관리"
-            onMouseDown={(event) => event.stopPropagation()}
+      {trackingOpen &&
+        createPortal(
+          <div
+            className="match-overlay tracking-overlay"
+            onMouseDown={() => setTrackingOpen(false)}
           >
-            <div className="tracking-dialog-head">
-              <div>
-                <span className="scrap-star" aria-hidden="true">
-                  ★
-                </span>
-                <strong>스크랩 공고 관리</strong>
+            <section
+              className="tracking-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-label="스크랩 및 지원 일정 관리"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="tracking-dialog-head">
+                <div>
+                  <span className="scrap-star" aria-hidden="true">
+                    ★
+                  </span>
+                  <strong>스크랩 공고 관리</strong>
+                </div>
+                <button type="button" onClick={() => setTrackingOpen(false)} aria-label="닫기">
+                  ×
+                </button>
               </div>
-              <button type="button" onClick={() => setTrackingOpen(false)} aria-label="닫기">
-                ×
-              </button>
-            </div>
-            <p>{job.organization}</p>
-            <h3>{job.title}</h3>
-            <div className="tracking-fields">
+              <p>{job.organization}</p>
+              <h3>{job.title}</h3>
+              <div className="tracking-fields">
+                <label>
+                  지원 단계
+                  <select
+                    value={tracking.stage}
+                    onChange={(e) => setTracking({ ...tracking, stage: e.target.value })}
+                  >
+                    {Object.entries(STAGE_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  다음 일정
+                  <input
+                    type="date"
+                    value={tracking.nextStepDate}
+                    onChange={(e) => setTracking({ ...tracking, nextStepDate: e.target.value })}
+                  />
+                </label>
+              </div>
               <label>
-                지원 단계
-                <select
-                  value={tracking.stage}
-                  onChange={(e) => setTracking({ ...tracking, stage: e.target.value })}
-                >
-                  {Object.entries(STAGE_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                다음 일정
-                <input
-                  type="date"
-                  value={tracking.nextStepDate}
-                  onChange={(e) => setTracking({ ...tracking, nextStepDate: e.target.value })}
+                메모
+                <textarea
+                  value={tracking.memo}
+                  onChange={(e) => setTracking({ ...tracking, memo: e.target.value })}
+                  placeholder="준비사항이나 전형 메모"
+                  maxLength={2000}
                 />
               </label>
-            </div>
-            <label>
-              메모
-              <textarea
-                value={tracking.memo}
-                onChange={(e) => setTracking({ ...tracking, memo: e.target.value })}
-                placeholder="준비사항이나 전형 메모"
-                maxLength={2000}
-              />
-            </label>
-            <div className="tracking-dialog-actions">
-              {job.scrapped && (
+              <div className="tracking-dialog-actions">
                 <button
-                  className="unscrap"
+                  className={confirmedScrap ? 'unscrap' : 'confirm-scrap'}
                   disabled={busy}
                   onClick={async () => {
+                    const next = !confirmedScrap
                     await onScrap(job.id)
+                    setConfirmedScrap(next)
+                  }}
+                >
+                  <span className="scrap-star" aria-hidden="true">
+                    ★
+                  </span>
+                  {confirmedScrap ? '스크랩 해제' : '스크랩'}
+                </button>
+                <button
+                  className="save"
+                  disabled={busy || !confirmedScrap}
+                  onClick={async () => {
+                    await onTrack(job.id, tracking)
                     setTrackingOpen(false)
                   }}
                 >
-                  스크랩 해제
+                  지원현황 저장
                 </button>
-              )}
-              <button
-                className="save"
-                disabled={busy}
-                onClick={async () => {
-                  await onTrack(job.id, tracking)
-                  setTrackingOpen(false)
-                }}
-              >
-                지원현황 저장
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+              </div>
+            </section>
+          </div>,
+          document.body,
+        )}
     </article>
   )
 }
@@ -884,7 +891,7 @@ function CompetitionDialog({ value, onClose }) {
               {value.items.map((item) => (
                 <article key={item.postingId}>
                   <div className="competition-title">
-                    <strong>{item.title}</strong>
+                    <strong title={item.title}>{item.title || '공고명 확인 필요'}</strong>
                     <span>
                       {item.postedAt?.slice(0, 4) || '연도 미확인'} ·{' '}
                       {item.similarCategory ? '유사 직렬' : '기관 정규직 참고'}

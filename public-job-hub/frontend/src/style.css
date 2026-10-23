@@ -5,6 +5,29 @@
   background: #f5f8fc;
 }
 
+/* 카드의 transform과 무관하게 스크랩 확인창을 현재 보이는 화면 중앙에 표시한다. */
+body > .tracking-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  padding: 16px;
+}
+body > .tracking-overlay .tracking-dialog {
+  margin: 0;
+}
+.tracking-dialog-actions .confirm-scrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d7c16d;
+  background: #fffdf4;
+  color: #655214;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1430,7 +1453,7 @@ nav button.active {
 }
 .application-dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.55fr);
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.45fr);
   gap: 18px;
 }
 
@@ -1611,7 +1634,7 @@ nav button.active {
 }
 .application-list-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px 230px;
+  grid-template-columns: minmax(0, 1fr) 125px 190px;
   gap: 12px;
   border-bottom: 1px solid #d4ddd8;
   padding: 0 12px 8px;
@@ -1625,13 +1648,13 @@ nav button.active {
 }
 .application-list .application-open {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px;
+  grid-template-columns: minmax(0, 1fr) 125px;
   align-items: center;
   gap: 14px;
   min-width: 0;
   border: 0;
   background: transparent;
-  padding: 12px;
+  padding: 9px 11px;
   text-align: left;
 }
 .application-posting-name,
@@ -1687,7 +1710,7 @@ nav button.active {
 }
 .application-item-actions {
   display: flex;
-  width: 230px;
+  width: 190px;
   flex-direction: row;
   border-left: 1px solid #dce5f0;
 }
@@ -1722,7 +1745,7 @@ nav button.active {
 .application-calendar {
   margin: 0;
   width: 100%;
-  max-width: 380px;
+  max-width: 340px;
   justify-self: end;
 }
 .application-spec-dialog {
