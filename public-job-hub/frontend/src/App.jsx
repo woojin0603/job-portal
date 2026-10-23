@@ -274,8 +274,9 @@ const STAGE_LABELS = {
   WRITTEN_TEST: '필기 예정',
   INTERVIEW: '면접 예정',
   PASSED: '최종 합격',
-  REJECTED: '전형 종료',
 }
+
+const SUCCESS_SHARE_STAGES = new Set(['DOCUMENT_PASSED', 'INTERVIEW', 'PASSED'])
 
 /** API가 쉼표로 전달한 여러 항목을 카드 크기에 맞게 핵심 항목과 나머지 개수로 요약한다. */
 function summarizeList(value, limit = 2) {
@@ -449,13 +450,14 @@ function JobCard({
   const visiblePositions = (job.positions || []).slice(0, 2)
   const hiddenPositionCount = Math.max(0, (job.positions?.length || 0) - visiblePositions.length)
   const [tracking, setTracking] = useState({
-    stage: job.applicationStage || 'SAVED',
+    stage: job.applicationStage === 'REJECTED' ? 'SUBMITTED' : job.applicationStage || 'SAVED',
     nextStepDate: job.nextStepDate || '',
     memo: job.applicationMemo || '',
   })
+  const [trackingOpen, setTrackingOpen] = useState(false)
   useEffect(() => {
     setTracking({
-      stage: job.applicationStage || 'SAVED',
+      stage: job.applicationStage === 'REJECTED' ? 'SUBMITTED' : job.applicationStage || 'SAVED',
       nextStepDate: job.nextStepDate || '',
       memo: job.applicationMemo || '',
     })
@@ -480,8 +482,14 @@ function JobCard({
             type="button"
             className={job.scrapped ? 'scrap-tool active' : 'scrap-tool'}
             disabled={busy}
-            onClick={() => onScrap(job.id)}
+            onClick={async () => {
+              if (!job.scrapped) await onScrap(job.id)
+              setTrackingOpen(true)
+            }}
           >
+            <span className="scrap-star" aria-hidden="true">
+              ★
+            </span>
             {job.scrapped ? '스크랩 완료' : '스크랩'}
           </button>
           <button type="button" onClick={() => onShare(job)} aria-label="공고 공유">
@@ -573,37 +581,85 @@ function JobCard({
           </>
         )}
       </div>
-      {job.scrapped && (
-        <div className="tracking-box">
-          <strong>지원 일정 관리</strong>
-          <div className="tracking-fields">
-            <select
-              value={tracking.stage}
-              onChange={(e) => setTracking({ ...tracking, stage: e.target.value })}
-              aria-label="지원 단계"
-            >
-              {Object.entries(STAGE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={tracking.nextStepDate}
-              onChange={(e) => setTracking({ ...tracking, nextStepDate: e.target.value })}
-              aria-label="다음 일정"
-            />
-          </div>
-          <textarea
-            value={tracking.memo}
-            onChange={(e) => setTracking({ ...tracking, memo: e.target.value })}
-            placeholder="준비사항이나 전형 메모"
-            maxLength={2000}
-          />
-          <button disabled={busy} onClick={() => onTrack(job.id, tracking)}>
-            지원현황 저장
-          </button>
+      {trackingOpen && (
+        <div className="match-overlay" onMouseDown={() => setTrackingOpen(false)}>
+          <section
+            className="tracking-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="스크랩 및 지원 일정 관리"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="tracking-dialog-head">
+              <div>
+                <span className="scrap-star" aria-hidden="true">
+                  ★
+                </span>
+                <strong>스크랩 공고 관리</strong>
+              </div>
+              <button type="button" onClick={() => setTrackingOpen(false)} aria-label="닫기">
+                ×
+              </button>
+            </div>
+            <p>{job.organization}</p>
+            <h3>{job.title}</h3>
+            <div className="tracking-fields">
+              <label>
+                지원 단계
+                <select
+                  value={tracking.stage}
+                  onChange={(e) => setTracking({ ...tracking, stage: e.target.value })}
+                >
+                  {Object.entries(STAGE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                다음 일정
+                <input
+                  type="date"
+                  value={tracking.nextStepDate}
+                  onChange={(e) => setTracking({ ...tracking, nextStepDate: e.target.value })}
+                />
+              </label>
+            </div>
+            <label>
+              메모
+              <textarea
+                value={tracking.memo}
+                onChange={(e) => setTracking({ ...tracking, memo: e.target.value })}
+                placeholder="준비사항이나 전형 메모"
+                maxLength={2000}
+              />
+            </label>
+            <div className="tracking-dialog-actions">
+              {job.scrapped && (
+                <button
+                  className="unscrap"
+                  disabled={busy}
+                  onClick={async () => {
+                    await onScrap(job.id)
+                    setTrackingOpen(false)
+                  }}
+                >
+                  스크랩 해제
+                </button>
+              )}
+              <button
+                className="save"
+                disabled={busy}
+                onClick={async () => {
+                  await onTrack(job.id, tracking)
+                  setTrackingOpen(false)
+                }}
+              >
+                지원현황 저장
+              </button>
+            </div>
+          </section>
         </div>
       )}
     </article>
@@ -2043,16 +2099,6 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
         <div className="application-list">
           <div className="application-list-heading">
             <h3>{stageFilter ? STAGE_LABELS[stageFilter] : '전체 지원 현황'}</h3>
-            {stageFilter === 'DOCUMENT_PASSED' && (
-              <button
-                type="button"
-                className="success-share-button"
-                disabled={!visible.length}
-                onClick={() => onShareSuccess(visible)}
-              >
-                합격자 게시판에 공유
-              </button>
-            )}
           </div>
           {visible.map((item) => {
             const hasSpec = Object.values(item.applicationSpec || {}).some((value) => value?.trim())
@@ -2067,13 +2113,24 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                   </small>
                   {item.memo && <em>{item.memo}</em>}
                 </button>
-                <button
-                  type="button"
-                  className="application-spec-button"
-                  onClick={() => onEditSpec(item)}
-                >
-                  {hasSpec ? '제출 스펙 수정' : '제출 스펙 기록'}
-                </button>
+                <div className="application-item-actions">
+                  <button
+                    type="button"
+                    className="application-spec-button"
+                    onClick={() => onEditSpec(item)}
+                  >
+                    {hasSpec ? '제출 스펙 수정' : '제출 스펙 기록'}
+                  </button>
+                  {SUCCESS_SHARE_STAGES.has(item.stage) && (
+                    <button
+                      type="button"
+                      className="application-success-share"
+                      onClick={() => onShareSuccess([item])}
+                    >
+                      합격자 게시판에 공유
+                    </button>
+                  )}
+                </div>
               </article>
             )
           })}
@@ -5233,7 +5290,7 @@ function SuccessBoard({ user, onOpen, onDelete }) {
             return (
               <article key={story.id}>
                 <div className="success-story-meta">
-                  <span>서류 합격</span>
+                  <span>{STAGE_LABELS[story.stage] || '합격 후기'}</span>
                   <time>{new Date(story.createdAt).toLocaleDateString('ko-KR')}</time>
                 </div>
                 <h2>{story.title}</h2>

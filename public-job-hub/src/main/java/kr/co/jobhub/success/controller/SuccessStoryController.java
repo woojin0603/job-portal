@@ -17,7 +17,7 @@ import java.util.List;
 public class SuccessStoryController {
     public record SaveRequest(@NotNull Long postingId, @NotBlank @Size(max = 120) String title,
                               @NotBlank @Size(max = 5000) String content, boolean shareProfile) {}
-    public record Item(Long id, Long postingId, String organization, String postingTitle, String title,
+    public record Item(Long id, Long postingId, String organization, String postingTitle, String stage, String title,
                        String content, String sharedProfile, Instant createdAt, boolean mine) {}
     private final SuccessStoryService service;
     public SuccessStoryController(SuccessStoryService service) { this.service = service; }
@@ -37,7 +37,7 @@ public class SuccessStoryController {
     public void delete(@PathVariable Long id, Principal principal) { service.delete(id, principal); }
 
     private Item item(SuccessStory value, String email) {
-        return new Item(value.id, value.posting.id, value.posting.organization, value.posting.title,
+        return new Item(value.id, value.posting.id, value.posting.organization, value.posting.title, value.scrap.stage,
                 value.title, value.content, value.sharedProfile, value.createdAt,
                 email != null && email.equalsIgnoreCase(value.user.email));
     }

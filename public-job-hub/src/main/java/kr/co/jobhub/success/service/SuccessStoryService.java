@@ -29,8 +29,8 @@ public class SuccessStoryService {
         AppUser user = user(principal);
         Scrap scrap = scraps.findByUserIdAndPostingId(user.id, postingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "지원 기록을 찾을 수 없습니다."));
-        if (!"DOCUMENT_PASSED".equals(scrap.stage))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "서류 합격으로 기록한 공고만 공유할 수 있습니다.");
+        if (!java.util.Set.of("DOCUMENT_PASSED", "INTERVIEW", "PASSED").contains(scrap.stage))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "서류 합격, 면접 예정 또는 최종 합격 공고만 공유할 수 있습니다.");
         SuccessStory value = stories.findByUserIdAndScrapId(user.id, scrap.id).orElseGet(SuccessStory::new);
         value.user = user; value.scrap = scrap; value.posting = scrap.posting;
         value.title = title.trim(); value.content = content.trim();
