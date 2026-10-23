@@ -582,7 +582,7 @@ function JobCard({
         )}
       </div>
       {trackingOpen && (
-        <div className="match-overlay" onMouseDown={() => setTrackingOpen(false)}>
+        <div className="match-overlay tracking-overlay" onMouseDown={() => setTrackingOpen(false)}>
           <section
             className="tracking-dialog"
             role="dialog"
@@ -2100,18 +2100,26 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
           <div className="application-list-heading">
             <h3>{stageFilter ? STAGE_LABELS[stageFilter] : '전체 지원 현황'}</h3>
           </div>
+          <div className="application-list-columns" aria-hidden="true">
+            <span>공고명</span>
+            <span>상태</span>
+            <span>관리</span>
+          </div>
           {visible.map((item) => {
             const hasSpec = Object.values(item.applicationSpec || {}).some((value) => value?.trim())
             return (
               <article key={item.id}>
                 <button type="button" className="application-open" onClick={() => onOpen(item)}>
-                  <span>{item.organization}</span>
-                  <strong>{item.title}</strong>
-                  <small>
-                    {STAGE_LABELS[item.stage] || '관심 공고'} · 다음 일정{' '}
-                    {item.nextStepDate || '미정'} · 마감 {item.deadline || '미정'}
-                  </small>
-                  {item.memo && <em>{item.memo}</em>}
+                  <div className="application-posting-name">
+                    <strong>{item.title}</strong>
+                    <small>{item.organization}</small>
+                  </div>
+                  <div className="application-status-info">
+                    <strong>{STAGE_LABELS[item.stage] || '지원 완료'}</strong>
+                    <small>다음 일정 {item.nextStepDate || '미정'}</small>
+                    <small>마감 {item.deadline || '미정'}</small>
+                    {item.memo && <em>{item.memo}</em>}
+                  </div>
                 </button>
                 <div className="application-item-actions">
                   <button

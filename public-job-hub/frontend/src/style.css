@@ -59,6 +59,14 @@ header {
   padding: 22px;
   box-shadow: 0 20px 55px rgba(21, 37, 29, 0.22);
 }
+.tracking-overlay {
+  background: transparent;
+  padding: 16px;
+}
+.tracking-overlay .tracking-dialog {
+  border: 1px solid #cfd8d2;
+  box-shadow: 0 16px 42px rgba(24, 42, 33, 0.24);
+}
 .tracking-dialog-head {
   display: flex;
   align-items: center;
@@ -1422,7 +1430,7 @@ nav button.active {
 }
 .application-dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(420px, 1.15fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.55fr);
   gap: 18px;
 }
 
@@ -1601,16 +1609,52 @@ nav button.active {
   border-radius: 9px;
   background: #fbfdff;
 }
+.application-list-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px 230px;
+  gap: 12px;
+  border-bottom: 1px solid #d4ddd8;
+  padding: 0 12px 8px;
+  color: #43544b;
+  font-size: 12px;
+  font-weight: 800;
+}
+.application-list-columns span:nth-child(2),
+.application-list-columns span:nth-child(3) {
+  text-align: center;
+}
 .application-list .application-open {
-  display: flex;
-  flex-direction: column;
-  align-items: start;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  align-items: center;
+  gap: 14px;
   min-width: 0;
   border: 0;
   background: transparent;
   padding: 12px;
   text-align: left;
+}
+.application-posting-name,
+.application-status-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+.application-posting-name strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.application-status-info {
+  border-left: 1px solid #e0e6e2;
+  padding-left: 13px;
+}
+.application-status-info > strong {
+  color: #315f50 !important;
+  font-size: 13px !important;
 }
 .application-list .application-open span {
   color: #365f4f;
@@ -1619,12 +1663,13 @@ nav button.active {
 }
 .application-list .application-open strong {
   color: #1f2f28;
-  font-size: 14px;
-  font-weight: 750;
+  font-size: 15px;
+  font-weight: 800;
 }
 .application-list .application-open small {
-  color: #52645b;
+  color: #45584e;
   font-size: 12px;
+  font-weight: 650;
 }
 .application-list > article:hover {
   border-color: #5f91cc;
@@ -1642,8 +1687,8 @@ nav button.active {
 }
 .application-item-actions {
   display: flex;
-  width: 116px;
-  flex-direction: column;
+  width: 230px;
+  flex-direction: row;
   border-left: 1px solid #dce5f0;
 }
 .application-item-actions .application-spec-button {
@@ -1653,11 +1698,11 @@ nav button.active {
 .application-success-share {
   flex: 1;
   border: 0;
-  border-top: 1px solid #dce5f0;
+  border-left: 1px solid #dce5f0;
   background: #315f50;
   color: #fff;
   padding: 9px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 750;
   line-height: 1.35;
 }
@@ -1676,6 +1721,9 @@ nav button.active {
 }
 .application-calendar {
   margin: 0;
+  width: 100%;
+  max-width: 380px;
+  justify-self: end;
 }
 .application-spec-dialog {
   position: relative;
@@ -5594,6 +5642,9 @@ nav a:hover,
   .application-dashboard-grid {
     grid-template-columns: 1fr;
   }
+  .application-calendar {
+    justify-self: center;
+  }
   .application-list {
     max-height: 360px;
   }
@@ -5902,6 +5953,15 @@ nav a:hover,
   .application-list > article {
     grid-template-columns: 1fr;
   }
+  .application-list-columns {
+    grid-template-columns: minmax(0, 1fr) 110px;
+  }
+  .application-list-columns span:last-child {
+    display: none;
+  }
+  .application-list .application-open {
+    grid-template-columns: minmax(0, 1fr) 110px;
+  }
   .application-item-actions {
     width: 100%;
     flex-direction: row;
@@ -5917,6 +5977,7 @@ nav a:hover,
   .application-success-share {
     min-height: 40px;
     border-top: 0;
+    border-left: 1px solid #dce5f0;
   }
   .posting-view-switch {
     justify-content: stretch;
