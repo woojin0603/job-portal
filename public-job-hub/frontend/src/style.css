@@ -3378,6 +3378,68 @@ nav button.active {
   font-size: 12px;
   line-height: 1.55;
 }
+.match-recommendations {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #dce3ea;
+}
+.match-recommendations-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.match-recommendations-head span {
+  color: #6b7785;
+  font-size: 12px;
+}
+.match-recommendation-list {
+  display: grid;
+  gap: 8px;
+}
+.match-recommendation-list button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  border: 1px solid #d7e0e8;
+  border-radius: 9px;
+  padding: 11px 13px;
+  background: #fff;
+  color: #243444;
+  text-align: left;
+}
+.match-recommendation-list button:hover {
+  border-color: #7895b2;
+  background: #f7f9fb;
+}
+.match-recommendation-list span,
+.match-recommendation-list small {
+  color: #667587;
+  font-size: 12px;
+}
+.grade-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.career-range {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+.career-current {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  align-self: end;
+  min-height: 42px;
+}
+.career-current input {
+  width: 17px;
+  height: 17px;
+}
+
 .match-original {
   width: 100%;
   margin-top: 22px;
@@ -5786,7 +5848,9 @@ nav a:hover,
   }
   .spec-grid-2,
   .spec-grid-3,
-  .month-range {
+  .month-range,
+  .grade-fields,
+  .career-range {
     grid-template-columns: 1fr;
   }
   .spec-item {

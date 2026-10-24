@@ -28,6 +28,12 @@ public class CareerToolsController {
     private static final Set<String> STAGES = Set.of(
             "SAVED", "PREPARING", "SUBMITTED", "DOCUMENT_PASSED", "WRITTEN_TEST",
             "INTERVIEW", "PASSED", "REJECTED");
+    private static final List<String> STANDARD_JOB_CATEGORIES = List.of(
+            "행정·사무", "기획·전략", "인사·노무", "법무", "회계·재무", "홍보·마케팅",
+            "전산·IT", "데이터·통계", "정보보안", "연구", "교육", "문화·예술",
+            "토목", "건축", "전기", "전자", "기계", "통신", "화학", "환경", "에너지",
+            "안전·보건", "시설관리", "운전·운송", "생산·정비", "농림·축산",
+            "의료·보건", "사회복지", "상담", "고객서비스", "영업·사업관리", "기타·전문직");
 
     public record ApplicationRequest(String stage, LocalDate nextStepDate, @Size(max = 2000) String memo) {}
     public record ApplicationState(String stage, LocalDate nextStepDate, String memo) {}
@@ -53,8 +59,11 @@ public class CareerToolsController {
     public record AlertItem(Long id, String title, String organization, String region,
                             LocalDate deadline, String mobilityType, String sourceUrl, boolean fresh,
                             Long remainingDays, String reason) {}
+    public record Recommendation(Long id, String title, String organization, LocalDate deadline,
+                                 String sourceUrl, int score, List<String> reasons) {}
     public record MatchResult(List<String> matchedCertifications, List<String> requirementEvidence,
-                              List<String> strengths, List<String> gaps, int score, String summary) {}
+                              List<String> strengths, List<String> gaps, int score, String summary,
+                              List<Recommendation> recommendations) {}
     public record FilterOptions(List<String> regions, List<String> mobilityTypes,
                                 List<String> jobCategories) {}
 
@@ -261,11 +270,12 @@ public class CareerToolsController {
     public FilterOptions filters() {
         List<String> regions = postings.findAll().stream().map(p -> p.region)
                 .filter(Objects::nonNull).filter(value -> !value.isBlank()).distinct().sorted().toList();
-        List<String> categories = positions.findAll().stream().map(p -> p.standardCategory)
-                .filter(Objects::nonNull)
-                .flatMap(value -> Arrays.stream(value.split("[,，]")))
-                .map(String::trim).filter(value -> !value.isBlank())
-                .distinct().sorted().toList();
+        List<String> categories = java.util.stream.Stream.concat(STANDARD_JOB_CATEGORIES.stream(),
+                        positions.findAll().stream().map(p -> p.standardCategory)
+                                .filter(Objects::nonNull)
+                                .flatMap(value -> Arrays.stream(value.split("[,，]")))
+                                .map(String::trim).filter(value -> !value.isBlank()))
+                .distinct().toList();
         return new FilterOptions(regions, List.of("ROTATIONAL", "FIXED", "UNKNOWN"), categories);
     }
 
@@ -322,7 +332,57 @@ public class CareerToolsController {
         String summary = strengths.isEmpty()
                 ? "직접 일치하는 역량을 찾지 못했습니다. 부족하다는 뜻은 아니며 원문 확인이 필요합니다."
                 : "등록한 역량 중 " + strengths.size() + "개 항목에서 공고와의 관련성을 찾았습니다.";
-        return new MatchResult(matched, evidence, strengths, gaps, score, summary);
+        return new MatchResult(matched, evidence, strengths, gaps, score, summary,
+                recommendations(posting.id, signals));
+    }
+
+    private List<Recommendation> recommendations(Long excludedPostingId, ProfileSignals signals) {
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        Map<Long, List<RecruitmentPosition>> positionsByPosting = positions.findAll().stream()
+                .collect(java.util.stream.Collectors.groupingBy(value -> value.posting.getId()));
+        return postings.findAll().stream()
+                .filter(value -> !Objects.equals(value.id, excludedPostingId))
+                .filter(value -> value.open && (value.deadline == null || !value.deadline.isBefore(today)))
+                .map(value -> recommendation(value, positionsByPosting.getOrDefault(value.id, List.of()), signals))
+                .filter(value -> value.score() > 0)
+                .sorted(Comparator.comparingInt(Recommendation::score).reversed()
+                        .thenComparing(Recommendation::deadline, Comparator.nullsLast(Comparator.naturalOrder())))
+                .limit(4).toList();
+    }
+
+    private Recommendation recommendation(JobPosting posting, List<RecruitmentPosition> postingPositions,
+                                          ProfileSignals signals) {
+        String positionText = postingPositions.stream()
+                .map(value -> clean(value.standardCategory) + " " + clean(value.originalName) + " " + clean(value.requirements))
+                .collect(java.util.stream.Collectors.joining(" "));
+        String source = posting.title + " " + posting.organization + " " + positionText;
+        List<String> reasons = new ArrayList<>();
+        int score = 0;
+        for (String certificate : signals.certificates()) if (contains(source, certificate)) {
+            score += 30; reasons.add("자격증 " + certificate + " 관련");
+        }
+        for (String major : signals.majors()) if (contains(source, major)) {
+            score += 20; reasons.add("전공 " + major + " 관련");
+        }
+        for (String experience : signals.experiences()) if (experience.length() >= 2 && contains(source, experience)) {
+            score += 10; reasons.add("경력·활동 키워드 일치");
+        }
+        String profileText = String.join(" ", signals.certificates()) + " "
+                + String.join(" ", signals.majors()) + " " + String.join(" ", signals.experiences());
+        Map<String, List<String>> relatedFields = new LinkedHashMap<>();
+        relatedFields.put("전산·데이터 역량 관련", List.of("정보처리", "컴퓨터", "소프트웨어", "데이터", "SQL", "빅데이터", "전산", "IT"));
+        relatedFields.put("회계·재무 역량 관련", List.of("회계", "재경", "세무", "재무"));
+        relatedFields.put("전기 직무 관련", List.of("전기", "전력"));
+        relatedFields.put("기계 직무 관련", List.of("기계", "설비"));
+        relatedFields.put("안전 직무 관련", List.of("산업안전", "안전관리", "보건"));
+        relatedFields.put("환경 직무 관련", List.of("환경", "수질", "대기", "폐기물"));
+        for (var field : relatedFields.entrySet()) {
+            boolean profileMatch = field.getValue().stream().anyMatch(value -> contains(profileText, value));
+            boolean postingMatch = field.getValue().stream().anyMatch(value -> contains(source, value));
+            if (profileMatch && postingMatch) { score += 18; reasons.add(field.getKey()); }
+        }
+        return new Recommendation(posting.id, posting.title, posting.organization, posting.deadline,
+                posting.sourceUrl, Math.min(100, score), reasons.stream().distinct().limit(3).toList());
     }
 
     private record ProfileSignals(List<String> certificates, List<String> majors, List<String> experiences) {}

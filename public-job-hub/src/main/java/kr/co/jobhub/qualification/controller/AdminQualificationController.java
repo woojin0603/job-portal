@@ -14,7 +14,7 @@ public class AdminQualificationController {
  public AdminQualificationController(QualificationCatalogRepository qualifications){this.qualifications=qualifications;}
  @PostMapping(value="/import",consumes="multipart/form-data")
  public ImportResult importCsv(@RequestParam MultipartFile file,@RequestParam String type,@RequestParam(defaultValue="AUTO") String encoding){
-  if(!List.of("AUTO","NATIONAL_TECHNICAL","NATIONAL_PROFESSIONAL","ACCREDITED_PRIVATE").contains(type))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"자격 유형이 올바르지 않습니다.");
+  if(!List.of("AUTO","NATIONAL_TECHNICAL","NATIONAL_PROFESSIONAL","ACCREDITED_PRIVATE","PUBLIC_OFFICIAL").contains(type))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"자격 유형이 올바르지 않습니다.");
   int imported=0,skipped=0;
   try{byte[] bytes=file.getBytes(); Charset charset=charset(bytes,encoding); BufferedReader reader=new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytes),charset));
    List<String> headers=parse(reader.readLine()); String line;
@@ -24,7 +24,7 @@ public class AdminQualificationController {
   }catch(Exception e){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"CSV를 읽지 못했습니다. 인코딩과 열 이름을 확인해 주세요.");}
  }
  private String detectedType(List<String> h,List<String> v){String code=value(h,v,"자격구분코드");String name=value(h,v,"자격구분명");if("T".equalsIgnoreCase(code)||name.contains("기술"))return "NATIONAL_TECHNICAL";if("S".equalsIgnoreCase(code)||name.contains("전문"))return "NATIONAL_PROFESSIONAL";if(hasHeader(h,"자격관리자")&&hasHeader(h,"공인유효기간(만료)"))return "ACCREDITED_PRIVATE";return "";}
- private String source(String type){return "ACCREDITED_PRIVATE".equals(type)?"한국직업능력연구원_공인민간자격등록현황":"한국산업인력공단_국가자격 종목 목록 정보";}
+ private String source(String type){if("ACCREDITED_PRIVATE".equals(type))return "한국직업능력연구원_공인민간자격등록현황";if("PUBLIC_OFFICIAL".equals(type))return "공공기관 시행 자격 목록";return "한국산업인력공단_국가자격 종목 목록 정보";}
  private boolean hasHeader(List<String> headers,String name){return headers.stream().map(value->value.replace("\uFEFF","").trim()).anyMatch(name::equals);}
  private Charset charset(byte[] bytes,String requested)throws CharacterCodingException{if(!"AUTO".equalsIgnoreCase(requested))return Charset.forName(requested);CharsetDecoder decoder=StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT);try{decoder.decode(ByteBuffer.wrap(bytes));return StandardCharsets.UTF_8;}catch(CharacterCodingException ignored){return Charset.forName("MS949");}}
  private String value(List<String> h,List<String> v,String... names){for(String name:names)for(int i=0;i<h.size();i++)if(h.get(i).replace("\uFEFF","").trim().equals(name)&&i<v.size())return v.get(i);return "";}

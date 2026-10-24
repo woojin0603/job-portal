@@ -359,15 +359,36 @@ public class CrawlService {
     private List<PositionCandidate> extractPositions(Document detail, Candidate candidate, String pdfText) {
         Map<String, List<String>> aliases = new LinkedHashMap<>();
         aliases.put("행정·사무", List.of("일반행정", "행정직", "사무직", "경영지원", "사무행정"));
-        aliases.put("전산·IT", List.of("전산직", "전산", "정보보안", "정보기술", "IT", "소프트웨어", "데이터"));
-        aliases.put("회계·재무", List.of("회계직", "회계", "재무", "세무"));
-        aliases.put("토목", List.of("토목직", "토목"));
-        aliases.put("건축", List.of("건축직", "건축"));
-        aliases.put("전기", List.of("전기직", "전기"));
-        aliases.put("기계", List.of("기계직", "기계"));
-        aliases.put("연구", List.of("연구직", "연구원", "연구개발"));
-        aliases.put("의료·보건", List.of("간호직", "간호사", "의사", "약사", "보건직", "의료기사"));
-        aliases.put("사회복지", List.of("사회복지직", "사회복지사", "상담직"));
+        aliases.put("기획·전략", List.of("경영기획", "사업기획", "전략기획", "성과관리"));
+        aliases.put("인사·노무", List.of("인사", "노무", "조직관리", "채용담당"));
+        aliases.put("법무", List.of("법무", "변호사", "법률", "송무"));
+        aliases.put("회계·재무", List.of("회계직", "회계", "재무", "세무", "자금"));
+        aliases.put("홍보·마케팅", List.of("홍보", "마케팅", "언론", "대외협력"));
+        aliases.put("전산·IT", List.of("전산직", "전산", "정보기술", "IT", "소프트웨어", "시스템개발"));
+        aliases.put("데이터·통계", List.of("데이터", "빅데이터", "통계", "데이터분석", "인공지능"));
+        aliases.put("정보보안", List.of("정보보안", "사이버보안", "개인정보보호"));
+        aliases.put("연구", List.of("연구직", "연구원", "연구개발", "R&D"));
+        aliases.put("교육", List.of("교육", "교수", "교사", "강사", "훈련"));
+        aliases.put("문화·예술", List.of("문화", "예술", "공연", "전시", "학예"));
+        aliases.put("토목", List.of("토목직", "토목", "수자원", "지적"));
+        aliases.put("건축", List.of("건축직", "건축", "도시계획"));
+        aliases.put("전기", List.of("전기직", "전기", "전력"));
+        aliases.put("전자", List.of("전자직", "전자", "반도체"));
+        aliases.put("기계", List.of("기계직", "기계", "설비"));
+        aliases.put("통신", List.of("통신직", "통신", "방송기술"));
+        aliases.put("화학", List.of("화학", "화공", "소재"));
+        aliases.put("환경", List.of("환경직", "환경", "대기", "수질", "폐기물"));
+        aliases.put("에너지", List.of("에너지", "원자력", "신재생", "가스"));
+        aliases.put("안전·보건", List.of("산업안전", "안전관리", "재난안전", "산업보건"));
+        aliases.put("시설관리", List.of("시설관리", "시설직", "영선", "방재"));
+        aliases.put("운전·운송", List.of("운전직", "운전원", "운송", "철도", "승무"));
+        aliases.put("생산·정비", List.of("생산", "정비", "유지보수", "공무직"));
+        aliases.put("농림·축산", List.of("농업", "농림", "산림", "축산", "수산"));
+        aliases.put("의료·보건", List.of("간호직", "간호사", "의사", "약사", "보건직", "의료기사", "임상"));
+        aliases.put("사회복지", List.of("사회복지직", "사회복지사", "복지"));
+        aliases.put("상담", List.of("상담직", "상담사", "심리"));
+        aliases.put("고객서비스", List.of("고객상담", "고객지원", "민원", "안내"));
+        aliases.put("영업·사업관리", List.of("영업", "사업관리", "프로젝트관리", "해외사업"));
 
         StringBuilder scoped = new StringBuilder(candidate.title()).append(' ');
         for (Element element : detail.select("tr, li, p, h1, h2, h3, h4, dt, dd")) {

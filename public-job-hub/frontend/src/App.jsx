@@ -994,6 +994,26 @@ function MatchDialog({ value, onClose, onOpenSource }) {
             <p>구조화된 자격·우대 문구를 찾지 못했습니다. 원문에서 확인해 주세요.</p>
           )}
         </div>
+        {result.recommendations?.length > 0 && (
+          <div className="match-recommendations">
+            <div className="match-recommendations-head">
+              <strong>이런 기업은 어때요?</strong>
+              <span>등록한 자격증·전공·경력과 관련된 진행 공고</span>
+            </div>
+            <div className="match-recommendation-list">
+              {result.recommendations.map((item) => (
+                <button key={item.id} type="button" onClick={() => onOpenSource(item)}>
+                  <span>{item.organization}</span>
+                  <strong>{item.title}</strong>
+                  <small>
+                    {item.reasons?.join(' · ') || '등록 스펙 관련 공고'}
+                    {item.deadline && ` · 마감 ${item.deadline}`}
+                  </small>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button className="match-original" onClick={() => onOpenSource(job)}>
           원문보기 ↗
         </button>
@@ -1084,7 +1104,7 @@ function CapabilityDialog({ profile, loading, onClose, onEdit }) {
                 {careers.map((item, index) => (
                   <div className="capability-item" key={`career-view-${index}`}>
                     <strong>{[item.companyName, item.position].filter(Boolean).join(' · ')}</strong>
-                    <span>{period(item.startMonth, item.endMonth)}</span>
+                    <span>{item.current ? `${item.startMonth || '미입력'} ~ 재직중` : period(item.startMonth, item.endMonth)}</span>
                     {item.duties && <p>{item.duties}</p>}
                   </div>
                 ))}
@@ -1102,11 +1122,12 @@ function CapabilityDialog({ profile, loading, onClose, onEdit }) {
                 ))}
               </section>
             )}
-            {profile.grades && (
+            {(profile.myGrade || profile.maxGrade || profile.grades) && (
               <section>
                 <h3>성적</h3>
-                <div className="capability-item">
-                  <p>{profile.grades}</p>
+                <div className="capability-item grade-summary">
+                  <span>내 성적 · {profile.myGrade || '미입력'}</span>
+                  <span>최고 성적 · {profile.maxGrade || '미입력'}</span>
                 </div>
               </section>
             )}
@@ -2900,6 +2921,17 @@ const QUALIFICATION_TYPE_LABELS = {
   NATIONAL_TECHNICAL: '국가기술',
   NATIONAL_PROFESSIONAL: '국가전문',
   ACCREDITED_PRIVATE: '국가공인 민간',
+  PUBLIC_OFFICIAL: '공공기관 시행',
+}
+const STANDARD_CERT_GRADES = ['기술사', '기능장', '기사', '산업기사', '기능사', '직접입력']
+function certificationGradeOptions(item) {
+  if (item.allowedGrades?.length) return item.allowedGrades
+  if ((item.name || '').includes('한국사능력검정'))
+    return ['심화 1급', '심화 2급', '심화 3급', '기본 4급', '기본 5급', '기본 6급', '직접입력']
+  const matched = STANDARD_CERT_GRADES.find(
+    (grade) => grade !== '직접입력' && (item.name || '').endsWith(grade),
+  )
+  return matched ? [matched, '직접입력'] : STANDARD_CERT_GRADES
 }
 
 function QualificationSearchInput({ item, onChange }) {
@@ -2938,6 +2970,9 @@ function QualificationSearchInput({ item, onChange }) {
       name: result.name,
       type: result.type,
       issuer: result.issuer,
+      allowedGrades: result.allowedGrades || [],
+      grade: result.allowedGrades?.length === 1 ? result.allowedGrades[0] : '',
+      gradeType: result.allowedGrades?.length === 1 ? result.allowedGrades[0] : '',
     })
     setOpen(false)
   }
@@ -3027,6 +3062,8 @@ function ProfileEditor({ profile, busy, message, onSave }) {
     type: '',
     issuer: '',
     grade: '',
+    gradeType: '',
+    allowedGrades: [],
     acquiredDate: '',
     acquiredMonth: '',
   })
@@ -3037,6 +3074,7 @@ function ProfileEditor({ profile, busy, message, onSave }) {
     duties: '',
     startMonth: '',
     endMonth: '',
+    current: false,
   })
   const blankDegree = () => ({
     schoolName: '',
@@ -3049,7 +3087,14 @@ function ProfileEditor({ profile, busy, message, onSave }) {
   const prepare = (value) => ({
     ...value,
     certifications: value.certifications?.length
-      ? value.certifications.map((item) => ({ ...blankCertification(), ...item }))
+      ? value.certifications.map((item) => {
+          const options = certificationGradeOptions(item)
+          return {
+            ...blankCertification(),
+            ...item,
+            gradeType: item.grade && options.includes(item.grade) ? item.grade : item.grade ? '직접입력' : '',
+          }
+        })
       : [blankCertification()],
     activities: value.activities?.length ? value.activities : [blankActivity()],
     careers: value.careers?.length ? value.careers : [blankCareer()],
@@ -3126,12 +3171,32 @@ function ProfileEditor({ profile, busy, message, onSave }) {
               </label>
               <label>
                 2. 급수
-                <input
-                  value={item.grade || ''}
-                  onChange={itemChange('certifications', index, 'grade')}
-                  maxLength={50}
-                  placeholder="예: 1급, 기사"
-                />
+                <select
+                  value={item.gradeType || ''}
+                  onChange={(event) => {
+                    const items = [...form.certifications]
+                    const selected = event.target.value
+                    items[index] = {
+                      ...item,
+                      gradeType: selected,
+                      grade: selected === '직접입력' ? '' : selected,
+                    }
+                    setForm({ ...form, certifications: items })
+                  }}
+                >
+                  <option value="">선택</option>
+                  {certificationGradeOptions(item).map((grade) => (
+                    <option key={grade}>{grade}</option>
+                  ))}
+                </select>
+                {item.gradeType === '직접입력' && (
+                  <input
+                    value={item.grade || ''}
+                    onChange={itemChange('certifications', index, 'grade')}
+                    maxLength={50}
+                    placeholder="급수 또는 등급 직접 입력"
+                  />
+                )}
               </label>
               <label>
                 3. 취득연월일
@@ -3222,7 +3287,7 @@ function ProfileEditor({ profile, busy, message, onSave }) {
                   maxLength={120}
                 />
               </label>
-              <div className="month-range item-wide">
+              <div className="month-range item-wide career-range">
                 <label>
                   시작연월
                   <input
@@ -3236,8 +3301,25 @@ function ProfileEditor({ profile, busy, message, onSave }) {
                   <input
                     type="month"
                     value={item.endMonth || ''}
+                    disabled={Boolean(item.current)}
                     onChange={itemChange('careers', index, 'endMonth')}
                   />
+                </label>
+                <label className="career-current">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(item.current)}
+                    onChange={(event) => {
+                      const items = [...form.careers]
+                      items[index] = {
+                        ...item,
+                        current: event.target.checked,
+                        endMonth: event.target.checked ? '' : item.endMonth,
+                      }
+                      setForm({ ...form, careers: items })
+                    }}
+                  />
+                  재직중
                 </label>
               </div>
               <label className="item-wide">
@@ -3324,15 +3406,26 @@ function ProfileEditor({ profile, busy, message, onSave }) {
             </div>
           ))}
         </div>
-        <label>
-          성적
-          <textarea
-            value={form.grades || ''}
-            onChange={change('grades')}
-            maxLength={1000}
-            placeholder="예: 3.8 / 4.5"
-          />
-        </label>
+        <div className="grade-fields">
+          <label>
+            내 성적
+            <input
+              value={form.myGrade || ''}
+              onChange={change('myGrade')}
+              maxLength={40}
+              placeholder="예: 3.8"
+            />
+          </label>
+          <label>
+            최고 성적
+            <input
+              value={form.maxGrade || ''}
+              onChange={change('maxGrade')}
+              maxLength={40}
+              placeholder="예: 4.5"
+            />
+          </label>
+        </div>
         <div className="profile-submit wide">
           {message && <span role="status">{message}</span>}
           <button disabled={busy}>{busy ? '저장 중...' : '내 스펙 저장'}</button>
@@ -3343,16 +3436,11 @@ function ProfileEditor({ profile, busy, message, onSave }) {
 }
 
 const ADMIN_CATEGORIES = [
-  '행정·사무',
-  '전산·IT',
-  '회계·재무',
-  '토목',
-  '건축',
-  '전기',
-  '기계',
-  '연구',
-  '의료·보건',
-  '사회복지',
+  '행정·사무', '기획·전략', '인사·노무', '법무', '회계·재무', '홍보·마케팅',
+  '전산·IT', '데이터·통계', '정보보안', '연구', '교육', '문화·예술',
+  '토목', '건축', '전기', '전자', '기계', '통신', '화학', '환경', '에너지',
+  '안전·보건', '시설관리', '운전·운송', '생산·정비', '농림·축산',
+  '의료·보건', '사회복지', '상담', '고객서비스', '영업·사업관리', '기타·전문직',
 ]
 
 const POSTING_CHANGE_TYPES = [
@@ -4818,6 +4906,7 @@ function AdminReviewPanel({ user, securePost }) {
             <option value="NATIONAL_TECHNICAL">국가기술자격</option>
             <option value="NATIONAL_PROFESSIONAL">국가전문자격</option>
             <option value="ACCREDITED_PRIVATE">국가공인 민간자격</option>
+            <option value="PUBLIC_OFFICIAL">공공기관 시행 자격</option>
           </select>
           <select
             value={qualificationEncoding}
@@ -5485,6 +5574,8 @@ export default function App() {
     careers: [],
     degrees: [],
     grades: '',
+    myGrade: '',
+    maxGrade: '',
   })
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileMessage, setProfileMessage] = useState('')
@@ -5856,11 +5947,21 @@ export default function App() {
         '/api/profile',
         JSON.stringify({
           birthDate: nextProfile.birthDate || null,
-          certifications: nextProfile.certifications,
+          certifications: nextProfile.certifications.map((item) => ({
+            catalogId: item.catalogId,
+            name: item.name,
+            type: item.type,
+            issuer: item.issuer,
+            grade: item.grade,
+            acquiredDate: item.acquiredDate,
+            acquiredMonth: item.acquiredMonth,
+          })),
           activities: nextProfile.activities,
           careers: nextProfile.careers,
           degrees: nextProfile.degrees,
           grades: nextProfile.grades,
+          myGrade: nextProfile.myGrade,
+          maxGrade: nextProfile.maxGrade,
         }),
         'application/json',
       )
@@ -6402,8 +6503,7 @@ export default function App() {
                     >
                       <option value="">전체 직렬</option>
                       {filterOptions.jobCategories
-                        ?.filter((value) => ADMIN_CATEGORIES.includes(value))
-                        .map((value) => (
+                        ?.map((value) => (
                           <option key={value}>{value}</option>
                         ))}
                     </select>

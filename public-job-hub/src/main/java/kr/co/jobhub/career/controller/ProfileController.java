@@ -46,7 +46,8 @@ public class ProfileController {
     public record Career(@Size(max = 160) String companyName, @Size(max = 120) String position,
                          @Size(max = 2000) String duties,
                          @Pattern(regexp = MONTH) String startMonth,
-                         @Pattern(regexp = MONTH) String endMonth) {}
+                         @Pattern(regexp = MONTH) String endMonth,
+                         Boolean current) {}
     public record Degree(@Size(max = 160) String schoolName, @Size(max = 160) String major,
                          @Size(max = 100) String degreeType,
                          @Pattern(regexp = MONTH) String startMonth,
@@ -58,11 +59,13 @@ public class ProfileController {
                                  @Valid @Size(max = 30) List<Activity> activities,
                                  @Valid @Size(max = 30) List<Career> careers,
                                  @Valid @Size(max = 20) List<Degree> degrees,
-                                 @Size(max = 1000) String grades) {}
+                                 @Size(max = 1000) String grades,
+                                 @Size(max = 40) String myGrade,
+                                 @Size(max = 40) String maxGrade) {}
     public record ProfileResponse(String displayName, LocalDate birthDate,
                                   List<Certification> certifications, List<Activity> activities,
                                   List<Career> careers, List<Degree> degrees,
-                                  String grades, Instant updatedAt) {}
+                                  String grades, String myGrade, String maxGrade, Instant updatedAt) {}
 
     private final UserProfileRepository profiles;
     private final AppUserRepository users;
@@ -79,7 +82,7 @@ public class ProfileController {
         AppUser user = user(principal);
         return profiles.findByUserId(user.id).map(profile -> response(user, profile))
                 .orElseGet(() -> new ProfileResponse(user.displayName, null, List.of(), List.of(),
-                        List.of(), List.of(), "", null));
+                        List.of(), List.of(), "", "", "", null));
     }
 
     @PostMapping
@@ -94,7 +97,7 @@ public class ProfileController {
         activities.forEach(item -> { values.add(item.name()); values.add(item.description()); });
         careers.forEach(item -> { values.add(item.companyName()); values.add(item.position()); values.add(item.duties()); });
         degrees.forEach(item -> { values.add(item.schoolName()); values.add(item.major()); values.add(item.degreeType()); });
-        values.add(request.grades());
+        values.add(request.grades()); values.add(request.myGrade()); values.add(request.maxGrade());
         rejectSensitive(values);
 
         UserProfile profile = profiles.findByUserId(user.id).orElseGet(UserProfile::new);
@@ -104,7 +107,9 @@ public class ProfileController {
         profile.activities = write(activities);
         profile.careerHistory = write(careers);
         profile.degree = write(degrees);
-        profile.grades = clean(request.grades());
+        GradeValue requestedGrade = clean(request.myGrade()).isBlank() && clean(request.maxGrade()).isBlank()
+                ? grade(request.grades()) : new GradeValue(clean(request.myGrade()), clean(request.maxGrade()));
+        profile.grades = write(requestedGrade);
         profile.updatedAt = Instant.now();
         return response(user, profiles.save(profile));
     }
@@ -138,7 +143,8 @@ public class ProfileController {
         return new ProfileResponse(user.displayName, profile.birthDate,
                 readCertifications(profile.certifications), readActivities(profile.activities),
                 readCareers(profile.careerHistory), readDegrees(profile.degree),
-                clean(profile.grades), profile.updatedAt);
+                grade(profile.grades).summary(), grade(profile.grades).myGrade(),
+                grade(profile.grades).maxGrade(), profile.updatedAt);
     }
 
     private List<Certification> readCertifications(String raw) {
@@ -151,11 +157,29 @@ public class ProfileController {
     }
     private List<Career> readCareers(String raw) {
         try { return json.readValue(raw, new TypeReference<>() {}); }
-        catch (Exception e) { return clean(raw).isBlank() ? List.of() : List.of(new Career("", "", clean(raw), "", "")); }
+        catch (Exception e) { return clean(raw).isBlank() ? List.of() : List.of(new Career("", "", clean(raw), "", "", false)); }
     }
     private List<Degree> readDegrees(String raw) {
         try { return json.readValue(raw, new TypeReference<>() {}); }
         catch (Exception e) { return clean(raw).isBlank() ? List.of() : List.of(new Degree("", clean(raw), "", "", "", "")); }
+    }
+    private record GradeValue(String myGrade, String maxGrade) {
+        String summary() {
+            if (myGrade.isBlank() && maxGrade.isBlank()) return "";
+            return myGrade + (maxGrade.isBlank() ? "" : " / " + maxGrade);
+        }
+    }
+
+    private GradeValue grade(String raw) {
+        String value = clean(raw);
+        if (value.isBlank()) return new GradeValue("", "");
+        try {
+            GradeValue parsed = json.readValue(value, GradeValue.class);
+            return new GradeValue(clean(parsed.myGrade()), clean(parsed.maxGrade()));
+        } catch (Exception ignored) {
+            String[] legacy = value.split("\\s*/\\s*", 2);
+            return new GradeValue(legacy[0], legacy.length > 1 ? legacy[1] : "");
+        }
     }
     private String clean(String value) {
         return value == null ? "" : value.trim();
