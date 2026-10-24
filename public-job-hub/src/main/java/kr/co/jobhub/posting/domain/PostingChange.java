@@ -21,9 +21,9 @@ public class PostingChange {
     /** IMPORTANT는 지원 판단이나 일정에 직접 영향을 주는 변경, NORMAL은 일반 정보 변경이다. */
     @Column(length = 20)
     public String importance = "NORMAL";
-    @Lob @Column(name = "old_value")
+    @Lob @Column(name = "old_value", columnDefinition = "LONGTEXT")
     public String oldValue;
-    @Lob @Column(name = "new_value")
+    @Lob @Column(name = "new_value", columnDefinition = "LONGTEXT")
     public String newValue;
     @Column(name = "source_url", length = 1500)
     public String sourceUrl;

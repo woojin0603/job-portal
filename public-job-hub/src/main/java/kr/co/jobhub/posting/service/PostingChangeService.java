@@ -57,7 +57,11 @@ public class PostingChangeService {
         change.newValue = limit(newValue);
         change.sourceUrl = posting.sourceUrl;
         change.detectedAt = detectedAt;
-        changes.save(change);
+        try {
+            changes.saveAndFlush(change);
+        } catch (RuntimeException ignored) {
+            // 변경 이력 기록 실패가 원본 채용공고 수집 전체를 중단시키지 않게 한다.
+        }
     }
 
     private String importance(String type, String oldValue, String newValue) {
@@ -138,8 +142,8 @@ public class PostingChangeService {
     private String value(Object value) { return value == null ? "" : String.valueOf(value); }
     private String limit(String value) {
         String clean = clean(value);
-        // 운영 DB의 기존 VARCHAR(1000) 스키마와도 호환되도록 변경 이력은 화면 확인에
-        // 필요한 앞부분만 보관한다. 전체 내용은 sourceUrl의 원문에서 확인할 수 있다.
-        return clean.length() <= 1000 ? clean : clean.substring(0, 999) + "…";
+        // 비정상적으로 큰 원문 전체가 변경 이력에 중복 저장되는 것을 막는다.
+        // 상세 원문은 sourceUrl에서 확인할 수 있고, 이력에는 비교 가능한 근거만 남긴다.
+        return clean.length() <= 8000 ? clean : clean.substring(0, 7999) + "…";
     }
 }
