@@ -18,6 +18,6 @@ public class QualificationController {
  private List<String> allowedGrades(String name){
   if(name.contains("한국사능력검정"))return List.of("심화 1급","심화 2급","심화 3급","기본 4급","기본 5급","기본 6급","직접입력");
   for(String grade:List.of("기술사","기능장","기사","산업기사","기능사"))if(name.endsWith(grade))return List.of(grade,"직접입력");
-  return List.of("기술사","기능장","기사","산업기사","기능사","직접입력");
+  return List.of("단일등급","기술사","기능장","기사","산업기사","기능사","직접입력");
  }
 }

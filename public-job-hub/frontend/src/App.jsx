@@ -2183,7 +2183,7 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                   >
                     {hasSpec ? '제출 스펙 수정' : '제출 스펙 기록'}
                   </button>
-                  {SUCCESS_SHARE_STAGES.has(item.stage) && (
+                  {stageFilter && SUCCESS_SHARE_STAGES.has(item.stage) && (
                     <button
                       type="button"
                       className="application-success-share"
@@ -2923,7 +2923,7 @@ const QUALIFICATION_TYPE_LABELS = {
   ACCREDITED_PRIVATE: '국가공인 민간',
   PUBLIC_OFFICIAL: '공공기관 시행',
 }
-const STANDARD_CERT_GRADES = ['기술사', '기능장', '기사', '산업기사', '기능사', '직접입력']
+const STANDARD_CERT_GRADES = ['단일등급', '기술사', '기능장', '기사', '산업기사', '기능사', '직접입력']
 function certificationGradeOptions(item) {
   if (item.allowedGrades?.length) return item.allowedGrades
   if ((item.name || '').includes('한국사능력검정'))
