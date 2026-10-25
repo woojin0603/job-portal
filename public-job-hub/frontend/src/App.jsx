@@ -346,10 +346,18 @@ function postingDeadlineLabel(deadline) {
   return days === 0 ? 'D-Day' : `D-${days}`
 }
 
-/** 게시판형 목록은 기관·제목·남은 기간·마감일만 한 줄에 표시한다. */
+/** 게시판형 목록도 로고·기관 분류·직렬·지역·마감일을 한 행에서 비교할 수 있게 표시한다. */
 function PostingListRow({ job, onOpen }) {
   const deadlineLabel = postingDeadlineLabel(job.deadline)
   const urgent = deadlineLabel === 'D-Day' || /^D-[12]$/.test(deadlineLabel)
+  const [iconFailed, setIconFailed] = useState(false)
+  const iconUrl = sourceIconUrl(job)
+  const position = job.positions?.[0]
+  const category = summarizeList(
+    position?.standardCategory || position?.originalName || job.employmentType || '직렬 미확인',
+    1,
+  )
+  const region = summarizeList(position?.workRegion || job.region || '지역 미정', 1)
   return (
     <button
       type="button"
@@ -357,10 +365,29 @@ function PostingListRow({ job, onOpen }) {
       onClick={onOpen}
       aria-label={`${job.organization} ${job.title}, ${deadlineLabel}, 마감일 ${job.deadline || '미정'}`}
     >
-      <strong className="posting-list-organization">[{job.organization || '기관 미확인'}]</strong>
+      <span className="posting-list-organization">
+        <span className={`posting-list-logo ${iconFailed || !iconUrl ? 'fallback' : ''}`}>
+          {!iconFailed && iconUrl ? (
+            <img src={iconUrl} alt="" loading="lazy" onError={() => setIconFailed(true)} />
+          ) : (
+            job.organization?.trim()?.charAt(0) || 'J'
+          )}
+        </span>
+        <span>
+          <strong>{job.organization || '기관 미확인'}</strong>
+          <small>{institutionClassification(job)}</small>
+        </span>
+      </span>
       <span className="posting-list-title">{job.title}</span>
-      <span className="posting-list-deadline">({deadlineLabel})</span>
-      <time dateTime={job.deadline || undefined}>/ {job.deadline || '마감일 미정'}</time>
+      <span className="posting-list-position">
+        <i>{category}</i>
+        <i>{region}</i>
+      </span>
+      <span className="posting-list-date">
+        <strong className="posting-list-deadline">{deadlineLabel}</strong>
+        <time dateTime={job.deadline || undefined}>{job.deadline || '마감일 미정'}</time>
+      </span>
+      <span className="posting-list-star" aria-hidden="true">☆</span>
     </button>
   )
 }
@@ -370,7 +397,9 @@ function PostingListHeader() {
     <div className="posting-list-header" aria-hidden="true">
       <span>채용기관</span>
       <span>공고명</span>
+      <span>직렬·지역</span>
       <span>마감일</span>
+      <span aria-hidden="true"></span>
     </div>
   )
 }
@@ -2173,7 +2202,7 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                     <small>마감 {item.deadline || '미정'}</small>
                     {nextAutoSchedule && (
                       <small className="auto-schedule">
-                        자동 확인 · {nextAutoSchedule.label} {nextAutoSchedule.date}
+                        {nextAutoSchedule.label} {nextAutoSchedule.date}
                       </small>
                     )}
                     {item.memo && <em>{item.memo}</em>}

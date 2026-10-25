@@ -43,9 +43,8 @@ public class PostingChangeController {
         Instant viewedAt = cursors.findByUserId(user.id).map(value -> value.lastViewedAt).orElse(null);
         Set<Long> postingIds = scraps.findByUserId(user.id).stream()
                 .map(value -> value.posting.id).collect(Collectors.toSet());
-        return changes.findAllByOrderByDetectedAtDesc().stream()
-                .filter(value -> postingIds.contains(value.posting.id))
-                .limit(100)
+        if (postingIds.isEmpty()) return List.of();
+        return changes.findTop100ByPosting_IdInOrderByDetectedAtDesc(postingIds).stream()
                 .map(value -> item(value, viewedAt)).toList();
     }
 
