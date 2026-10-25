@@ -1023,8 +1023,31 @@ function MatchDialog({ value, onClose, onOpenSource }) {
         <p className="match-organization">{job.organization}</p>
         <div className="match-score">
           <strong>{result.score ?? 0}점</strong>
-          <span>등록한 역량과 공고문을 비교한 참고 점수</span>
+          <span>필수요건·자격증·경력·대외활동을 구분한 참고 점수</span>
         </div>
+        {result.eligibility && (
+          <div className={`match-eligibility ${result.eligibility.status === '지원 가능성 있음' ? 'possible' : ''}`}>
+            <span>필수요건 판정</span>
+            <strong>{result.eligibility.status}</strong>
+            <p>{result.eligibility.detail}</p>
+          </div>
+        )}
+        {result.components?.length > 0 && (
+          <div className="match-components">
+            {result.components.map((component) => (
+              <article key={component.key}>
+                <div>
+                  <strong>{component.label}</strong>
+                  <span>{component.status}</span>
+                </div>
+                <b>{component.score} / {component.maxScore}</b>
+                {component.details?.length > 0 && (
+                  <p>{component.details.join(' · ')}</p>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
         <div className="match-summary">{result.summary}</div>
         {result.strengths?.length > 0 && (
           <div className="match-points strengths">
@@ -1244,7 +1267,8 @@ function ProfileSummary({ profile, onEdit }) {
       title: '경력',
       items: (profile.careers || []).filter((item) => item.companyName || item.position || item.duties).map((item) => ({
         title: [item.companyName, item.position].filter(Boolean).join(' · ') || '경력',
-        meta: period(item.startMonth, item.endMonth, item.current),
+        meta: [item.field && `분야 ${item.field}`, period(item.startMonth, item.endMonth, item.current)]
+          .filter(Boolean).join(' · '),
         detail: item.duties,
       })),
     },
@@ -1253,7 +1277,8 @@ function ProfileSummary({ profile, onEdit }) {
       title: '대외활동',
       items: (profile.activities || []).filter((item) => item.name || item.description).map((item) => ({
         title: item.name || '대외활동',
-        meta: period(item.startMonth, item.endMonth),
+        meta: [item.field && `분야 ${item.field}`, period(item.startMonth, item.endMonth)]
+          .filter(Boolean).join(' · '),
         detail: item.description,
       })),
     },
@@ -3132,6 +3157,13 @@ const QUALIFICATION_TYPE_LABELS = {
   PUBLIC_OFFICIAL: '공공기관 시행',
 }
 const STANDARD_CERT_GRADES = ['단일등급', '기술사', '기능장', '기사', '산업기사', '기능사', '직접입력']
+const PROFILE_JOB_FIELDS = [
+  '행정·사무', '기획·전략', '인사·노무', '법무', '회계·재무', '홍보·마케팅',
+  '전산·IT', '데이터·통계', '정보보안', '연구', '교육', '문화·예술',
+  '토목', '건축', '전기', '전자', '기계', '통신', '화학', '환경', '에너지',
+  '안전·보건', '시설관리', '운전·운송', '생산·정비', '농림·축산',
+  '의료·보건', '사회복지', '상담', '고객서비스', '영업·사업관리', '기타·전문직',
+]
 function qualificationField(name = '') {
   const fields = [
     ['전산·데이터', ['정보처리', '컴퓨터', '소프트웨어', '데이터', 'SQL', '빅데이터', '정보보안', '네트워크']],
@@ -3291,10 +3323,11 @@ function ProfileEditor({ profile, busy, message, onSave }) {
     acquiredDate: '',
     acquiredMonth: '',
   })
-  const blankActivity = () => ({ name: '', description: '', startMonth: '', endMonth: '' })
+  const blankActivity = () => ({ name: '', field: '', description: '', startMonth: '', endMonth: '' })
   const blankCareer = () => ({
     companyName: '',
     position: '',
+    field: '',
     duties: '',
     startMonth: '',
     endMonth: '',
@@ -3455,6 +3488,13 @@ function ProfileEditor({ profile, busy, message, onSave }) {
                   maxLength={160}
                 />
               </label>
+              <label>
+                활동 분야
+                <select value={item.field || ''} onChange={itemChange('activities', index, 'field')}>
+                  <option value="">선택안함</option>
+                  {PROFILE_JOB_FIELDS.map((field) => <option key={field}>{field}</option>)}
+                </select>
+              </label>
               <div className="month-range">
                 <label>
                   시작연월
@@ -3510,6 +3550,13 @@ function ProfileEditor({ profile, busy, message, onSave }) {
                   onChange={itemChange('careers', index, 'position')}
                   maxLength={120}
                 />
+              </label>
+              <label>
+                경력 분야
+                <select value={item.field || ''} onChange={itemChange('careers', index, 'field')}>
+                  <option value="">선택안함</option>
+                  {PROFILE_JOB_FIELDS.map((field) => <option key={field}>{field}</option>)}
+                </select>
               </label>
               <div className="month-range item-wide career-range">
                 <label>

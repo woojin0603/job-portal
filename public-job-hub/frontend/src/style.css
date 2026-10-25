@@ -3530,6 +3530,76 @@ nav button.active {
   color: #6b7b8f;
   font-size: 12px;
 }
+.match-eligibility {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 10px;
+  margin-bottom: 12px;
+  border: 1px solid #e4cf9c;
+  border-radius: 10px;
+  background: #fff9ec;
+  padding: 12px 14px;
+}
+.match-eligibility.possible {
+  border-color: #b8d7c7;
+  background: #eff8f3;
+}
+.match-eligibility span {
+  color: #68766f;
+  font-size: 11px;
+  font-weight: 700;
+}
+.match-eligibility strong {
+  color: #6f501c;
+}
+.match-eligibility.possible strong {
+  color: #236047;
+}
+.match-eligibility p {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  color: #536259;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.match-components {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.match-components article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 12px;
+  border: 1px solid #dfe6e2;
+  border-radius: 9px;
+  background: #fafcfb;
+  padding: 11px 13px;
+}
+.match-components article > div strong,
+.match-components article > div span {
+  display: block;
+}
+.match-components article > div strong {
+  color: #293f34;
+}
+.match-components article > div span {
+  margin-top: 2px;
+  color: #68776f;
+  font-size: 11px;
+}
+.match-components article > b {
+  color: #315f50;
+  font-size: 14px;
+}
+.match-components article > p {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  color: #596961;
+  font-size: 11px;
+  line-height: 1.45;
+}
 .match-points {
   margin-top: 16px;
   padding: 13px 15px;

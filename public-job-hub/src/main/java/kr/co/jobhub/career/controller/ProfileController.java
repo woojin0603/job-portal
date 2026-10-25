@@ -40,11 +40,12 @@ public class ProfileController {
                                 @Size(max = 50) String grade,
                                 @Pattern(regexp = DATE) String acquiredDate,
                                 @Pattern(regexp = MONTH) String acquiredMonth) {}
-    public record Activity(@Size(max = 160) String name, @Size(max = 1500) String description,
+    public record Activity(@Size(max = 160) String name, @Size(max = 100) String field,
+                           @Size(max = 1500) String description,
                            @Pattern(regexp = MONTH) String startMonth,
                            @Pattern(regexp = MONTH) String endMonth) {}
     public record Career(@Size(max = 160) String companyName, @Size(max = 120) String position,
-                         @Size(max = 2000) String duties,
+                         @Size(max = 100) String field, @Size(max = 2000) String duties,
                          @Pattern(regexp = MONTH) String startMonth,
                          @Pattern(regexp = MONTH) String endMonth,
                          Boolean current) {}
@@ -94,8 +95,8 @@ public class ProfileController {
         List<Degree> degrees = request.degrees() == null ? List.of() : request.degrees();
         List<String> values = new ArrayList<>();
         certifications.forEach(item -> { values.add(item.name()); values.add(item.grade()); });
-        activities.forEach(item -> { values.add(item.name()); values.add(item.description()); });
-        careers.forEach(item -> { values.add(item.companyName()); values.add(item.position()); values.add(item.duties()); });
+        activities.forEach(item -> { values.add(item.name()); values.add(item.field()); values.add(item.description()); });
+        careers.forEach(item -> { values.add(item.companyName()); values.add(item.position()); values.add(item.field()); values.add(item.duties()); });
         degrees.forEach(item -> { values.add(item.schoolName()); values.add(item.major()); values.add(item.degreeType()); });
         values.add(request.grades()); values.add(request.myGrade()); values.add(request.maxGrade());
         rejectSensitive(values);
@@ -153,11 +154,11 @@ public class ProfileController {
     }
     private List<Activity> readActivities(String raw) {
         try { return json.readValue(raw, new TypeReference<>() {}); }
-        catch (Exception e) { return clean(raw).isBlank() ? List.of() : List.of(new Activity("", clean(raw), "", "")); }
+        catch (Exception e) { return clean(raw).isBlank() ? List.of() : List.of(new Activity("", "", clean(raw), "", "")); }
     }
     private List<Career> readCareers(String raw) {
         try { return json.readValue(raw, new TypeReference<>() {}); }
-        catch (Exception e) { return clean(raw).isBlank() ? List.of() : List.of(new Career("", "", clean(raw), "", "", false)); }
+        catch (Exception e) { return clean(raw).isBlank() ? List.of() : List.of(new Career("", "", "", clean(raw), "", "", false)); }
     }
     private List<Degree> readDegrees(String raw) {
         try { return json.readValue(raw, new TypeReference<>() {}); }
