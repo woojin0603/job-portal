@@ -330,10 +330,7 @@ public class CareerToolsController {
         List<String> experienceMatches = signals.experiences().stream()
                 .filter(value -> meaningfulTokens(List.of(value)).stream().anyMatch(sourceTokens::contains))
                 .distinct().limit(3).toList();
-        experienceMatches.forEach(value -> strengths.add("경력·활동 핵심어 관련: " + shorten(value, 80)));
-        boolean preferredMatch = !signals.preferredJobCategory().isBlank()
-                && normalizedContains(text, signals.preferredJobCategory());
-        if (preferredMatch) strengths.add("희망직무 일치: " + signals.preferredJobCategory());
+        experienceMatches.forEach(value -> strengths.add("경력 핵심어 관련: " + shorten(value, 80)));
         List<String> gaps = new ArrayList<>();
         for (String line : evidence) {
             if (gaps.size() == 4) break;
@@ -344,9 +341,8 @@ public class CareerToolsController {
         }
         if (signals.certificates().isEmpty()) gaps.add("등록된 자격증이 없어 자격요건 비교가 제한됩니다.");
         int score = Math.min(100, Math.min(50, matched.size() * 25)
-                + Math.min(24, matchedMajors.size() * 12)
-                + Math.min(20, experienceMatches.size() * 7)
-                + (preferredMatch ? 15 : 0));
+                + Math.min(25, matchedMajors.size() * 13)
+                + Math.min(25, experienceMatches.size() * 9));
         String summary = strengths.isEmpty()
                 ? "등록 정보와 공고문에서 직접 확인되는 일치 근거가 없습니다. 점수는 합격 가능성이 아니므로 원문 요건을 확인해 주세요."
                 : "공고문에서 " + strengths.size() + "개의 관련 근거를 확인했습니다. 점수는 자격 충족이나 합격 가능성을 보장하지 않습니다.";
@@ -389,17 +385,11 @@ public class CareerToolsController {
                     .filter(sourceTokens::contains).limit(2).toList();
             if (!matches.isEmpty()) {
                 score += Math.min(12, matches.size() * 6);
-                reasons.add("경력·활동: " + String.join(", ", matches));
+                reasons.add("경력: " + String.join(", ", matches));
             }
         }
-        if (!signals.preferredJobCategory().isBlank()
-                && normalizedContains(source, signals.preferredJobCategory())) {
-            score += 20;
-            reasons.add("희망직무 " + signals.preferredJobCategory());
-        }
         String profileText = String.join(" ", signals.certificates()) + " "
-                + String.join(" ", signals.majors()) + " " + String.join(" ", signals.experiences())
-                + " " + signals.preferredJobCategory();
+                + String.join(" ", signals.majors()) + " " + String.join(" ", signals.experiences());
         Map<String, List<String>> relatedFields = new LinkedHashMap<>();
         relatedFields.put("전산·데이터 역량 관련", List.of("정보처리", "컴퓨터", "소프트웨어", "데이터", "SQL", "빅데이터", "전산", "IT"));
         relatedFields.put("회계·재무 역량 관련", List.of("회계", "재경", "세무", "재무"));
@@ -417,13 +407,12 @@ public class CareerToolsController {
     }
 
     private record ProfileSignals(List<String> certificates, List<String> majors,
-                                  List<String> experiences, String preferredJobCategory) {}
+                                  List<String> experiences) {}
 
     private ProfileSignals profileSignals(AppUser user) {
         try {
             UserProfile profile = profiles.findByUserId(user.id).orElse(null);
-            String preferred = clean(user.preferredJobCategory);
-            if (profile == null) return new ProfileSignals(List.of(), List.of(), List.of(), preferred);
+            if (profile == null) return new ProfileSignals(List.of(), List.of(), List.of());
             List<String> certificates = new ArrayList<>();
             for (JsonNode item : json.readTree(profile.certifications == null ? "[]" : profile.certifications)) {
                 String name = item.path("name").asText().trim();
@@ -435,19 +424,19 @@ public class CareerToolsController {
                 if (!major.isBlank()) majors.add(major);
             }
             List<String> experiences = new ArrayList<>();
-            for (String raw : Arrays.asList(profile.careerHistory, profile.activities)) {
+            for (String raw : List.of(profile.careerHistory == null ? "" : profile.careerHistory)) {
                 if (raw == null || raw.isBlank()) continue;
                 for (JsonNode item : json.readTree(raw)) {
-                    for (String field : List.of("companyName", "position", "duties", "name", "description")) {
+                    for (String field : List.of("companyName", "position", "duties")) {
                         String value = item.path(field).asText().trim();
                         if (value.length() >= 2) experiences.add(value);
                     }
                 }
             }
             return new ProfileSignals(certificates.stream().distinct().toList(),
-                    majors.stream().distinct().toList(), experiences.stream().distinct().toList(), preferred);
+                    majors.stream().distinct().toList(), experiences.stream().distinct().toList());
         } catch (Exception e) {
-            return new ProfileSignals(List.of(), List.of(), List.of(), clean(user.preferredJobCategory));
+            return new ProfileSignals(List.of(), List.of(), List.of());
         }
     }
 

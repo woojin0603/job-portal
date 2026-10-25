@@ -1181,17 +1181,22 @@ function ProfileSummary({ profile, onEdit }) {
     current ? `${start || '시작일 미입력'} ~ 재직중` : [start, end].filter(Boolean).join(' ~ ') || '기간 미입력'
   const groups = [
     {
+      area: 'certifications',
       title: '자격증',
       items: (profile.certifications || []).filter((item) => item.name).map((item) => ({
         title: item.name,
-        meta: [
-          item.grade,
-          item.acquiredDate || item.acquiredMonth,
-          QUALIFICATION_TYPE_LABELS[item.type] || item.type,
-        ].filter(Boolean).join(' · '),
+        badges: [
+          ['분야', qualificationField(item.name)],
+          ['분류', QUALIFICATION_TYPE_LABELS[item.type] || item.type || '직접 등록'],
+          ['등급', item.grade || '미입력'],
+        ],
+        meta: item.acquiredDate || item.acquiredMonth
+          ? `${item.acquiredDate || item.acquiredMonth} 취득`
+          : '취득일 미입력',
       })),
     },
     {
+      area: 'degrees',
       title: '학위',
       items: (profile.degrees || []).filter((item) => item.schoolName || item.major).map((item) => ({
         title: [item.schoolName, item.major].filter(Boolean).join(' · '),
@@ -1199,6 +1204,7 @@ function ProfileSummary({ profile, onEdit }) {
       })),
     },
     {
+      area: 'careers',
       title: '경력',
       items: (profile.careers || []).filter((item) => item.companyName || item.position || item.duties).map((item) => ({
         title: [item.companyName, item.position].filter(Boolean).join(' · ') || '경력',
@@ -1207,6 +1213,7 @@ function ProfileSummary({ profile, onEdit }) {
       })),
     },
     {
+      area: 'activities',
       title: '대외활동',
       items: (profile.activities || []).filter((item) => item.name || item.description).map((item) => ({
         title: item.name || '대외활동',
@@ -1231,18 +1238,25 @@ function ProfileSummary({ profile, onEdit }) {
       ) : (
         <div className="profile-summary-grid">
           {groups.map((group) => (
-            <article key={group.title}>
+            <article key={group.title} className={`profile-group-${group.area}`}>
               <h3>{group.title}<b>{group.items.length}</b></h3>
               {group.items.length ? group.items.map((item, index) => (
                 <div className="profile-summary-item" key={`${group.title}-${index}`}>
                   <strong>{item.title}</strong>
+                  {item.badges && (
+                    <div className="qualification-badges">
+                      {item.badges.map(([label, value]) => (
+                        <span key={label}><b>{label}</b>{value}</span>
+                      ))}
+                    </div>
+                  )}
                   {item.meta && <span>{item.meta}</span>}
                   {item.detail && <p>{item.detail}</p>}
                 </div>
               )) : <p className="profile-summary-empty">등록 내용 없음</p>}
             </article>
           ))}
-          <article>
+          <article className="profile-group-grades">
             <h3>성적</h3>
             <div className="profile-summary-item grade-summary">
               <strong>{profile.myGrade || '미입력'} / {profile.maxGrade || '미입력'}</strong>
@@ -3057,6 +3071,22 @@ const QUALIFICATION_TYPE_LABELS = {
   PUBLIC_OFFICIAL: '공공기관 시행',
 }
 const STANDARD_CERT_GRADES = ['단일등급', '기술사', '기능장', '기사', '산업기사', '기능사', '직접입력']
+function qualificationField(name = '') {
+  const fields = [
+    ['전산·데이터', ['정보처리', '컴퓨터', '소프트웨어', '데이터', 'SQL', '빅데이터', '정보보안', '네트워크']],
+    ['경영·회계·금융', ['회계', '세무', '재경', '재무', '경영', '투자', '자산', '보험']],
+    ['전기·전자·통신', ['전기', '전자', '통신', '무선', '전파', '반도체']],
+    ['기계·설비', ['기계', '설비', '공조', '냉동', '자동차', '용접', '금형']],
+    ['건설·토목·건축', ['건축', '토목', '건설', '측량', '지적', '조경', '도시계획']],
+    ['안전·소방', ['안전', '소방', '위험물', '가스', '산업위생', '인간공학']],
+    ['환경·에너지', ['환경', '수질', '대기', '폐기물', '에너지', '신재생', '기상']],
+    ['보건·의료·복지', ['간호', '의료', '보건', '위생', '영양', '임상', '사회복지', '상담']],
+    ['법률·행정', ['법무', '행정', '노무', '관세', '감정평가', '공인중개']],
+    ['교육·언어·문화', ['한국사', '한국어', '영어', '한자', '번역', '교육', '문화', '사서']],
+    ['농림·축산·수산', ['농업', '산림', '축산', '수산', '식물', '종자', '식품']],
+  ]
+  return fields.find(([, keywords]) => keywords.some((keyword) => name.includes(keyword)))?.[0] || '기타·전문'
+}
 function certificationGradeOptions(item) {
   if (item.allowedGrades?.length) return item.allowedGrades
   if ((item.name || '').includes('한국사능력검정'))
