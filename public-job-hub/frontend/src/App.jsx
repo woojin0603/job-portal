@@ -403,6 +403,10 @@ function PostingListRow({
         </span>
       </button>
       <div className="posting-list-actions" aria-label="공고 부가 정보">
+        <span className="posting-list-actions-context">
+          <strong>{job.organization || '기관 미확인'}</strong>
+          <small>공고 부가정보</small>
+        </span>
         <button type="button" onClick={() => onSalary(job)}>연봉정보</button>
         <button type="button" onClick={() => onCompetition(job)}>이전 경쟁률</button>
         <button type="button" disabled={matchBusy} onClick={() => onMatch(job)}>
@@ -6604,8 +6608,10 @@ export default function App() {
             <div className="heading">
               <div>
                 <p className="eyebrow">공공기관 채용정보</p>
-                <h1>{mine ? '마이페이지' : '나에게 맞는 채용공고'}</h1>
-                {!mine && <p className="sub">마감일이 가까운 공고부터 빠르게 확인하세요.</p>}
+                <h1>{mine ? '마이페이지' : '오늘 확인할 채용공고'}</h1>
+                {!mine && (
+                  <p className="sub">기관·직렬·지역을 비교하고 지원할 공고를 찾아보세요.</p>
+                )}
                 {mine && <p className="sub">내 스펙과 맞춤 알림을 관리하세요.</p>}
                 {mine && (
                   <div className="mypage-heading-actions">

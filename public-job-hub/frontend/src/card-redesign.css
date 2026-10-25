@@ -62,7 +62,7 @@
 }
 
 .posting-list-entry {
-  border-bottom: 1px solid #e8ece9;
+  border-bottom: 3px solid #e1e6e3;
   background: #fff;
 }
 .posting-list-entry:last-child {
@@ -190,9 +190,32 @@
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-  border-top: 1px solid #eff2f0;
+  border-top: 1px solid #dfe6e2;
   padding: 8px 18px 10px;
-  background: #fbfcfb;
+  background: #f6f8f6;
+}
+.posting-list-actions-context {
+  display: flex;
+  min-width: 0;
+  margin-right: auto;
+  align-items: center;
+  gap: 7px;
+  color: #526159;
+}
+.posting-list-actions-context strong {
+  max-width: 180px;
+  overflow: hidden;
+  color: #2e4338;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.posting-list-actions-context small {
+  border-left: 1px solid #cbd5cf;
+  padding-left: 7px;
+  color: #748078;
+  font-size: 10px;
+  white-space: nowrap;
 }
 .posting-list-actions button {
   min-height: 30px;
@@ -981,6 +1004,15 @@ body > #root > main {
     flex-wrap: wrap;
     gap: 6px;
     padding: 9px 12px 11px;
+  }
+  .posting-list-actions-context {
+    width: 100%;
+    flex: 1 0 100%;
+    border-bottom: 1px solid #e1e6e3;
+    padding-bottom: 7px;
+  }
+  .posting-list-actions-context strong {
+    max-width: calc(100% - 90px);
   }
   .posting-list-actions button {
     flex: 1 1 calc(50% - 6px);
