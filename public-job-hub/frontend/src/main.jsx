@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 import App from './App.jsx'
 import './style.css'
+import './card-redesign.css'
 
 // React 메인 화면을 index.html의 root 요소에 마운트한다.
 // StrictMode는 개발 중 렌더링 부작용을 발견하도록 돕는다.

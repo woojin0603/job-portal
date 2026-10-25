@@ -1,0 +1,244 @@
+/* 카드형 화면의 최종 우선순위. 후반 반응형 규칙 뒤에서 시안의 3열 카드 구성을 확정한다. */
+.grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.grid > .card,
+.grid > .card.deadline-urgent,
+.grid > .card.deadline-urgent:hover {
+  min-width: 0;
+  min-height: 0;
+  padding: 18px 20px 16px;
+  overflow: hidden;
+  border: 1px solid #dfe4e1;
+  border-top: 4px solid transparent;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 9px rgba(34, 50, 42, 0.055);
+  transform: none;
+}
+.grid > .card.deadline-urgent,
+.grid > .card.deadline-urgent:hover {
+  border-top-color: #c9473f;
+}
+.grid > .card:hover,
+.grid > .card.deadline-urgent:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(34, 50, 42, 0.1);
+}
+.grid .card-top,
+.grid .card.deadline-urgent .card-top {
+  min-height: 42px;
+  margin: 0 0 14px;
+  padding: 0;
+  gap: 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+}
+.grid .card-brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+.grid .source-symbol {
+  width: 52px;
+  height: 38px;
+  flex: 0 0 52px;
+  border: 0;
+  border-radius: 7px;
+  background: #f4f6f4;
+}
+.grid .source-symbol img {
+  max-width: 46px;
+  max-height: 32px;
+  object-fit: contain;
+}
+.grid .institution-badge,
+.grid .institution-badge.institution-central,
+.grid .institution-badge.institution-local,
+.grid .institution-badge.institution-private,
+.grid .institution-badge.institution-public {
+  max-width: 112px;
+  padding: 6px 10px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #f1f3f1;
+  color: #58645e;
+  font-size: 12px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grid .card-tools {
+  flex: 0 0 auto;
+  gap: 5px;
+}
+.grid .deadline-tag,
+.grid .urgent-tag,
+.grid .expired-tag {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #26322c;
+  font-size: 13px;
+  font-weight: 750;
+}
+.grid .urgent-tag {
+  color: #b53e37;
+}
+.grid .card-tools .scrap-tool,
+.grid .card-tools .scrap-tool.active,
+.grid .card-tools .share-tool {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 0;
+}
+.grid .card-tools .share-tool::before {
+  content: '↗';
+  color: #68736d;
+  font-size: 19px;
+}
+.grid .scrap-star {
+  color: #d5a514;
+  font-size: 20px;
+}
+.grid .card-heading {
+  min-width: 0;
+  margin-bottom: 13px;
+}
+.grid .card-heading > .organization-name {
+  display: block;
+  margin-bottom: 6px;
+  overflow: hidden;
+  color: #49554f;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grid .title-button {
+  width: 100%;
+  min-height: 51px;
+  padding: 0;
+  text-align: left;
+}
+.grid .card h2,
+.grid .card.deadline-urgent h2 {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: #17221d;
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.grid .details {
+  display: flex;
+  min-height: 66px;
+  margin: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+.grid .pills,
+.grid .position-list {
+  margin: 0;
+  gap: 6px;
+}
+.grid .pills span,
+.grid .position-list > span {
+  max-width: 100%;
+  margin: 0;
+  padding: 5px 9px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #f3f5f3;
+  color: #4c5952;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grid .position-list > span:nth-child(n + 3) {
+  display: none;
+}
+.grid .date,
+.grid .card.deadline-urgent .date {
+  margin: auto 0 0;
+  padding: 13px 0 11px;
+  align-items: end;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.grid .date strong,
+.grid .card.deadline-urgent .date strong {
+  color: #5d6862;
+  font-size: 13px;
+  font-weight: 550;
+}
+.grid .card-dday {
+  color: #26322c;
+  font-size: 20px;
+  font-weight: 800;
+}
+.grid .card-dday.urgent {
+  color: #c13932;
+}
+.grid .card > .actions {
+  margin: 0 -20px -16px;
+  padding: 11px 14px 13px;
+  border-top: 1px solid #edf0ee;
+  background: #fbfcfb;
+}
+.grid .job-info-actions .preview-link,
+.grid .actions > .report-link,
+.grid .career-actions button {
+  min-height: 32px;
+  border-color: #dfe4e1 !important;
+  background: #fff !important;
+  color: #4c5a53 !important;
+  font-size: 11px;
+}
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .grid,
+  .scrap-list-grid {
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+  .grid > .card,
+  .grid > .card.deadline-urgent {
+    padding: 14px 15px 13px;
+  }
+  .grid .card-top,
+  .grid .card.deadline-urgent .card-top {
+    margin-bottom: 10px;
+  }
+  .grid .title-button,
+  .grid .details {
+    min-height: 0;
+  }
+  .grid .card h2,
+  .grid .card.deadline-urgent h2 {
+    font-size: 17px;
+  }
+  .grid .card > .actions {
+    margin: 0 -15px -13px;
+  }
+}

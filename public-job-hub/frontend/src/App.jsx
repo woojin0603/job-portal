@@ -470,38 +470,7 @@ function JobCard({
       className={`card ${institutionClass} ${urgent ? 'deadline-urgent' : ''} ${expired ? 'posting-expired' : ''} ${job.applied ? 'applied' : job.scrapped ? 'saved' : ''}`}
     >
       <div className="card-top">
-        <div className="card-labels">
-          <span className={`institution-badge ${institutionClass}`}>{institutionType}</span>
-          {!expired && daysLeft !== null && (
-            <span className={urgent ? 'deadline-tag urgent-tag' : 'deadline-tag'}>
-              {daysLeft === 0 ? 'D-Day' : `D-${daysLeft}`}
-            </span>
-          )}
-          {!expired && daysLeft === null && <span className="deadline-tag">마감일 미정</span>}
-          {expired && <span className="expired-tag">접수마감</span>}
-        </div>
-        <div className="card-tools">
-          <button
-            type="button"
-            className={job.scrapped ? 'scrap-tool active' : 'scrap-tool'}
-            disabled={busy}
-            onClick={() => setTrackingOpen(true)}
-          >
-            <span className="scrap-star" aria-hidden="true">
-              ★
-            </span>
-            {job.scrapped ? '스크랩 완료' : '스크랩'}
-          </button>
-          <button type="button" onClick={() => onShare(job)} aria-label="공고 공유">
-            공유
-          </button>
-        </div>
-      </div>
-      <button className="title-button" onClick={onOpenSource} title={job.title}>
-        <h2>{job.title}</h2>
-      </button>
-      <div className="details">
-        <div className="organization-row">
+        <div className="card-brand">
           <span className={`source-symbol ${iconFailed || !iconUrl ? 'fallback' : ''}`}>
             {!iconFailed && iconUrl ? (
               <img src={iconUrl} alt="" loading="lazy" onError={() => setIconFailed(true)} />
@@ -509,17 +478,49 @@ function JobCard({
               job.organization?.trim()?.charAt(0) || 'J'
             )}
           </span>
-          <div>
-            <span>{institutionClassificationText}</span>
-            <strong className="organization-name" title={job.organization}>
-              {job.organization}
-            </strong>
-          </div>
+          <span className={`institution-badge ${institutionClass}`}>
+            {institutionClassificationText || institutionType}
+          </span>
         </div>
+        <div className="card-tools">
+          {!expired && daysLeft !== null && (
+            <span className={urgent ? 'deadline-tag urgent-tag' : 'deadline-tag'}>
+              {daysLeft === 0 ? 'D-Day' : `D-${daysLeft}`}
+            </span>
+          )}
+          {!expired && daysLeft === null && <span className="deadline-tag">마감일 미정</span>}
+          {expired && <span className="expired-tag">접수마감</span>}
+          <button
+            type="button"
+            className={job.scrapped ? 'scrap-tool active' : 'scrap-tool'}
+            disabled={busy}
+            onClick={() => setTrackingOpen(true)}
+            aria-label={job.scrapped ? '스크랩 공고 관리' : '스크랩'}
+            title={job.scrapped ? '스크랩 공고 관리' : '스크랩'}
+          >
+            <span className="scrap-star" aria-hidden="true">
+              ★
+            </span>
+          </button>
+          <button className="share-tool" type="button" onClick={() => onShare(job)} aria-label="공고 공유">
+            공유
+          </button>
+        </div>
+      </div>
+      <div className="card-heading">
+        <strong className="organization-name" title={job.organization}>
+          {job.organization}
+        </strong>
+        <button className="title-button" onClick={onOpenSource} title={job.title}>
+          <h2>{job.title}</h2>
+        </button>
+      </div>
+      <div className="details">
         <div className="pills">
           {job.employmentType && (
             <span title={job.employmentType}>{summarizeList(job.employmentType)}</span>
           )}
+          {job.region && <span title={job.region}>{summarizeList(job.region, 1)}</span>}
         </div>
         {job.positions?.length > 0 && (
           <div className="position-list">
@@ -547,14 +548,17 @@ function JobCard({
         )}
       </div>
       <div className="date">
-        <span aria-hidden="true">▦</span>
         <div>
-          <small>접수 기간</small>
+          <small>마감일</small>
           <strong>
-            {job.postedAt || '미확인'} ~ {job.deadline || '미확인'}
-            {urgent && ` · D-${daysLeft}`}
+            {job.deadline || '미확인'}
           </strong>
         </div>
+        {!expired && daysLeft !== null && (
+          <b className={urgent ? 'card-dday urgent' : 'card-dday'}>
+            {daysLeft === 0 ? 'D-Day' : `D-${daysLeft}`}
+          </b>
+        )}
       </div>
       <div className="actions">
         <div className="job-info-actions">
@@ -5542,7 +5546,7 @@ export default function App() {
   const [jobCategory, setJobCategory] = useState('')
   const [showClosed, setShowClosed] = useState(false)
   const [postingViewMode, setPostingViewMode] = useState(
-    () => window.localStorage.getItem('jobhub-posting-view') || 'list',
+    () => window.localStorage.getItem('jobhub-posting-view-v2') || 'card',
   )
   const [filterOptions, setFilterOptions] = useState({
     regions: [],
@@ -5617,7 +5621,7 @@ export default function App() {
 
   function changePostingView(mode) {
     setPostingViewMode(mode)
-    window.localStorage.setItem('jobhub-posting-view', mode)
+    window.localStorage.setItem('jobhub-posting-view-v2', mode)
   }
 
   /** 브라우저 주소와 화면 상태를 동기화해 새로고침·뒤로가기를 지원한다. */
