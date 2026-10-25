@@ -54,18 +54,22 @@
   min-height: 106px;
   padding: 18px 22px;
   border: 0;
-  border-bottom: 1px solid #e8ece9;
+  border-bottom: 0;
   border-radius: 0;
   background: #fff;
   color: #1d2823;
   text-align: left;
 }
 
-.posting-list-row:last-child {
+.posting-list-entry {
+  border-bottom: 1px solid #e8ece9;
+  background: #fff;
+}
+.posting-list-entry:last-child {
   border-bottom: 0;
 }
 
-.posting-list-row:nth-child(even) {
+.posting-list-entry:nth-child(odd) {
   background: #fdfefd;
 }
 
@@ -75,7 +79,7 @@
   box-shadow: inset 4px 0 #1c6044;
 }
 
-.posting-list-row.urgent {
+.posting-list-entry.urgent .posting-list-row {
   background: #fff;
 }
 
@@ -170,7 +174,7 @@
 }
 
 .posting-list-deadline,
-.posting-list-row.urgent .posting-list-deadline {
+.posting-list-entry.urgent .posting-list-deadline {
   padding: 0;
   background: transparent;
   color: #202b26;
@@ -178,8 +182,41 @@
   font-weight: 800;
 }
 
-.posting-list-row.urgent .posting-list-deadline {
+.posting-list-entry.urgent .posting-list-deadline {
   color: #d32622;
+}
+.posting-list-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  border-top: 1px solid #eff2f0;
+  padding: 8px 18px 10px;
+  background: #fbfcfb;
+}
+.posting-list-actions button {
+  min-height: 30px;
+  border: 1px solid #dce3df;
+  border-radius: 7px;
+  background: #fff;
+  color: #46574e;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.posting-list-actions button:hover {
+  border-color: #98ada2;
+  color: #24533e;
+}
+.posting-list-actions button:disabled {
+  opacity: 0.6;
+}
+.posting-list-actions .posting-list-report {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+  font-size: 15px;
 }
 
 .posting-list-date time {
@@ -938,6 +975,20 @@ body > #root > main {
   }
   .posting-list-star small {
     font-size: 9px;
+  }
+  .posting-list-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 9px 12px 11px;
+  }
+  .posting-list-actions button {
+    flex: 1 1 calc(50% - 6px);
+    min-height: 36px;
+  }
+  .posting-list-actions .posting-list-report {
+    flex: 0 0 38px;
+    width: 38px;
   }
 }
 

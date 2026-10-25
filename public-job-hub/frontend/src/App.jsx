@@ -347,7 +347,16 @@ function postingDeadlineLabel(deadline) {
 }
 
 /** 게시판형 목록도 로고·기관 분류·직렬·지역·마감일을 한 행에서 비교할 수 있게 표시한다. */
-function PostingListRow({ job, onOpen }) {
+function PostingListRow({
+  job,
+  onOpen,
+  onSalary,
+  onCompetition,
+  onMatch,
+  onInsight,
+  onReport,
+  matchBusy,
+}) {
   const deadlineLabel = postingDeadlineLabel(job.deadline)
   const urgent = deadlineLabel === 'D-Day' || /^D-[12]$/.test(deadlineLabel)
   const [iconFailed, setIconFailed] = useState(false)
@@ -359,39 +368,58 @@ function PostingListRow({ job, onOpen }) {
   )
   const region = summarizeList(position?.workRegion || job.region || '지역 미정', 1)
   return (
-    <button
-      type="button"
-      className={`posting-list-row ${urgent ? 'urgent' : ''}`}
-      onClick={onOpen}
-      aria-label={`${job.organization} ${job.title}, ${deadlineLabel}, 마감일 ${job.deadline || '미정'}`}
-    >
-      <span className="posting-list-organization">
-        <span className={`posting-list-logo ${iconFailed || !iconUrl ? 'fallback' : ''}`}>
-          {!iconFailed && iconUrl ? (
-            <img src={iconUrl} alt="" loading="lazy" onError={() => setIconFailed(true)} />
-          ) : (
-            job.organization?.trim()?.charAt(0) || 'J'
-          )}
+    <article className={`posting-list-entry ${urgent ? 'urgent' : ''}`}>
+      <button
+        type="button"
+        className="posting-list-row"
+        onClick={onOpen}
+        aria-label={`${job.organization} ${job.title}, ${deadlineLabel}, 마감일 ${job.deadline || '미정'}`}
+      >
+        <span className="posting-list-organization">
+          <span className={`posting-list-logo ${iconFailed || !iconUrl ? 'fallback' : ''}`}>
+            {!iconFailed && iconUrl ? (
+              <img src={iconUrl} alt="" loading="lazy" onError={() => setIconFailed(true)} />
+            ) : (
+              job.organization?.trim()?.charAt(0) || 'J'
+            )}
+          </span>
+          <span>
+            <strong>{job.organization || '기관 미확인'}</strong>
+            <small>{institutionClassification(job)}</small>
+          </span>
         </span>
-        <span>
-          <strong>{job.organization || '기관 미확인'}</strong>
-          <small>{institutionClassification(job)}</small>
+        <span className="posting-list-title">{job.title}</span>
+        <span className="posting-list-position">
+          <i>{category}</i>
+          <i>{region}</i>
         </span>
-      </span>
-      <span className="posting-list-title">{job.title}</span>
-      <span className="posting-list-position">
-        <i>{category}</i>
-        <i>{region}</i>
-      </span>
-      <span className="posting-list-date">
-        <strong className="posting-list-deadline">{deadlineLabel}</strong>
-        <time dateTime={job.deadline || undefined}>{job.deadline || '마감일 미정'}</time>
-      </span>
-      <span className={job.scrapped ? 'posting-list-star saved' : 'posting-list-star'} aria-hidden="true">
-        {job.scrapped && <small>스크랩됨</small>}
-        {job.scrapped ? '★' : '☆'}
-      </span>
-    </button>
+        <span className="posting-list-date">
+          <strong className="posting-list-deadline">{deadlineLabel}</strong>
+          <time dateTime={job.deadline || undefined}>{job.deadline || '마감일 미정'}</time>
+        </span>
+        <span className={job.scrapped ? 'posting-list-star saved' : 'posting-list-star'} aria-hidden="true">
+          {job.scrapped && <small>스크랩됨</small>}
+          {job.scrapped ? '★' : '☆'}
+        </span>
+      </button>
+      <div className="posting-list-actions" aria-label="공고 부가 정보">
+        <button type="button" onClick={() => onSalary(job)}>연봉정보</button>
+        <button type="button" onClick={() => onCompetition(job)}>이전 경쟁률</button>
+        <button type="button" disabled={matchBusy} onClick={() => onMatch(job)}>
+          {matchBusy ? '분석 중' : '내 스펙 매칭'}
+        </button>
+        <button type="button" onClick={() => onInsight(job)}>과거 채용분석</button>
+        <button
+          type="button"
+          className="posting-list-report"
+          aria-label="정보 오류 신고"
+          title="정보 오류 신고"
+          onClick={() => onReport(job)}
+        >
+          🚨
+        </button>
+      </div>
+    </article>
   )
 }
 
@@ -6827,7 +6855,17 @@ export default function App() {
                   {postingViewMode === 'list' && <PostingListHeader />}
                   {data.items.map((job) =>
                     postingViewMode === 'list' ? (
-                      <PostingListRow key={job.id} job={job} onOpen={() => openSource(job)} />
+                      <PostingListRow
+                        key={job.id}
+                        job={job}
+                        onOpen={() => openSource(job)}
+                        onSalary={openSalary}
+                        onCompetition={openCompetition}
+                        onMatch={analyzeMatch}
+                        onInsight={openInsight}
+                        onReport={openReport}
+                        matchBusy={matchBusyId === job.id}
+                      />
                     ) : (
                       <JobCard
                         key={job.id}
@@ -6944,7 +6982,17 @@ export default function App() {
                   {postingViewMode === 'list' && <PostingListHeader />}
                   {data.items.map((job) =>
                     postingViewMode === 'list' ? (
-                      <PostingListRow key={job.id} job={job} onOpen={() => openSource(job)} />
+                      <PostingListRow
+                        key={job.id}
+                        job={job}
+                        onOpen={() => openSource(job)}
+                        onSalary={openSalary}
+                        onCompetition={openCompetition}
+                        onMatch={analyzeMatch}
+                        onInsight={openInsight}
+                        onReport={openReport}
+                        matchBusy={matchBusyId === job.id}
+                      />
                     ) : (
                       <JobCard
                         key={job.id}
