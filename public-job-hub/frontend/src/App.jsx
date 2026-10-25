@@ -5545,6 +5545,7 @@ export default function App() {
   const [organizationForm, setOrganizationForm] = useState('')
   const [jobCategory, setJobCategory] = useState('')
   const [showClosed, setShowClosed] = useState(false)
+  const [filterExpanded, setFilterExpanded] = useState(false)
   const [postingViewMode, setPostingViewMode] = useState(
     () => window.localStorage.getItem('jobhub-posting-view-v2') || 'card',
   )
@@ -6368,7 +6369,8 @@ export default function App() {
             <div className="heading">
               <div>
                 <p className="eyebrow">공공기관 채용정보</p>
-                <h1>{mine ? '마이페이지' : '최신 채용공고 현황'}</h1>
+                <h1>{mine ? '마이페이지' : '나에게 맞는 채용공고'}</h1>
+                {!mine && <p className="sub">마감일이 가까운 공고부터 빠르게 확인하세요.</p>}
                 {mine && <p className="sub">내 스펙과 맞춤 알림을 관리하세요.</p>}
                 {mine && (
                   <div className="mypage-heading-actions">
@@ -6401,151 +6403,164 @@ export default function App() {
                   </div>
                 )}
               </div>
-              {!mine && (
-                <form className="search" onSubmit={search}>
-                  <input
-                    value={queryInput}
-                    onChange={(e) => setQueryInput(e.target.value)}
-                    placeholder="직무, 기관 검색..."
-                    aria-label="공고 검색"
-                  />
-                  <button>검색</button>
-                </form>
-              )}
             </div>
             {!mine && (
               <>
-                <div className="filter-row">
-                  <label>
-                    도·광역시·특별시
-                    <select
-                      value={regionProvince}
-                      onChange={(e) => {
-                        setRegionProvince(e.target.value)
-                        setRegionDistrict('')
-                        setPage(0)
-                      }}
-                    >
-                      <option value="">전국</option>
-                      {REGION_LEVELS.map((item) => (
-                        <option key={item.code} value={item.code}>
-                          {item.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    시·군·구
-                    <select
-                      value={regionDistrict}
-                      disabled={!regionProvince}
-                      onChange={(e) => {
-                        setRegionDistrict(e.target.value)
-                        setPage(0)
-                      }}
-                    >
-                      <option value="">
-                        {regionProvince ? '전체 시·군·구' : '상위 지역을 먼저 선택'}
-                      </option>
-                      {districtOptions.map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    근무 범위
-                    <select
-                      value={mobility}
-                      onChange={(e) => {
-                        setMobility(e.target.value)
-                        setPage(0)
-                      }}
-                    >
-                      <option value="">전체</option>
-                      <option value="ROTATIONAL">순환근무 가능</option>
-                      <option value="FIXED">지역고정</option>
-                      <option value="UNKNOWN">확인 필요</option>
-                    </select>
-                  </label>
-                  <label>
-                    기관 구분
-                    <select
-                      value={institutionScope}
-                      onChange={(e) => {
-                        setInstitutionScope(e.target.value)
-                        setPage(0)
-                      }}
-                    >
-                      <option value="">중앙·지방 전체</option>
-                      <option value="CENTRAL_PUBLIC">중앙 공공기관</option>
-                      <option value="LOCAL_PUBLIC">지방공기업</option>
-                    </select>
-                  </label>
-                  <label>
-                    기관 형태
-                    <select
-                      value={organizationForm}
-                      onChange={(e) => {
-                        setOrganizationForm(e.target.value)
-                        setPage(0)
-                      }}
-                    >
-                      <option value="">전체 형태</option>
-                      {['공사', '공단', '재단', '병원', '연구원', '진흥원', '센터'].map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    채용 직렬
-                    <select
-                      value={jobCategory}
-                      onChange={(e) => {
-                        setJobCategory(e.target.value)
-                        setPage(0)
-                      }}
-                    >
-                      <option value="">전체 직렬</option>
-                      {filterOptions.jobCategories
-                        ?.map((value) => (
+                <section className="posting-filter-panel" aria-label="채용공고 검색 및 필터">
+                  <form className="posting-keyword-search" onSubmit={search}>
+                    <label>
+                      <span>검색</span>
+                      <input
+                        value={queryInput}
+                        onChange={(e) => setQueryInput(e.target.value)}
+                        placeholder="기관명 또는 공고명"
+                        aria-label="공고 검색"
+                      />
+                    </label>
+                    <label>
+                      <span>지역</span>
+                      <select
+                        value={regionProvince}
+                        onChange={(e) => {
+                          setRegionProvince(e.target.value)
+                          setRegionDistrict('')
+                          setPage(0)
+                        }}
+                      >
+                        <option value="">전국</option>
+                        {REGION_LEVELS.map((item) => (
+                          <option key={item.code} value={item.code}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>채용 직렬</span>
+                      <select
+                        value={jobCategory}
+                        onChange={(e) => {
+                          setJobCategory(e.target.value)
+                          setPage(0)
+                        }}
+                      >
+                        <option value="">전체 직렬</option>
+                        {filterOptions.jobCategories?.map((value) => (
                           <option key={value}>{value}</option>
                         ))}
-                    </select>
-                  </label>
-                  <label className="closed-posting-toggle">
-                    <input
-                      type="checkbox"
-                      checked={showClosed}
-                      onChange={(e) => {
-                        setShowClosed(e.target.checked)
-                        setPage(0)
-                      }}
-                    />
-                    마감 공고도 확인
-                  </label>
-                  {(regionProvince ||
-                    regionDistrict ||
-                    mobility ||
-                    institutionScope ||
-                    organizationForm ||
-                    jobCategory ||
-                    showClosed) && (
+                      </select>
+                    </label>
+                    <button className="posting-search-submit">검색</button>
                     <button
-                      onClick={() => {
-                        setRegionProvince('')
-                        setRegionDistrict('')
-                        setMobility('')
-                        setInstitutionScope('')
-                        setOrganizationForm('')
-                        setJobCategory('')
-                        setShowClosed(false)
-                        setPage(0)
-                      }}
+                      type="button"
+                      className={`posting-filter-toggle ${filterExpanded ? 'active' : ''}`}
+                      aria-expanded={filterExpanded}
+                      onClick={() => setFilterExpanded((expanded) => !expanded)}
                     >
-                      필터 초기화
+                      상세 필터
                     </button>
+                  </form>
+                  {filterExpanded && (
+                    <div className="filter-row posting-advanced-filters">
+                      <label>
+                        시·군·구
+                        <select
+                          value={regionDistrict}
+                          disabled={!regionProvince}
+                          onChange={(e) => {
+                            setRegionDistrict(e.target.value)
+                            setPage(0)
+                          }}
+                        >
+                          <option value="">
+                            {regionProvince ? '전체 시·군·구' : '상위 지역을 먼저 선택'}
+                          </option>
+                          {districtOptions.map((value) => (
+                            <option key={value}>{value}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        근무 범위
+                        <select
+                          value={mobility}
+                          onChange={(e) => {
+                            setMobility(e.target.value)
+                            setPage(0)
+                          }}
+                        >
+                          <option value="">전체</option>
+                          <option value="ROTATIONAL">순환근무 가능</option>
+                          <option value="FIXED">지역고정</option>
+                          <option value="UNKNOWN">확인 필요</option>
+                        </select>
+                      </label>
+                      <label>
+                        기관 구분
+                        <select
+                          value={institutionScope}
+                          onChange={(e) => {
+                            setInstitutionScope(e.target.value)
+                            setPage(0)
+                          }}
+                        >
+                          <option value="">중앙·지방 전체</option>
+                          <option value="CENTRAL_PUBLIC">중앙 공공기관</option>
+                          <option value="LOCAL_PUBLIC">지방공기업</option>
+                        </select>
+                      </label>
+                      <label>
+                        기관 형태
+                        <select
+                          value={organizationForm}
+                          onChange={(e) => {
+                            setOrganizationForm(e.target.value)
+                            setPage(0)
+                          }}
+                        >
+                          <option value="">전체 형태</option>
+                          {['공사', '공단', '재단', '병원', '연구원', '진흥원', '센터'].map((value) => (
+                            <option key={value}>{value}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="closed-posting-toggle">
+                        <input
+                          type="checkbox"
+                          checked={showClosed}
+                          onChange={(e) => {
+                            setShowClosed(e.target.checked)
+                            setPage(0)
+                          }}
+                        />
+                        마감 공고도 확인
+                      </label>
+                      {(regionProvince ||
+                        regionDistrict ||
+                        mobility ||
+                        institutionScope ||
+                        organizationForm ||
+                        jobCategory ||
+                        showClosed) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRegionProvince('')
+                            setRegionDistrict('')
+                            setMobility('')
+                            setInstitutionScope('')
+                            setOrganizationForm('')
+                            setJobCategory('')
+                            setShowClosed(false)
+                            setPage(0)
+                          }}
+                        >
+                          필터 초기화
+                        </button>
+                      )}
+                    </div>
                   )}
-                </div>
+                </section>
                 <div className="meta">
                   <span>검색 결과 {data.total}건</span>
                 </div>

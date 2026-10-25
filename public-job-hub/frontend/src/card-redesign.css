@@ -242,3 +242,237 @@
     margin: 0 -15px -13px;
   }
 }
+
+/* 채용정보 페이지 전체를 카드형 시안의 여백과 정보 위계로 정리한다. */
+body {
+  background: #f7f8f6;
+}
+
+body > #root > main {
+  width: min(100% - 48px, 1280px);
+  max-width: 1280px;
+}
+
+.heading {
+  margin: 54px 0 28px;
+  align-items: end;
+}
+
+.heading .eyebrow {
+  margin-bottom: 10px;
+  color: #1c5a41;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.heading h1 {
+  color: #17231d;
+  font-size: clamp(34px, 4vw, 52px);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+}
+
+.heading .sub {
+  margin-top: 13px;
+  color: #65716b;
+  font-size: 18px;
+}
+
+.posting-filter-panel {
+  margin-bottom: 16px;
+  border: 1px solid #dce2de;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.posting-keyword-search {
+  display: grid;
+  grid-template-columns: minmax(260px, 2fr) minmax(150px, 0.85fr) minmax(180px, 1.15fr) auto auto;
+  gap: 12px;
+  padding: 15px;
+  align-items: end;
+}
+
+.posting-keyword-search label {
+  min-width: 0;
+}
+
+.posting-keyword-search label > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.posting-keyword-search input,
+.posting-keyword-search select {
+  width: 100%;
+  height: 52px;
+  margin: 0;
+  border: 1px solid #d5dcd8;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #28342e;
+  font-size: 15px;
+}
+
+.posting-keyword-search input {
+  padding-inline: 18px;
+}
+
+.posting-keyword-search select {
+  padding-inline: 14px 36px;
+}
+
+.posting-keyword-search input::placeholder {
+  color: #87908b;
+}
+
+.posting-search-submit,
+.posting-filter-toggle {
+  min-width: 118px;
+  height: 52px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.posting-search-submit {
+  border: 1px solid #165a40;
+  background: #165a40;
+  color: #fff;
+}
+
+.posting-search-submit:hover {
+  background: #104b35;
+}
+
+.posting-filter-toggle {
+  border: 1px solid #d5dcd8;
+  background: #fff;
+  color: #34423b;
+}
+
+.posting-filter-toggle::before {
+  content: '☷';
+  margin-right: 8px;
+}
+
+.posting-filter-toggle.active {
+  border-color: #789487;
+  background: #eef4f0;
+  color: #174f38;
+}
+
+.posting-advanced-filters {
+  margin: 0;
+  padding: 15px;
+  border: 0;
+  border-top: 1px solid #edf0ee;
+  border-radius: 0 0 12px 12px;
+  background: #fafbfa;
+}
+
+.meta {
+  margin: 8px 0 0;
+  color: #68736d;
+  font-size: 13px;
+}
+
+.posting-view-switch {
+  margin: -27px 0 17px;
+}
+
+.posting-view-switch button.active {
+  border-color: #174f38;
+  background: #174f38;
+}
+
+.grid > .card.deadline-urgent,
+.grid > .card.deadline-urgent:hover {
+  border-top-width: 5px;
+  border-top-color: #d52622;
+}
+
+.grid > .card.deadline-urgent::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: -1px;
+  right: -1px;
+  left: -1px;
+  height: 5px;
+  border-radius: 12px 12px 0 0;
+  background: #d52622;
+}
+
+.grid .card-heading > .organization-name {
+  color: #34423b;
+  font-size: 15px;
+}
+
+.grid .card h2,
+.grid .card.deadline-urgent h2 {
+  font-size: 19px;
+}
+
+.grid .card > .actions {
+  background: #fff;
+}
+
+.pagination .active {
+  border-color: #174f38;
+  background: #174f38;
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .posting-keyword-search {
+    grid-template-columns: 1fr 1fr;
+  }
+  .posting-keyword-search label:first-child {
+    grid-column: 1 / -1;
+  }
+  .posting-search-submit,
+  .posting-filter-toggle {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  body > #root > main {
+    width: min(100% - 24px, 1280px);
+  }
+  .heading {
+    margin: 28px 0 20px;
+  }
+  .heading h1 {
+    font-size: 30px;
+  }
+  .heading .sub {
+    font-size: 14px;
+  }
+  .posting-keyword-search {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    padding: 11px;
+  }
+  .posting-keyword-search input,
+  .posting-keyword-search select,
+  .posting-search-submit,
+  .posting-filter-toggle {
+    height: 46px;
+    min-width: 0;
+    font-size: 14px;
+  }
+  .posting-view-switch {
+    margin: 8px 0 13px;
+  }
+  .meta {
+    margin-top: 12px;
+  }
+}
