@@ -1641,13 +1641,13 @@ function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
     if (!user) return
     setLoading(true)
     try {
-      const [alerts, notificationStates] = await Promise.all([
+      const [alerts, favoritePostings, notificationStates] = await Promise.all([
         getJson('/api/tools/alerts'),
+        getJson('/api/tools/favorite-organizations/postings'),
         getJson('/api/tools/notification-states'),
       ])
       const stateByKey = new Map(notificationStates.map((item) => [item.key, item]))
-      const merged = alerts
-        .map((item) => ({
+      const alertItems = alerts.map((item) => ({
           ...item,
           key: `alert-${item.id}-${item.reason}`,
           postingId: item.id,
@@ -1659,6 +1659,19 @@ function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
           detail: item.region || '지역 미정',
           occurredAt: item.deadline ? `${item.deadline}T00:00:00` : null,
         }))
+      const favoriteItems = favoritePostings
+        .filter((item) => item.fresh)
+        .map((item) => ({
+          ...item,
+          key: `favorite-${item.id}-${item.postedAt || 'new'}`,
+          postingId: item.id,
+          category: '관심 기관 신규 공고',
+          important: false,
+          reason: item.postedAt ? `${item.postedAt} 등록` : '새 채용공고 등록',
+          detail: item.region || '지역 미정',
+          occurredAt: item.postedAt ? `${item.postedAt}T00:00:00` : null,
+        }))
+      const merged = [...alertItems, ...favoriteItems]
         .map((item) => ({
           ...item,
           fresh: item.fresh && !stateByKey.get(item.key)?.read,
@@ -1692,6 +1705,7 @@ function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
           'application/json',
         ),
         securePost('/api/tools/alerts/read'),
+        securePost('/api/tools/favorite-organizations/read'),
       ])
       setItems((values) => values.map((item) => ({ ...item, fresh: false })))
     } catch (e) {
@@ -1700,11 +1714,16 @@ function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
   }
   const markRead = async (item) => {
     if (!item.fresh) return
-    await securePost(
-      '/api/tools/notification-states/read',
-      JSON.stringify({ keys: [item.key] }),
-      'application/json',
-    )
+    await Promise.all([
+      securePost(
+        '/api/tools/notification-states/read',
+        JSON.stringify({ keys: [item.key] }),
+        'application/json',
+      ),
+      ...(item.category === '관심 기관 신규 공고'
+        ? [securePost('/api/tools/favorite-organizations/read')]
+        : []),
+    ])
     setItems((values) =>
       values.map((value) => (value.key === item.key ? { ...value, fresh: false } : value)),
     )
@@ -1750,7 +1769,7 @@ function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
           <div className="notification-popover-head">
             <div>
               <strong>알림센터</strong>
-              <span>스크랩한 공고의 마감 일정만 보여드립니다.</span>
+              <span>스크랩 일정과 관심 기관의 새 공고를 알려드립니다.</span>
             </div>
             {unread > 0 && (
               <button type="button" onClick={readAll}>
