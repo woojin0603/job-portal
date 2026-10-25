@@ -387,7 +387,10 @@ function PostingListRow({ job, onOpen }) {
         <strong className="posting-list-deadline">{deadlineLabel}</strong>
         <time dateTime={job.deadline || undefined}>{job.deadline || '마감일 미정'}</time>
       </span>
-      <span className="posting-list-star" aria-hidden="true">☆</span>
+      <span className={job.scrapped ? 'posting-list-star saved' : 'posting-list-star'} aria-hidden="true">
+        {job.scrapped && <small>스크랩됨</small>}
+        {job.scrapped ? '★' : '☆'}
+      </span>
     </button>
   )
 }
@@ -519,6 +522,7 @@ function JobCard({
           )}
           {!expired && daysLeft === null && <span className="deadline-tag">마감일 미정</span>}
           {expired && <span className="expired-tag">접수마감</span>}
+          {job.scrapped && <span className="scrapped-label">스크랩됨</span>}
           <button
             type="button"
             className={job.scrapped ? 'scrap-tool active' : 'scrap-tool'}
@@ -1280,6 +1284,7 @@ function CommunityBoard({ user, securePost, onLogin, onUnreadChange }) {
     title: '',
     content: '',
     postingUrl: '',
+    privateContent: false,
   })
   const [answers, setAnswers] = useState({})
   const [inquiryQuery, setInquiryQuery] = useState('')
@@ -1338,7 +1343,13 @@ function CommunityBoard({ user, securePost, onLogin, onUnreadChange }) {
     setBusy(true)
     try {
       await securePost('/api/community/inquiries', JSON.stringify(questionForm), 'application/json')
-      setQuestionForm({ category: 'SERVICE', title: '', content: '', postingUrl: '' })
+      setQuestionForm({
+        category: 'SERVICE',
+        title: '',
+        content: '',
+        postingUrl: '',
+        privateContent: false,
+      })
       await loadCommunity()
       setMessage('문의가 접수되었습니다.')
     } catch (e) {
@@ -1416,7 +1427,7 @@ function CommunityBoard({ user, securePost, onLogin, onUnreadChange }) {
       (!categoryFilter || item.category === categoryFilter) &&
       (!query ||
         item.title.toLowerCase().includes(query) ||
-        item.content.toLowerCase().includes(query) ||
+        item.content?.toLowerCase().includes(query) ||
         item.requesterName?.toLowerCase().includes(query) ||
         item.requesterEmail?.toLowerCase().includes(query))
     )
@@ -1558,11 +1569,24 @@ function CommunityBoard({ user, securePost, onLogin, onUnreadChange }) {
                   maxLength={1500}
                 />
               )}
+              <label className="community-check inquiry-private-check">
+                <input
+                  type="checkbox"
+                  checked={questionForm.privateContent}
+                  onChange={(e) =>
+                    setQuestionForm({ ...questionForm, privateContent: e.target.checked })
+                  }
+                />
+                <span>
+                  <strong>내용 비공개</strong>
+                  <small>제목만 표시되고 본문과 답변은 작성자와 관리자만 확인할 수 있습니다.</small>
+                </span>
+              </label>
               <button disabled={busy}>문의 접수</button>
             </form>
           )}
           <div className="board-list inquiry-list">
-            <h2>{user.admin ? '전체 문의 관리' : '내 문의'}</h2>
+            <h2>{user.admin ? '전체 문의 관리' : 'Q&A 문의 목록'}</h2>
             <div className="inquiry-filters">
               <input
                 value={inquiryQuery}
@@ -1589,6 +1613,7 @@ function CommunityBoard({ user, securePost, onLogin, onUnreadChange }) {
                 <summary>
                   <span className={item.status.toLowerCase()}>{statusLabel(item.status)}</span>
                   <strong>{item.title}</strong>
+                  {item.privateContent && <em className="inquiry-private-badge">비공개</em>}
                   <time>{formatDateTime(item.createdAt)}</time>
                 </summary>
                 {user.admin && (
@@ -1596,7 +1621,11 @@ function CommunityBoard({ user, securePost, onLogin, onUnreadChange }) {
                     문의자: {item.requesterName} · {item.requesterEmail}
                   </small>
                 )}
-                <p>{item.content}</p>
+                {item.content ? (
+                  <p>{item.content}</p>
+                ) : (
+                  <p className="inquiry-private-message">작성자와 관리자만 내용을 확인할 수 있습니다.</p>
+                )}
                 {item.postingUrl && (
                   <a
                     className="inquiry-posting-link"

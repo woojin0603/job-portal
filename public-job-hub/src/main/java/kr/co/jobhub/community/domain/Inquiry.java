@@ -21,6 +21,8 @@ public class Inquiry {
     public String title;
     @Lob @Column(nullable = false)
     public String content;
+    @Column(name = "private_content", nullable = false, columnDefinition = "boolean default true")
+    public boolean privateContent = true;
     @Column(name = "posting_url", length = 1500)
     public String postingUrl;
     @Column(nullable = false, length = 20)

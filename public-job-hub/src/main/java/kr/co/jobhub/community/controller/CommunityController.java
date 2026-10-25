@@ -16,6 +16,7 @@ import java.security.Principal;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 /** 공지사항과 회원별 비공개 Q&A를 제공한다. */
 @RestController
@@ -28,13 +29,14 @@ public class CommunityController {
     public record InquiryRequest(@NotBlank @Size(max = 30) String category,
                                  @NotBlank @Size(max = 200) String title,
                                  @NotBlank @Size(max = 10000) String content,
-                                 @Size(max = 1500) String postingUrl) {}
+                                 @Size(max = 1500) String postingUrl,
+                                 boolean privateContent) {}
     public record AnswerRequest(@NotBlank @Size(max = 10000) String answer) {}
     public record StatusRequest(@NotBlank String status) {}
     public record UnreadCount(long count) {}
     public record InquiryItem(Long id, String category, String title, String content, String status,
                               String postingUrl, String answer, Instant createdAt, Instant answeredAt,
-                              boolean answerRead,
+                              boolean answerRead, boolean privateContent, boolean owned,
                               String requesterName, String requesterEmail) {}
 
     private final NoticeRepository notices;
@@ -83,10 +85,10 @@ public class CommunityController {
         AppUser user = user(principal);
         boolean admin = authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
-        List<Inquiry> values = admin ? inquiries.findAllByOrderByCreatedAtDesc().stream()
-                .sorted(Comparator.comparingInt(value -> statusOrder(value.status))).toList()
-                : inquiries.findByUserIdOrderByCreatedAtDesc(user.id);
-        return values.stream().map(this::inquiry).toList();
+        List<Inquiry> values = inquiries.findAllByOrderByCreatedAtDesc();
+        if (admin) values = values.stream()
+                .sorted(Comparator.comparingInt(value -> statusOrder(value.status))).toList();
+        return values.stream().map(value -> inquiry(value, user.id, admin)).toList();
     }
 
     @PostMapping("/community/inquiries")
@@ -97,7 +99,9 @@ public class CommunityController {
         value.title = request.title().trim();
         value.content = request.content().trim();
         value.postingUrl = clean(request.postingUrl());
-        return inquiry(inquiries.save(value));
+        value.privateContent = request.privateContent();
+        Inquiry saved = inquiries.save(value);
+        return inquiry(saved, saved.user.id, false);
     }
 
     @PostMapping("/admin/community/inquiries/{id}/status")
@@ -107,7 +111,7 @@ public class CommunityController {
         Inquiry value = inquiries.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         value.status = request.status();
-        return inquiry(inquiries.save(value));
+        return inquiry(inquiries.save(value), null, true);
     }
 
     @PostMapping("/admin/community/inquiries/{id}/answer")
@@ -118,7 +122,7 @@ public class CommunityController {
         value.status = "ANSWERED";
         value.answeredAt = Instant.now();
         value.answerReadAt = null;
-        return inquiry(inquiries.save(value));
+        return inquiry(inquiries.save(value), null, true);
     }
 
     @GetMapping("/community/inquiries/unread-count")
@@ -147,11 +151,16 @@ public class CommunityController {
         return new NoticeItem(value.id, value.title, value.content, value.pinned,
                 value.createdAt, value.updatedAt);
     }
-    private InquiryItem inquiry(Inquiry value) {
-        return new InquiryItem(value.id, value.category, value.title, value.content, value.status,
-                value.postingUrl, value.answer, value.createdAt, value.answeredAt,
-                value.answer == null || value.answerReadAt != null,
-                value.user.displayName, value.user.email);
+    private InquiryItem inquiry(Inquiry value, Long viewerId, boolean admin) {
+        boolean owned = viewerId != null && Objects.equals(value.user.id, viewerId);
+        boolean canRead = admin || owned || !value.privateContent;
+        return new InquiryItem(value.id, value.category, value.title,
+                canRead ? value.content : null, value.status,
+                canRead ? value.postingUrl : null, canRead ? value.answer : null,
+                value.createdAt, value.answeredAt,
+                !owned || value.answer == null || value.answerReadAt != null,
+                value.privateContent, owned,
+                admin ? value.user.displayName : null, admin ? value.user.email : null);
     }
     private String clean(String value) { return value == null || value.isBlank() ? null : value.trim(); }
     private int statusOrder(String status) {

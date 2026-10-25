@@ -30,7 +30,7 @@
 .posting-list-header,
 .posting-list-row {
   display: grid;
-  grid-template-columns: minmax(210px, 1.25fr) minmax(280px, 2fr) minmax(180px, 1fr) minmax(110px, 0.65fr) 42px;
+  grid-template-columns: minmax(210px, 1.25fr) minmax(280px, 2fr) minmax(180px, 1fr) minmax(110px, 0.65fr) minmax(42px, 92px);
   gap: 18px;
   align-items: center;
 }
@@ -189,10 +189,29 @@
 }
 
 .posting-list-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
   color: #45534c;
   font-size: 28px;
   font-weight: 400;
   text-align: center;
+}
+.posting-list-star small,
+.scrapped-label {
+  color: #876a0b;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.posting-list-star.saved {
+  color: #d2a10a;
+}
+.scrapped-label {
+  border-radius: 999px;
+  background: #fff8d9;
+  padding: 4px 7px;
 }
 .grid > .card.deadline-urgent,
 .grid > .card.deadline-urgent:hover {
@@ -916,6 +935,9 @@ body > #root > main {
     grid-column: 2;
     grid-row: 3;
     font-size: 23px;
+  }
+  .posting-list-star small {
+    font-size: 9px;
   }
 }
 

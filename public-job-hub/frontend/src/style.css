@@ -2220,6 +2220,48 @@ nav button.active {
 .community-check input {
   width: auto;
 }
+.inquiry-private-check {
+  align-items: flex-start;
+  border: 1px solid #d8e1dc;
+  border-radius: 9px;
+  background: #f8faf9;
+  padding: 11px 12px;
+}
+.inquiry-private-check input {
+  margin-top: 3px;
+}
+.inquiry-private-check span,
+.inquiry-private-check strong,
+.inquiry-private-check small {
+  display: block;
+}
+.inquiry-private-check strong {
+  color: #30473b;
+}
+.inquiry-private-check small {
+  margin-top: 3px;
+  color: #68776f;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.inquiry-list summary {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+.inquiry-private-badge {
+  border: 1px solid #cbd6d0;
+  border-radius: 999px;
+  color: #596b62;
+  padding: 3px 7px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 750;
+}
+.inquiry-private-message {
+  border-radius: 8px;
+  background: #f3f5f4;
+  color: #6d7872 !important;
+  text-align: center;
+}
 .board-list {
   display: grid;
   gap: 9px;
@@ -5924,6 +5966,12 @@ nav a:hover,
   }
   .board-list summary time {
     grid-column: 2;
+  }
+  .inquiry-list summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .inquiry-list summary time {
+    grid-column: 2 / -1;
   }
   .filter-row {
     align-items: stretch;
