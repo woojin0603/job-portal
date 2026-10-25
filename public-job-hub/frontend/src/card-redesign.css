@@ -420,6 +420,234 @@
   }
 }
 
+/* 모바일 앱은 PC 내비게이션을 축소하지 않고 별도의 터치용 메뉴와 대시보드를 사용한다. */
+.mobile-menu-toggle {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 80;
+    box-shadow: 0 1px 10px rgba(27, 45, 36, 0.06);
+  }
+  header .bar {
+    position: relative;
+    min-height: 58px;
+    height: 58px;
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: max(7px, env(safe-area-inset-top)) 16px 7px;
+  }
+  header .brand {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  header .bar > span {
+    display: none;
+  }
+  .mobile-menu-toggle {
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
+    margin-left: auto;
+    flex: 0 0 42px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    border: 1px solid #d9e1dc;
+    border-radius: 10px;
+    background: #fff;
+  }
+  .mobile-menu-toggle i {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 99px;
+    background: #2b4035;
+    transition: transform 0.18s, opacity 0.18s;
+  }
+  .mobile-menu-toggle.active i:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  .mobile-menu-toggle.active i:nth-child(2) {
+    opacity: 0;
+  }
+  .mobile-menu-toggle.active i:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+  header .bar .main-navigation {
+    position: absolute;
+    top: calc(100% + 1px);
+    right: 10px;
+    left: 10px;
+    display: none;
+    width: auto;
+    max-height: calc(100dvh - 76px);
+    margin: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    overflow-y: auto;
+    border: 1px solid #d9e1dc;
+    border-radius: 14px;
+    background: #fff;
+    padding: 12px;
+    box-shadow: 0 16px 42px rgba(25, 43, 34, 0.16);
+    white-space: normal;
+  }
+  header .bar .main-navigation.open {
+    display: grid;
+  }
+  .main-navigation > button,
+  .main-navigation > .notification-center > button {
+    width: 100%;
+    min-height: 46px;
+    border: 1px solid #e0e6e2;
+    border-radius: 9px;
+    background: #f8faf8;
+    padding: 9px 8px;
+    color: #34463d;
+    font-size: 13px;
+    text-align: center;
+  }
+  .main-navigation > button.active,
+  .main-navigation > .notification-center > button.active {
+    border-color: #315f50;
+    background: #315f50;
+    color: #fff !important;
+  }
+  .main-navigation .notification-center {
+    width: 100%;
+    margin: 0;
+  }
+  .main-navigation .user-name {
+    grid-column: 1 / -1;
+    display: block;
+    border-radius: 8px;
+    background: #eef3f0;
+    padding: 9px 12px;
+    color: #53645b;
+    font-size: 12px;
+    text-align: center;
+  }
+  .notification-popover {
+    top: 68px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-height: calc(100dvh - 84px);
+  }
+  body > #root > main {
+    width: 100%;
+    padding: 20px 12px calc(42px + env(safe-area-inset-bottom));
+  }
+  .heading {
+    margin: 10px 2px 16px;
+  }
+  .heading .eyebrow {
+    margin-bottom: 5px;
+    font-size: 11px;
+  }
+  .heading h1 {
+    font-size: 27px;
+  }
+  .heading .sub {
+    margin-top: 7px;
+    font-size: 13px;
+  }
+  .mypage-heading-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .mypage-heading-actions button {
+    width: 100%;
+    min-height: 42px;
+    margin: 0;
+    border-radius: 9px;
+  }
+  .mypage-heading-actions .account-delete-button {
+    grid-column: 1 / -1;
+  }
+  .mypage-tabs {
+    position: sticky;
+    top: 66px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin: 12px 0;
+    overflow: visible;
+    padding: 8px;
+    border-radius: 12px;
+  }
+  .mypage-tabs button {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    flex: none;
+    padding: 7px 8px;
+    font-size: 13px;
+  }
+  .mypage-dashboard {
+    display: block;
+  }
+  .mypage-dashboard.compact > * {
+    width: 100%;
+    min-width: 0;
+  }
+  .application-dashboard,
+  .favorite-organizations,
+  .posting-changes-panel,
+  .profile-summary,
+  .profile-editor {
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: none;
+  }
+  .application-stage-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .application-stage-summary button {
+    min-width: 0;
+    min-height: 42px;
+    padding: 8px;
+  }
+  .application-list {
+    max-height: none;
+    overflow: visible;
+  }
+  .application-list > article {
+    border-radius: 10px;
+  }
+  .application-list .application-open {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  .application-status-info {
+    border-top: 1px solid #d9e2dd;
+    border-left: 0;
+    padding: 9px 0 0;
+  }
+  .application-item-actions {
+    width: 100%;
+    flex-direction: row;
+    border-top: 1px solid #d9e2dd;
+    border-left: 0;
+  }
+  .application-calendar {
+    width: 100%;
+    max-width: none;
+  }
+}
+
 /* 채용정보 페이지 전체를 카드형 시안의 여백과 정보 위계로 정리한다. */
 body {
   background: #f7f8f6;
@@ -688,5 +916,22 @@ body > #root > main {
     grid-column: 2;
     grid-row: 3;
     font-size: 23px;
+  }
+}
+
+/* 파일 후반의 공고 목록 규칙보다 모바일 앱 프레임이 우선하도록 확정한다. */
+@media (max-width: 760px) {
+  body > #root > main {
+    width: 100%;
+    padding: 20px 12px calc(42px + env(safe-area-inset-bottom));
+  }
+  .heading {
+    margin: 10px 2px 16px;
+  }
+  .heading h1 {
+    font-size: 27px;
+  }
+  .heading .sub {
+    font-size: 13px;
   }
 }

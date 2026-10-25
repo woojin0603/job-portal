@@ -5744,6 +5744,7 @@ export default function App() {
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileMessage, setProfileMessage] = useState('')
   const [profileEditing, setProfileEditing] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [preference, setPreference] = useState({
     keywords: '',
     regions: '',
@@ -5779,6 +5780,10 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState(null)
   const [online, setOnline] = useState(navigator.onLine)
   const [updateAvailable, setUpdateAvailable] = useState(false)
+
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [landingView, mine, communityView, successView, adminView, detailId, user?.email])
 
   function changePostingView(mode) {
     setPostingViewMode(mode)
@@ -6381,7 +6386,18 @@ export default function App() {
             JOB HUB KOREA
           </button>
           <span>한눈에 확인하는 공공기관 채용공고</span>
-          <nav>
+          <button
+            type="button"
+            className={mobileMenuOpen ? 'mobile-menu-toggle active' : 'mobile-menu-toggle'}
+            aria-label={mobileMenuOpen ? '메뉴 닫기' : '메뉴 열기'}
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((open) => !open)}
+          >
+            <i />
+            <i />
+            <i />
+          </button>
+          <nav className={mobileMenuOpen ? 'main-navigation open' : 'main-navigation'}>
             {installPrompt && <button onClick={installApp}>앱 설치</button>}
             <button
               className={
