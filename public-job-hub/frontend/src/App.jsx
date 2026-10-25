@@ -810,7 +810,8 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
 }
 
 function SalaryDialog({ value, onClose }) {
-  const money = (amount) => (amount == null ? '—' : `${Number(amount).toLocaleString('ko-KR')}천원`)
+  const money = (amount) =>
+    amount == null ? '—' : `${(Number(amount) * 1000).toLocaleString('ko-KR')}원`
   return (
     <div className="match-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <section className="salary-dialog" role="dialog" aria-modal="true" aria-label="신입사원 초임">
@@ -874,8 +875,8 @@ function SalaryDialog({ value, onClose }) {
               </div>
             </dl>
             <p className="salary-note">
-              알리오 공시 기준 참고값이며 실제 채용 직무·직급의 보수와 다를 수 있습니다. 단위는
-              천원입니다.
+              알리오 공시 기준 참고값이며 실제 채용 직무·직급의 보수와 다를 수 있습니다. 금액은
+              원 단위로 환산해 표시합니다.
             </p>
           </>
         )}
@@ -1171,6 +1172,86 @@ function CapabilityDialog({ profile, loading, onClose, onEdit }) {
         </button>
       </section>
     </div>
+  )
+}
+
+/** 마이페이지에서는 입력 폼보다 저장된 내용을 먼저 보여주고, 사용자가 요청할 때만 수정한다. */
+function ProfileSummary({ profile, onEdit }) {
+  const period = (start, end, current = false) =>
+    current ? `${start || '시작일 미입력'} ~ 재직중` : [start, end].filter(Boolean).join(' ~ ') || '기간 미입력'
+  const groups = [
+    {
+      title: '자격증',
+      items: (profile.certifications || []).filter((item) => item.name).map((item) => ({
+        title: item.name,
+        meta: [
+          item.grade,
+          item.acquiredDate || item.acquiredMonth,
+          QUALIFICATION_TYPE_LABELS[item.type] || item.type,
+        ].filter(Boolean).join(' · '),
+      })),
+    },
+    {
+      title: '학위',
+      items: (profile.degrees || []).filter((item) => item.schoolName || item.major).map((item) => ({
+        title: [item.schoolName, item.major].filter(Boolean).join(' · '),
+        meta: [item.degreeType, item.status, period(item.startMonth, item.endMonth)].filter(Boolean).join(' · '),
+      })),
+    },
+    {
+      title: '경력',
+      items: (profile.careers || []).filter((item) => item.companyName || item.position || item.duties).map((item) => ({
+        title: [item.companyName, item.position].filter(Boolean).join(' · ') || '경력',
+        meta: period(item.startMonth, item.endMonth, item.current),
+        detail: item.duties,
+      })),
+    },
+    {
+      title: '대외활동',
+      items: (profile.activities || []).filter((item) => item.name || item.description).map((item) => ({
+        title: item.name || '대외활동',
+        meta: period(item.startMonth, item.endMonth),
+        detail: item.description,
+      })),
+    },
+  ]
+  const hasItems = groups.some((group) => group.items.length)
+  return (
+    <section className="profile-summary" aria-labelledby="profile-summary-title">
+      <div className="profile-summary-head">
+        <div>
+          <p className="eyebrow">MY CAREER PROFILE</p>
+          <h2 id="profile-summary-title">내 스펙</h2>
+          <span>저장된 역량을 한눈에 확인할 수 있습니다.</span>
+        </div>
+        <button type="button" onClick={onEdit}>내 스펙 수정하기</button>
+      </div>
+      {!hasItems && !profile.myGrade && !profile.maxGrade ? (
+        <p className="capability-empty">등록된 스펙이 없습니다. 내 스펙 수정하기에서 입력해 주세요.</p>
+      ) : (
+        <div className="profile-summary-grid">
+          {groups.map((group) => (
+            <article key={group.title}>
+              <h3>{group.title}<b>{group.items.length}</b></h3>
+              {group.items.length ? group.items.map((item, index) => (
+                <div className="profile-summary-item" key={`${group.title}-${index}`}>
+                  <strong>{item.title}</strong>
+                  {item.meta && <span>{item.meta}</span>}
+                  {item.detail && <p>{item.detail}</p>}
+                </div>
+              )) : <p className="profile-summary-empty">등록 내용 없음</p>}
+            </article>
+          ))}
+          <article>
+            <h3>성적</h3>
+            <div className="profile-summary-item grade-summary">
+              <strong>{profile.myGrade || '미입력'} / {profile.maxGrade || '미입력'}</strong>
+              <span>내 성적 / 최고 성적</span>
+            </div>
+          </article>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -5632,6 +5713,7 @@ export default function App() {
   })
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileMessage, setProfileMessage] = useState('')
+  const [profileEditing, setProfileEditing] = useState(false)
   const [preference, setPreference] = useState({
     keywords: '',
     regions: '',
@@ -6020,8 +6102,10 @@ export default function App() {
       )
       setProfile(saved)
       setProfileMessage('저장되었습니다.')
+      return true
     } catch (e) {
       setProfileMessage(e.message)
+      return false
     } finally {
       setProfileBusy(false)
     }
@@ -6710,7 +6794,10 @@ export default function App() {
                       type="button"
                       key={value}
                       className={mypageSection === value ? 'active' : ''}
-                      onClick={() => setMypageSection(value)}
+                      onClick={() => {
+                        setMypageSection(value)
+                        if (value === 'profile') setProfileEditing(false)
+                      }}
                     >
                       {label}
                       {count > 0 && <b>{count}</b>}
@@ -6749,12 +6836,23 @@ export default function App() {
                     />
                   )}
                   {mypageSection === 'profile' && (
-                    <ProfileEditor
-                      profile={profile}
-                      busy={profileBusy}
-                      message={profileMessage}
-                      onSave={saveProfile}
-                    />
+                    profileEditing ? (
+                      <div className="profile-edit-shell">
+                        <button type="button" className="profile-edit-cancel" onClick={() => setProfileEditing(false)}>
+                          저장된 내 스펙 보기
+                        </button>
+                        <ProfileEditor
+                          profile={profile}
+                          busy={profileBusy}
+                          message={profileMessage}
+                          onSave={async (value) => {
+                            if (await saveProfile(value)) setProfileEditing(false)
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <ProfileSummary profile={profile} onEdit={() => setProfileEditing(true)} />
+                    )
                   )}
                 </div>
               </>

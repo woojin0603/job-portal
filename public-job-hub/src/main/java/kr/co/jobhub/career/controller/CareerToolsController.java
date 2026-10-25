@@ -284,17 +284,19 @@ public class CareerToolsController {
         AppUser user = user(principal);
         JobPosting posting = postings.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        ProfileSignals signals = profileSignals(user.id);
+        ProfileSignals signals = profileSignals(user);
         List<String> evidence = new ArrayList<>();
-        StringBuilder sourceText = new StringBuilder(posting.title).append(' ')
-                .append(Optional.ofNullable(posting.organization).orElse(""));
-        positions.findByPostingIdOrderById(posting.id).stream()
-                .map(position -> position.requirements)
-                .filter(Objects::nonNull).filter(value -> !value.isBlank())
-                .forEach(value -> {
-                    sourceText.append(' ').append(value);
-                    if (evidence.size() < 4) evidence.add(shorten(value.replaceAll("\\s+", " "), 500));
-                });
+        StringBuilder sourceText = new StringBuilder(clean(posting.title)).append(' ')
+                .append(clean(posting.organization)).append(' ').append(clean(posting.region))
+                .append(' ').append(clean(posting.employmentType));
+        positions.findByPostingIdOrderById(posting.id).forEach(position -> {
+            sourceText.append(' ').append(clean(position.standardCategory))
+                    .append(' ').append(clean(position.originalName))
+                    .append(' ').append(clean(position.requirements));
+            if (position.requirements != null && !position.requirements.isBlank() && evidence.size() < 4) {
+                evidence.add(shorten(position.requirements.replaceAll("\\s+", " "), 500));
+            }
+        });
         try {
             Document doc = Jsoup.connect(posting.sourceUrl).userAgent("PublicJobHub/0.4")
                     .maxBodySize(3_000_000).timeout(12000).get();
@@ -311,27 +313,43 @@ public class CareerToolsController {
             // 원문 접근이 일시적으로 실패해도 DB에 저장된 자격요건으로 매칭을 계속한다.
         }
         String text = sourceText.toString();
-        List<String> matched = signals.certificates().stream().filter(name -> contains(text, name)).toList();
+        Set<String> sourceTokens = meaningfulTokens(List.of(text));
+        Set<String> profileTokens = meaningfulTokens(java.util.stream.Stream.of(
+                        signals.certificates(), signals.majors(), signals.experiences())
+                .flatMap(Collection::stream).toList());
+        List<String> matched = signals.certificates().stream()
+                .filter(name -> normalizedContains(text, name)).distinct().toList();
         List<String> strengths = new ArrayList<>();
         matched.forEach(name -> strengths.add("보유 자격증 일치: " + name));
-        signals.majors().stream().filter(value -> contains(text, value)).limit(3)
+        List<String> matchedMajors = signals.majors().stream()
+                .filter(value -> normalizedContains(text, value)
+                        || meaningfulTokens(List.of(value)).stream().anyMatch(sourceTokens::contains))
+                .distinct().limit(3).toList();
+        matchedMajors.stream()
                 .forEach(value -> strengths.add("전공 관련성: " + value));
-        signals.experiences().stream().filter(value -> contains(text, value)).limit(3)
-                .forEach(value -> strengths.add("경력·활동 관련성: " + shorten(value, 80)));
+        List<String> experienceMatches = signals.experiences().stream()
+                .filter(value -> meaningfulTokens(List.of(value)).stream().anyMatch(sourceTokens::contains))
+                .distinct().limit(3).toList();
+        experienceMatches.forEach(value -> strengths.add("경력·활동 핵심어 관련: " + shorten(value, 80)));
+        boolean preferredMatch = !signals.preferredJobCategory().isBlank()
+                && normalizedContains(text, signals.preferredJobCategory());
+        if (preferredMatch) strengths.add("희망직무 일치: " + signals.preferredJobCategory());
         List<String> gaps = new ArrayList<>();
         for (String line : evidence) {
             if (gaps.size() == 4) break;
-            if ((line.contains("필수") || line.contains("자격") || line.contains("면허"))
-                    && matched.stream().noneMatch(name -> contains(line, name))) {
-                gaps.add(shorten(line, 180));
+            if ((line.contains("필수") || line.contains("자격") || line.contains("면허") || line.contains("우대"))
+                    && profileTokens.stream().noneMatch(token -> normalizedContains(line, token))) {
+                gaps.add("원문 확인 필요: " + shorten(line, 180));
             }
         }
         if (signals.certificates().isEmpty()) gaps.add("등록된 자격증이 없어 자격요건 비교가 제한됩니다.");
-        int score = Math.min(95, 35 + matched.size() * 20
-                + Math.min(20, Math.max(0, strengths.size() - matched.size()) * 10));
+        int score = Math.min(100, Math.min(50, matched.size() * 25)
+                + Math.min(24, matchedMajors.size() * 12)
+                + Math.min(20, experienceMatches.size() * 7)
+                + (preferredMatch ? 15 : 0));
         String summary = strengths.isEmpty()
-                ? "직접 일치하는 역량을 찾지 못했습니다. 부족하다는 뜻은 아니며 원문 확인이 필요합니다."
-                : "등록한 역량 중 " + strengths.size() + "개 항목에서 공고와의 관련성을 찾았습니다.";
+                ? "등록 정보와 공고문에서 직접 확인되는 일치 근거가 없습니다. 점수는 합격 가능성이 아니므로 원문 요건을 확인해 주세요."
+                : "공고문에서 " + strengths.size() + "개의 관련 근거를 확인했습니다. 점수는 자격 충족이나 합격 가능성을 보장하지 않습니다.";
         return new MatchResult(matched, evidence, strengths, gaps, score, summary,
                 recommendations(posting.id, signals));
     }
@@ -356,19 +374,32 @@ public class CareerToolsController {
                 .map(value -> clean(value.standardCategory) + " " + clean(value.originalName) + " " + clean(value.requirements))
                 .collect(java.util.stream.Collectors.joining(" "));
         String source = posting.title + " " + posting.organization + " " + positionText;
+        Set<String> sourceTokens = meaningfulTokens(List.of(source));
         List<String> reasons = new ArrayList<>();
         int score = 0;
-        for (String certificate : signals.certificates()) if (contains(source, certificate)) {
+        for (String certificate : signals.certificates()) if (normalizedContains(source, certificate)) {
             score += 30; reasons.add("자격증 " + certificate + " 관련");
         }
-        for (String major : signals.majors()) if (contains(source, major)) {
+        for (String major : signals.majors()) if (normalizedContains(source, major)
+                || meaningfulTokens(List.of(major)).stream().anyMatch(sourceTokens::contains)) {
             score += 20; reasons.add("전공 " + major + " 관련");
         }
-        for (String experience : signals.experiences()) if (experience.length() >= 2 && contains(source, experience)) {
-            score += 10; reasons.add("경력·활동 키워드 일치");
+        for (String experience : signals.experiences()) {
+            List<String> matches = meaningfulTokens(List.of(experience)).stream()
+                    .filter(sourceTokens::contains).limit(2).toList();
+            if (!matches.isEmpty()) {
+                score += Math.min(12, matches.size() * 6);
+                reasons.add("경력·활동: " + String.join(", ", matches));
+            }
+        }
+        if (!signals.preferredJobCategory().isBlank()
+                && normalizedContains(source, signals.preferredJobCategory())) {
+            score += 20;
+            reasons.add("희망직무 " + signals.preferredJobCategory());
         }
         String profileText = String.join(" ", signals.certificates()) + " "
-                + String.join(" ", signals.majors()) + " " + String.join(" ", signals.experiences());
+                + String.join(" ", signals.majors()) + " " + String.join(" ", signals.experiences())
+                + " " + signals.preferredJobCategory();
         Map<String, List<String>> relatedFields = new LinkedHashMap<>();
         relatedFields.put("전산·데이터 역량 관련", List.of("정보처리", "컴퓨터", "소프트웨어", "데이터", "SQL", "빅데이터", "전산", "IT"));
         relatedFields.put("회계·재무 역량 관련", List.of("회계", "재경", "세무", "재무"));
@@ -385,12 +416,14 @@ public class CareerToolsController {
                 posting.sourceUrl, Math.min(100, score), reasons.stream().distinct().limit(3).toList());
     }
 
-    private record ProfileSignals(List<String> certificates, List<String> majors, List<String> experiences) {}
+    private record ProfileSignals(List<String> certificates, List<String> majors,
+                                  List<String> experiences, String preferredJobCategory) {}
 
-    private ProfileSignals profileSignals(Long userId) {
+    private ProfileSignals profileSignals(AppUser user) {
         try {
-            UserProfile profile = profiles.findByUserId(userId).orElse(null);
-            if (profile == null) return new ProfileSignals(List.of(), List.of(), List.of());
+            UserProfile profile = profiles.findByUserId(user.id).orElse(null);
+            String preferred = clean(user.preferredJobCategory);
+            if (profile == null) return new ProfileSignals(List.of(), List.of(), List.of(), preferred);
             List<String> certificates = new ArrayList<>();
             for (JsonNode item : json.readTree(profile.certifications == null ? "[]" : profile.certifications)) {
                 String name = item.path("name").asText().trim();
@@ -411,9 +444,10 @@ public class CareerToolsController {
                     }
                 }
             }
-            return new ProfileSignals(certificates, majors, experiences);
+            return new ProfileSignals(certificates.stream().distinct().toList(),
+                    majors.stream().distinct().toList(), experiences.stream().distinct().toList(), preferred);
         } catch (Exception e) {
-            return new ProfileSignals(List.of(), List.of(), List.of());
+            return new ProfileSignals(List.of(), List.of(), List.of(), clean(user.preferredJobCategory));
         }
     }
 
@@ -436,6 +470,24 @@ public class CareerToolsController {
     }
     private boolean contains(String text, String value) {
         return text != null && text.toLowerCase(Locale.ROOT).contains(value.toLowerCase(Locale.ROOT));
+    }
+    private boolean normalizedContains(String text, String value) {
+        if (text == null || value == null || value.isBlank()) return false;
+        String source = text.toLowerCase(Locale.ROOT).replaceAll("[^가-힣a-z0-9+#]", "");
+        String target = value.toLowerCase(Locale.ROOT).replaceAll("[^가-힣a-z0-9+#]", "");
+        return target.length() >= 2 && source.contains(target);
+    }
+    private Set<String> meaningfulTokens(Collection<String> values) {
+        Set<String> stop = Set.of("담당업무", "업무", "근무", "경력", "활동", "관련", "지원", "채용",
+                "직원", "기관", "회사", "관리", "기타", "이상", "이하", "해당", "우대", "필수");
+        Set<String> result = new LinkedHashSet<>();
+        for (String value : values) {
+            if (value == null) continue;
+            for (String token : value.toLowerCase(Locale.ROOT).split("[^가-힣a-z0-9+#]+")) {
+                if (token.length() >= 2 && !stop.contains(token)) result.add(token);
+            }
+        }
+        return result;
     }
     private String clean(String value) { return value == null ? "" : value.trim(); }
     private String normalizedDeadlineDays(String value) {
