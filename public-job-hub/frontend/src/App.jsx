@@ -402,6 +402,15 @@ function PostingListRow({
           {job.scrapped ? '★' : '☆'}
         </span>
       </button>
+      <button
+        type="button"
+        className="posting-list-inline-report"
+        aria-label="공고 정보 오류 신고"
+        title="공고 정보 오류 신고"
+        onClick={() => onReport(job)}
+      >
+        <span aria-hidden="true">🚨</span>
+      </button>
       <div className="posting-list-actions" aria-label="공고 부가 정보">
         <span className="posting-list-actions-context">
           <strong>{job.organization || '기관 미확인'}</strong>
@@ -413,15 +422,6 @@ function PostingListRow({
           {matchBusy ? '분석 중' : '내 스펙 매칭'}
         </button>
         <button type="button" onClick={() => onInsight(job)}>과거 채용분석</button>
-        <button
-          type="button"
-          className="posting-list-report"
-          aria-label="정보 오류 신고"
-          title="정보 오류 신고"
-          onClick={() => onReport(job)}
-        >
-          🚨
-        </button>
       </div>
     </article>
   )
@@ -555,17 +555,15 @@ function JobCard({
           {!expired && daysLeft === null && <span className="deadline-tag">마감일 미정</span>}
           {expired && <span className="expired-tag">접수마감</span>}
           {job.scrapped && <span className="scrapped-label">스크랩됨</span>}
-          {memberActions && (
-            <button
-              type="button"
-              className="card-report-tool"
-              onClick={() => onReport(job)}
-              aria-label="공고 정보 오류 신고"
-              title="공고 정보 오류 신고"
-            >
-              <span aria-hidden="true">🚨</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className="card-report-tool"
+            onClick={() => onReport(job)}
+            aria-label="공고 정보 오류 신고"
+            title="공고 정보 오류 신고"
+          >
+            <span aria-hidden="true">🚨</span>
+          </button>
           <button
             type="button"
             className={job.scrapped ? 'scrap-tool active' : 'scrap-tool'}
@@ -2292,6 +2290,13 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
     })
   })
   const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : []
+  const selectedDateLabel = selectedDate
+    ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString('ko-KR', {
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short',
+      })
+    : ''
   const dateKey = (day) =>
     `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   const changeMonth = (offset) => {
@@ -2406,8 +2411,10 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                   </div>
                   <div className="application-status-info">
                     <strong>{STAGE_LABELS[item.stage] || '지원 완료'}</strong>
-                    <small>다음 일정 {item.nextStepDate || '미정'}</small>
-                    <small>마감 {item.deadline || '미정'}</small>
+                    <div className="application-status-dates">
+                      <span><small>다음 일정</small><b>{item.nextStepDate || '미정'}</b></span>
+                      <span><small>마감일</small><b>{item.deadline || '미정'}</b></span>
+                    </div>
                     {nextAutoSchedule && (
                       <small className="auto-schedule">
                         {nextAutoSchedule.label} {nextAutoSchedule.date}
@@ -2451,40 +2458,43 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
               ›
             </button>
           </div>
-          <div className="calendar-grid calendar-weekdays">
-            {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-              <span key={day}>{day}</span>
-            ))}
-          </div>
-          <div className="calendar-grid calendar-days">
-            {Array.from({ length: firstWeekday }, (_, index) => (
-              <span key={`application-blank-${index}`} />
-            ))}
-            {Array.from({ length: lastDay }, (_, index) => {
-              const day = index + 1
-              const key = dateKey(day)
-              const events = eventsByDate[key] || []
-              return (
-                <button
-                  type="button"
-                  key={key}
-                  className={`${events.length ? 'has-events' : ''} ${selectedDate === key ? 'selected' : ''}`}
-                  onClick={() => events.length && setSelectedDate(key)}
-                >
-                  <span>{day}</span>
-                  {events.length > 0 && (
-                    <small className="calendar-event-chip">
-                      {events[0].eventType}
-                      {events.length > 1 ? ` +${events.length - 1}` : ''}
-                    </small>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-          {selectedDate && (
-            <div className="calendar-events">
-              <strong>{selectedDate} 일정</strong>
+          <div className="application-calendar-content">
+            <div className="application-calendar-month">
+              <div className="calendar-grid calendar-weekdays">
+                {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+                  <span key={day}>{day}</span>
+                ))}
+              </div>
+              <div className="calendar-grid calendar-days">
+                {Array.from({ length: firstWeekday }, (_, index) => (
+                  <span key={`application-blank-${index}`} />
+                ))}
+                {Array.from({ length: lastDay }, (_, index) => {
+                  const day = index + 1
+                  const key = dateKey(day)
+                  const events = eventsByDate[key] || []
+                  return (
+                    <button
+                      type="button"
+                      key={key}
+                      className={`${events.length ? 'has-events' : ''} ${selectedDate === key ? 'selected' : ''}`}
+                      onClick={() => events.length && setSelectedDate(key)}
+                    >
+                      <span>{day}</span>
+                      {events.length > 0 && (
+                        <small className="calendar-event-chip">
+                          {events[0].eventType}
+                          {events.length > 1 ? ` +${events.length - 1}` : ''}
+                        </small>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <aside className={`calendar-events application-calendar-detail ${selectedDate ? 'active' : ''}`}>
+              <strong>{selectedDate ? `${selectedDateLabel} 일정` : '일정을 선택하세요'}</strong>
+              {!selectedDate && <p>표시가 있는 날짜를 누르면 이곳에서 공고와 전형 일정을 확인할 수 있습니다.</p>}
               {selectedEvents.map((item, index) => (
                 <button
                   type="button"
@@ -2498,8 +2508,8 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                   {item.schedule?.tentative && <small>공고상 예정 일정 · 원문 재확인 필요</small>}
                 </button>
               ))}
-            </div>
-          )}
+            </aside>
+          </div>
         </section>
       </div>
     </section>
