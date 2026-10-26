@@ -2256,6 +2256,7 @@ function FavoriteOrganizationsPanel({ securePost, onOpen }) {
 
 function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess }) {
   const [stageFilter, setStageFilter] = useState('')
+  const [applicationExpanded, setApplicationExpanded] = useState(false)
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const today = new Date()
     return new Date(today.getFullYear(), today.getMonth(), 1)
@@ -2268,6 +2269,7 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
   const visible = stageFilter
     ? applications.filter((item) => item.stage === stageFilter)
     : applications
+  const displayedApplications = applicationExpanded ? visible : visible.slice(0, 3)
   const eventsByDate = {}
   applications.forEach((item) => {
     if (item.deadline) {
@@ -2366,7 +2368,10 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
         </div>
       </div>
       <div className="application-stage-summary">
-        <button className={!stageFilter ? 'active' : ''} onClick={() => setStageFilter('')}>
+        <button className={!stageFilter ? 'active' : ''} onClick={() => {
+          setStageFilter('')
+          setApplicationExpanded(false)
+        }}>
           <span>전체</span>
           <b>{applications.length}</b>
         </button>
@@ -2374,7 +2379,10 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
           <button
             key={stage}
             className={stageFilter === stage ? 'active' : ''}
-            onClick={() => setStageFilter(stage)}
+            onClick={() => {
+              setStageFilter(stage)
+              setApplicationExpanded(false)
+            }}
           >
             <span>{label}</span>
             <b>{applications.filter((item) => item.stage === stage).length}</b>
@@ -2391,7 +2399,7 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
             <span>상태</span>
             <span>관리</span>
           </div>
-          {visible.map((item) => {
+          {displayedApplications.map((item) => {
             const hasSpec = Object.values(item.applicationSpec || {}).some((value) => value?.trim())
             const today = new Date().toISOString().slice(0, 10)
             const nextAutoSchedule = (item.schedules || []).find(
@@ -2444,6 +2452,17 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
               </article>
             )
           })}
+          {visible.length > 3 && (
+            <button
+              type="button"
+              className="application-list-more"
+              aria-expanded={applicationExpanded}
+              onClick={() => setApplicationExpanded((value) => !value)}
+            >
+              <span aria-hidden="true">{applicationExpanded ? '−' : '+'}</span>
+              {applicationExpanded ? '지원 현황 접기' : `${visible.length - 3}개 더보기`}
+            </button>
+          )}
           {visible.length === 0 && <p className="empty">해당 단계의 공고가 없습니다.</p>}
         </div>
         <section className="alerts-calendar application-calendar" aria-label="지원 일정 달력">
