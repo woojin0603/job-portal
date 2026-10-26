@@ -397,20 +397,24 @@ function PostingListRow({
           <strong className="posting-list-deadline">{deadlineLabel}</strong>
           <time dateTime={job.deadline || undefined}>{job.deadline || '마감일 미정'}</time>
         </span>
-        <span className={job.scrapped ? 'posting-list-star saved' : 'posting-list-star'} aria-hidden="true">
-          {job.scrapped && <small>스크랩됨</small>}
+      </button>
+      <div className="posting-list-inline-tools" aria-label="공고 도구">
+        <button
+          type="button"
+          className="posting-list-inline-report"
+          aria-label="공고 정보 오류 신고"
+          title="공고 정보 오류 신고"
+          onClick={() => onReport(job)}
+        >
+          <span aria-hidden="true">🚨</span>
+        </button>
+        <span
+          className={job.scrapped ? 'posting-list-star saved' : 'posting-list-star'}
+          aria-label={job.scrapped ? '스크랩됨' : '스크랩하지 않음'}
+        >
           {job.scrapped ? '★' : '☆'}
         </span>
-      </button>
-      <button
-        type="button"
-        className="posting-list-inline-report"
-        aria-label="공고 정보 오류 신고"
-        title="공고 정보 오류 신고"
-        onClick={() => onReport(job)}
-      >
-        <span aria-hidden="true">🚨</span>
-      </button>
+      </div>
       <div className="posting-list-actions" aria-label="공고 부가 정보">
         <span className="posting-list-actions-context">
           <strong>{job.organization || '기관 미확인'}</strong>

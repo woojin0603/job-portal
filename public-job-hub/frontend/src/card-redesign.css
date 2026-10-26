@@ -730,16 +730,17 @@
 /* 오류 신고는 카드형·게시판형 모두 스크랩 별표 바로 왼쪽에 둔다. */
 .card-tools .card-report-tool {
   display: inline-grid !important;
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
   place-items: center;
   border: 1px solid transparent !important;
   border-radius: 50% !important;
   background: transparent !important;
   padding: 0 !important;
   color: #a13a32 !important;
-  font-size: 15px !important;
+  font-size: 28px !important;
+  line-height: 1 !important;
 }
 .card-tools .card-report-tool:hover,
 .card-tools .card-report-tool:focus-visible {
@@ -749,21 +750,36 @@
 .posting-list-entry {
   position: relative;
 }
-.posting-list-inline-report {
+.posting-list-inline-tools {
   position: absolute;
   z-index: 3;
   top: 36px;
-  right: 56px;
-  display: grid;
-  width: 34px;
-  height: 34px;
+  right: 18px;
+  display: flex;
+  height: 36px;
+  align-items: center;
+  gap: 2px;
+}
+.posting-list-inline-report,
+.posting-list-inline-tools .posting-list-star {
+  display: grid !important;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
   place-items: center;
+  margin: 0;
+  padding: 0;
+  font-size: 28px !important;
+  line-height: 1 !important;
+  text-align: center;
+}
+.posting-list-inline-report {
   border: 1px solid transparent;
   border-radius: 50%;
   background: transparent;
-  padding: 0;
-  font-size: 23px;
-  line-height: 1;
+}
+.posting-list-inline-tools .posting-list-star {
+  justify-content: center !important;
 }
 .posting-list-inline-report:hover,
 .posting-list-inline-report:focus-visible {
@@ -908,9 +924,9 @@
   }
 }
 @media (max-width: 620px) {
-  .posting-list-inline-report {
+  .posting-list-inline-tools {
     top: 87px;
-    right: 51px;
+    right: 10px;
   }
   .application-calendar-content {
     grid-template-columns: 1fr;
