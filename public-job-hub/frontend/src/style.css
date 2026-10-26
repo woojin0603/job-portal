@@ -3135,6 +3135,7 @@ nav button.active {
 .salary-total strong {
   color: #1d4ed8;
   font-size: 1.7rem;
+  white-space: nowrap;
 }
 
 .salary-breakdown {
@@ -3153,6 +3154,7 @@ nav button.active {
 .salary-breakdown dd {
   margin: 0;
   font-weight: 700;
+  white-space: nowrap;
 }
 .salary-note,
 .salary-empty p {
@@ -6235,6 +6237,24 @@ nav a:hover,
 .card-tools .scrap-tool.active {
   font-weight: 700;
 }
+.card-tools .card-report-tool {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  padding: 0;
+  color: #a33b2c;
+  font-size: 14px;
+  line-height: 1;
+}
+.card-tools .card-report-tool:hover,
+.card-tools .card-report-tool:focus-visible {
+  border-color: #e3bbb4;
+  background: #fff5f3;
+}
 .job-info-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -6447,6 +6467,7 @@ nav a:hover,
   min-width: 0;
   overflow: visible;
   background: #fff;
+  box-shadow: 0 2px 8px rgba(23, 49, 37, 0.05);
 }
 .application-list .application-open {
   grid-template-columns: minmax(0, 1fr) 156px;
@@ -6461,6 +6482,15 @@ nav a:hover,
   white-space: normal;
   word-break: keep-all;
   overflow-wrap: anywhere;
+  color: #15271f !important;
+  font-size: 15px !important;
+  font-weight: 850 !important;
+  line-height: 1.45;
+}
+.application-posting-name small {
+  color: #52665c !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
 }
 .application-posting-name small,
 .application-status-info small,
@@ -6485,6 +6515,7 @@ nav a:hover,
   padding: 5px 9px;
   color: #214e3d !important;
   font-size: 12px !important;
+  letter-spacing: -0.01em;
 }
 .application-status-info > small {
   color: #485e53 !important;
@@ -6546,6 +6577,52 @@ nav a:hover,
 }
 .application-calendar .calendar-days > button.has-events small {
   background: #315f50;
+}
+.application-calendar .calendar-event-chip {
+  display: block;
+  width: calc(100% - 6px);
+  overflow: hidden;
+  padding: 3px 4px !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px !important;
+  line-height: 1.2;
+}
+.application-calendar .calendar-events {
+  border-top: 1px solid #dce6e0;
+  background: #f8fbf9;
+}
+.application-calendar .calendar-events button {
+  border: 1px solid #d7e2dc;
+  border-radius: 7px;
+  background: #fff;
+  padding: 9px 10px;
+  text-align: left;
+}
+.application-calendar .calendar-events button span {
+  color: #315f50;
+  font-weight: 800;
+}
+.application-calendar .calendar-events button b {
+  margin-top: 3px;
+  color: #17271f;
+  line-height: 1.4;
+}
+@media (max-width: 520px) {
+  .salary-total {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .salary-total strong {
+    font-size: 1.45rem;
+  }
+  .salary-breakdown div {
+    gap: 10px;
+  }
+  .salary-breakdown dd {
+    font-size: 13px;
+  }
 }
 .application-calendar .calendar-days > button.selected {
   box-shadow: inset 0 0 0 2px #315f50;

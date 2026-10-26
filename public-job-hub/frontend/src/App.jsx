@@ -555,6 +555,17 @@ function JobCard({
           {!expired && daysLeft === null && <span className="deadline-tag">마감일 미정</span>}
           {expired && <span className="expired-tag">접수마감</span>}
           {job.scrapped && <span className="scrapped-label">스크랩됨</span>}
+          {memberActions && (
+            <button
+              type="button"
+              className="card-report-tool"
+              onClick={() => onReport(job)}
+              aria-label="공고 정보 오류 신고"
+              title="공고 정보 오류 신고"
+            >
+              <span aria-hidden="true">🚨</span>
+            </button>
+          )}
           <button
             type="button"
             className={job.scrapped ? 'scrap-tool active' : 'scrap-tool'}
@@ -639,9 +650,6 @@ function JobCard({
         </div>
         {memberActions && (
           <>
-            <button className="report-link" onClick={() => onReport(job)}>
-              정보 오류 신고
-            </button>
             <div className="career-actions">
               <button disabled={matchBusy} onClick={() => onMatch(job)}>
                 {matchBusy ? '분석 중...' : '내 스펙 매칭'}
@@ -1026,7 +1034,7 @@ function MatchDialog({ value, onClose, onOpenSource }) {
           <span>필수요건·자격증·경력·대외활동을 구분한 참고 점수</span>
         </div>
         {result.eligibility && (
-          <div className={`match-eligibility ${result.eligibility.status === '지원 가능성 있음' ? 'possible' : ''}`}>
+          <div className={`match-eligibility ${result.eligibility.status === '지원 가능성 있음' || result.eligibility.status === '필수 자격증 일치' ? 'possible' : ''}`}>
             <span>필수요건 판정</span>
             <strong>{result.eligibility.status}</strong>
             <p>{result.eligibility.detail}</p>
@@ -2464,7 +2472,12 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                   onClick={() => events.length && setSelectedDate(key)}
                 >
                   <span>{day}</span>
-                  {events.length > 0 && <small>{events.length}건</small>}
+                  {events.length > 0 && (
+                    <small className="calendar-event-chip">
+                      {events[0].eventType}
+                      {events.length > 1 ? ` +${events.length - 1}` : ''}
+                    </small>
+                  )}
                 </button>
               )
             })}
