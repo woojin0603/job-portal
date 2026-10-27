@@ -1608,3 +1608,64 @@ body > #root > main {
     font-size: 17px;
   }
 }
+
+/* 설명을 덜어낸 첫 화면 메뉴는 아이콘과 이름만 명확하게 보여준다. */
+.landing-card {
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  text-align: center;
+}
+.landing-card > span,
+.landing-card.mypage > span,
+.landing-card.notice > span {
+  margin: 0;
+}
+.landing-card strong {
+  color: #1d3429;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* 게시판형 부가 기능의 시작점은 원문보기로 통일한다. */
+.posting-list-actions .posting-list-original {
+  margin-right: auto;
+  border-color: #315f50;
+  background: #315f50;
+  color: #fff;
+  font-weight: 800;
+}
+.posting-list-actions .posting-list-original:hover {
+  border-color: #244c3e;
+  background: #244c3e;
+  color: #fff;
+}
+
+@media (max-width: 700px) {
+  .landing-main .landing-card {
+    min-height: 62px;
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    justify-items: start;
+    gap: 12px;
+    padding: 10px 14px;
+    text-align: left;
+  }
+  .landing-main .landing-card > span,
+  .landing-main .landing-card.mypage > span,
+  .landing-main .landing-card.notice > span {
+    width: 42px;
+    height: 42px;
+    grid-row: 1;
+  }
+  .landing-main .landing-card strong {
+    font-size: 17px;
+  }
+  .posting-list-actions .posting-list-original {
+    flex: 1 0 100%;
+    min-height: 38px;
+    margin-right: 0;
+  }
+}

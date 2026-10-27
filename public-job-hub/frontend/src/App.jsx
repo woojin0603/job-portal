@@ -416,10 +416,7 @@ function PostingListRow({
         </span>
       </div>
       <div className="posting-list-actions" aria-label="공고 부가 정보">
-        <span className="posting-list-actions-context">
-          <strong>{job.organization || '기관 미확인'}</strong>
-          <small>공고 부가정보</small>
-        </span>
+        <button type="button" className="posting-list-original" onClick={onOpen}>원문보기</button>
         <button type="button" onClick={() => onSalary(job)}>연봉정보</button>
         <button type="button" onClick={() => onCompetition(job)}>이전 경쟁률</button>
         <button type="button" disabled={matchBusy} onClick={() => onMatch(job)}>
@@ -5801,21 +5798,14 @@ function LandingPage({ user, onPostings, onMyPage, onCommunity }) {
         <button className="landing-card postings" onClick={onPostings}>
           <span aria-hidden="true">⌕</span>
           <strong>채용공고 확인</strong>
-          <small>로그인 없이 최신 채용공고를 검색하고 원문을 확인합니다.</small>
         </button>
         <button className="landing-card mypage" onClick={onMyPage}>
           <span aria-hidden="true">◎</span>
           <strong>마이페이지</strong>
-          <small>
-            {user
-              ? '내 역량·스크랩·지원 일정을 관리합니다.'
-              : '로그인 후 내 역량과 지원 일정을 관리합니다.'}
-          </small>
         </button>
         <button className="landing-card notice" onClick={onCommunity}>
           <span aria-hidden="true">i</span>
           <strong>공지사항</strong>
-          <small>서비스 공지와 자주 묻는 내용을 로그인 없이 확인합니다.</small>
         </button>
       </div>
     </section>
