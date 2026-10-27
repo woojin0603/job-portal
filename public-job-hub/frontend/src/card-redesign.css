@@ -1266,3 +1266,221 @@ body > #root > main {
     font-size: 13px;
   }
 }
+
+/* 카드형 공고의 정보 위계와 버튼 가독성을 최종 보정한다. */
+.grid > .card,
+.grid > .card.deadline-urgent {
+  border-color: #d8e0dc;
+  box-shadow: 0 4px 16px rgba(30, 52, 42, 0.07);
+}
+.grid > .card:hover,
+.grid > .card.deadline-urgent:hover {
+  border-color: #b9c9c1;
+  box-shadow: 0 10px 28px rgba(30, 52, 42, 0.12);
+}
+.grid .card-top,
+.grid .card.deadline-urgent .card-top {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf1ef;
+}
+.grid .institution-badge,
+.grid .institution-badge.institution-central,
+.grid .institution-badge.institution-local,
+.grid .institution-badge.institution-private,
+.grid .institution-badge.institution-public {
+  background: #edf3f0;
+  color: #365649;
+  font-weight: 750;
+}
+.grid .card-heading > .organization-name {
+  margin-bottom: 7px;
+  color: #4f6258;
+  font-size: 13px;
+  font-weight: 750;
+}
+.grid .card h2,
+.grid .card.deadline-urgent h2 {
+  color: #10251b;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.45;
+}
+.grid .details {
+  min-height: 74px;
+  padding-top: 2px;
+}
+.grid .pills span,
+.grid .position-list > span {
+  background: #f1f5f3;
+  color: #40564b;
+  font-weight: 650;
+}
+.grid .date,
+.grid .card.deadline-urgent .date {
+  margin-top: 15px;
+  border-top: 1px solid #edf1ef;
+}
+.grid .date small {
+  color: #7b8a82;
+  font-size: 10px;
+  font-weight: 750;
+}
+.grid .date strong,
+.grid .card.deadline-urgent .date strong {
+  margin-top: 3px;
+  color: #364c41;
+  font-weight: 700;
+}
+.grid .card > .actions {
+  padding: 12px 14px 14px;
+  background: #f8faf9;
+}
+.grid .job-info-actions {
+  gap: 6px;
+}
+.grid .job-info-actions .preview-link,
+.grid .career-actions button {
+  min-height: 36px;
+  border: 1px solid #d8e2dd !important;
+  border-radius: 7px !important;
+  background: #fff !important;
+  color: #304b3e !important;
+  font-weight: 750;
+  text-align: center;
+  text-decoration: none;
+}
+.grid .career-actions button {
+  margin-top: 7px;
+  border-color: #315f50 !important;
+  background: #315f50 !important;
+  color: #fff !important;
+}
+
+/* 마이페이지는 메뉴와 각 정보 패널을 동일한 시각 체계로 묶는다. */
+.mypage-tabs {
+  gap: 6px;
+  border-color: #d4dfd9;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(30, 52, 42, 0.08);
+}
+.mypage-tabs button {
+  min-height: 46px;
+  color: #43584d;
+  font-size: 13px;
+  font-weight: 750;
+}
+.mypage-tabs button:hover:not(.active) {
+  background: #f0f5f2;
+  color: #244f3c;
+}
+.mypage-dashboard.compact > *,
+.application-dashboard,
+.favorite-organizations,
+.posting-changes-panel,
+.profile-summary,
+.profile-editor {
+  border-color: #d5e0da;
+  box-shadow: 0 6px 22px rgba(30, 52, 42, 0.065);
+}
+.profile-heading,
+.profile-summary-head {
+  padding-bottom: 17px;
+  border-bottom: 1px solid #e4ebe7;
+}
+.profile-heading h2,
+.profile-summary-head h2 {
+  color: #173629;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+.profile-summary-grid {
+  gap: 12px;
+}
+.profile-summary-grid > article {
+  border-color: #dbe5df;
+  background: #fbfdfc;
+  box-shadow: inset 0 3px #e7f0eb;
+}
+.profile-summary-grid h3 {
+  color: #1f4333;
+  font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .grid > .card,
+  .grid > .card.deadline-urgent {
+    padding: 15px 15px 13px;
+  }
+  .grid .card-top,
+  .grid .card.deadline-urgent .card-top {
+    margin-bottom: 13px;
+    padding-bottom: 10px;
+  }
+  .grid .source-symbol {
+    width: 46px;
+    height: 34px;
+    flex-basis: 46px;
+  }
+  .grid .institution-badge,
+  .grid .institution-badge.institution-central,
+  .grid .institution-badge.institution-local,
+  .grid .institution-badge.institution-private,
+  .grid .institution-badge.institution-public {
+    max-width: 96px;
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  .grid .card h2,
+  .grid .card.deadline-urgent h2 {
+    min-height: 48px;
+    font-size: 17px;
+  }
+  .grid .details {
+    min-height: 0;
+  }
+  .grid .card > .actions {
+    margin-right: -15px;
+    margin-bottom: -13px;
+    margin-left: -15px;
+  }
+  .grid .job-info-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid .job-info-actions .preview-link:last-child {
+    grid-column: 1 / -1;
+  }
+  .mypage-tabs {
+    top: 60px;
+    padding: 7px;
+  }
+  .mypage-tabs button {
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .application-dashboard,
+  .favorite-organizations,
+  .posting-changes-panel,
+  .profile-summary,
+  .profile-editor {
+    padding: 14px;
+  }
+  .profile-summary-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .profile-summary-head button {
+    width: 100%;
+  }
+  .profile-summary-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "certifications"
+      "degrees"
+      "careers"
+      "activities"
+      "grades";
+  }
+}
