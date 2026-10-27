@@ -5791,8 +5791,8 @@ function LandingPage({ user, onPostings, onMyPage, onCommunity }) {
     <section className="landing-page">
       <div className="landing-intro">
         <p className="eyebrow">PUBLIC JOB HUB</p>
-        <h1>공공기관 채용, 필요한 화면부터 시작하세요</h1>
-        <p>최신 공고를 확인하고, 나의 역량과 지원 일정을 관리할 수 있습니다.</p>
+        <h1>기회를 찾는 가장 체계적인 방법</h1>
+        <p>공공기관 채용정보와 취업 준비를 한곳에서 관리하세요.</p>
       </div>
       <div className="landing-menu">
         <button className="landing-card postings" onClick={onPostings}>
