@@ -6648,7 +6648,7 @@ export default function App() {
           </nav>
         </div>
       </header>
-      <main>
+      <main className={landingView ? 'landing-main' : undefined}>
         {updateAvailable && (
           <div className="update-banner" role="status">
             <span>새 버전이 준비되었습니다.</span>
