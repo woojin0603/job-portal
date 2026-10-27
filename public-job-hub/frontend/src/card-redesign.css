@@ -1635,7 +1635,53 @@ body > #root > main {
   border-color: #315f50;
   background: #315f50;
   color: #fff;
-  font-weight: 800;
+  font-weight: 500;
+}
+
+/* 설명이 없는 웹 첫 화면은 과한 카드 높이를 줄여 간결한 3열 메뉴로 구성한다. */
+@media (min-width: 701px) {
+  .landing-page {
+    gap: 28px;
+  }
+  .landing-intro {
+    max-width: 680px;
+  }
+  .landing-intro h1 {
+    margin: 0;
+    font-size: clamp(34px, 4vw, 46px);
+    line-height: 1.18;
+  }
+  .landing-intro > p:last-child {
+    margin-top: 12px;
+    font-size: 15px;
+  }
+  .landing-menu {
+    width: min(100%, 920px);
+    margin: 0 auto;
+    gap: 14px;
+  }
+  .landing-card {
+    min-height: 142px;
+    gap: 12px;
+    border-radius: 12px;
+    padding: 22px 18px;
+  }
+  .landing-card > span,
+  .landing-card.mypage > span,
+  .landing-card.notice > span {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    font-size: 21px;
+  }
+  .landing-card strong {
+    font-size: 18px;
+  }
+  .landing-card:hover {
+    border-color: #9fb2a8 !important;
+    background: #fbfdfc;
+    transform: translateY(-2px);
+  }
 }
 .posting-list-actions .posting-list-original:hover {
   border-color: #244c3e;
