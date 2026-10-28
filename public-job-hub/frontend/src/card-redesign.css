@@ -1545,14 +1545,28 @@ body > #root > main {
 .admin-popup-manager > form { display: grid; gap: 0; border: 1px solid #d9e2dd; border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 8px 28px rgba(26, 55, 42, 0.07); }
 .admin-popup-manager label { display: grid; gap: 7px; color: #334c41; font-weight: 700; }
 .admin-popup-manager textarea { resize: vertical; }
+.admin-popup-title-field input { min-height: 54px; padding: 0 16px; border-color: #bdcec5; border-radius: 10px; font-size: 16px; }
 .admin-popup-editor { grid-template-columns: minmax(0, 1fr) 260px; }
 .admin-popup-editor-main { display: grid; gap: 20px; padding: 26px; }
 .admin-popup-content-editor { display: grid; gap: 10px; }
 .admin-popup-content-editor > label:first-child { color: #334c41; font-weight: 700; }
 .admin-popup-content-editor textarea { width: 100%; border-color: #ccd9d2; background: #fcfdfc; line-height: 1.65; }
+.admin-popup-rich-editor { overflow: hidden; border: 1px solid #bdcec5; border-radius: 12px; background: #fff; transition: border-color .16s, box-shadow .16s; }
+.admin-popup-rich-editor:focus-within { border-color: #3e735d; box-shadow: 0 0 0 3px rgba(49, 95, 80, .1); }
+.admin-popup-rich-editor > textarea { display: block; min-height: 170px; border: 0 !important; border-radius: 0; background: #fff !important; padding: 15px 16px; outline: 0; box-shadow: none !important; }
+.admin-popup-rich-editor > textarea + textarea { min-height: 100px; border-top: 1px solid #e1e9e5 !important; }
+.admin-popup-editor-toolbar { display: flex; min-height: 46px; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 10px 7px 14px; border-top: 1px solid #e1e9e5; background: #f7faf8; }
+.admin-popup-editor-toolbar > span { color: #74847c; font-size: 12px; font-weight: 500; }
+.admin-popup-editor-toolbar > label,
+.admin-attachment-picker { display: inline-flex !important; width: max-content; min-height: 34px; align-items: center; justify-content: center; padding: 0 13px; border: 1px solid #afc3b9; border-radius: 8px; background: #fff; color: #285642 !important; cursor: pointer; font-size: 12px; font-weight: 750 !important; transition: border-color .15s, background .15s; }
+.admin-popup-editor-toolbar > label:hover,
+.admin-attachment-picker:hover { border-color: #315f50; background: #edf5f1; }
+.admin-popup-editor-toolbar input,
+.admin-attachment-picker input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .admin-popup-inline-image { display: grid; justify-items: start; gap: 9px; padding: 14px; border: 1px dashed #b9ccc2; border-radius: 10px; background: #f6faf8; }
 .admin-popup-inline-image span { color: #416052; font-size: 12px; font-weight: 750; }
 .admin-popup-inline-image img { width: min(100%, 430px); max-height: 260px; border-radius: 8px; object-fit: contain; background: #fff; }
+.admin-popup-rich-editor .admin-popup-inline-image { margin: 0; border-width: 1px 0; border-radius: 0; background: #f8fbf9; }
 .admin-popup-image-dropzone { display: grid !important; min-height: 138px; place-items: center; align-content: center; gap: 5px; padding: 20px; border: 1.5px dashed #9eb9ab; border-radius: 12px; background: #f7fbf9; color: #2a5843 !important; cursor: pointer; text-align: center; transition: border-color 0.16s, background 0.16s, transform 0.16s; }
 .admin-popup-image-dropzone:hover,
 .admin-popup-image-dropzone:focus-within { border-color: #315f50; background: #eff7f3; transform: translateY(-1px); }
@@ -1570,6 +1584,8 @@ body > #root > main {
 .admin-popup-options > p { margin: 0 0 8px; color: #6b7d74; font-size: 12px; line-height: 1.6; }
 .admin-popup-options .check { display: flex; align-items: center; gap: 8px; padding: 11px; border-radius: 8px; background: #fff; font-size: 13px; }
 .admin-popup-options .check input { width: 17px; height: 17px; }
+.admin-popup-submit { min-height: 46px; border: 1px solid #244f3d !important; border-radius: 9px !important; background: #285b46 !important; color: #fff !important; font-size: 14px; font-weight: 800; box-shadow: 0 5px 13px rgba(40, 91, 70, .16); }
+.admin-popup-submit:hover:not(:disabled) { background: #1f4c39 !important; transform: translateY(-1px); }
 .admin-popup-live-preview { display: grid; gap: 8px; margin: 4px 0 8px; padding: 14px; border: 1px solid #d8e3dd; border-radius: 10px; background: #fff; }
 .admin-popup-live-preview > small { color: #718179; font-size: 10px; letter-spacing: 0.08em; }
 .admin-popup-live-preview > strong { overflow: hidden; color: #1c4332; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
@@ -1636,6 +1652,37 @@ body > #root > main {
   .admin-popup-editor { grid-template-columns: 1fr; }
   .admin-popup-editor-main { padding: 19px 16px; }
   .admin-popup-options { padding: 18px 16px; border-top: 1px solid #dde6e1; border-left: 0; }
+  .admin-popup-title-field input { min-height: 52px; }
+  .admin-popup-editor-toolbar { align-items: flex-start; flex-direction: column; }
+  .admin-popup-editor-toolbar > label { width: 100%; }
+}
+
+/* 모바일 카드의 마감 정보는 고정 높이에서 분리해 다른 정보와 겹치지 않게 한다. */
+@media (max-width: 700px) {
+  .grid > .card,
+  .grid > .card.deadline-urgent {
+    height: auto !important;
+    min-height: 0;
+  }
+  .grid .date,
+  .grid .card.deadline-urgent .date {
+    position: static !important;
+    display: flex !important;
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 58px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 14px 0 0 !important;
+    padding: 10px 0 12px !important;
+    border-top: 1px solid #e7ece9;
+  }
+  .grid .date > div { min-width: 0; }
+  .grid .date small { display: block; margin-bottom: 3px; }
+  .grid .date strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grid .card-dday { flex: 0 0 auto; margin: 0; line-height: 1; }
+  .grid .card > .actions { position: static !important; flex: 0 0 auto; }
 }
 .mypage-tabs button:hover:not(.active) {
   background: #f0f5f2;

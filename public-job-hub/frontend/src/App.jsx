@@ -4520,28 +4520,22 @@ function AdminServicePopups({ securePost }) {
       <div className="operations-heading"><div><p className="eyebrow">USER NOTICE</p><h2>사용자 팝업 관리</h2><span>중요 안내를 작성하고 실제 노출 모습을 미리 확인하세요.</span></div></div>
       <form className="admin-popup-editor" onSubmit={save}>
         <div className="admin-popup-editor-main">
-          <label>팝업 제목<input required maxLength={160} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="사용자에게 전달할 제목" /></label>
+          <label className="admin-popup-title-field">팝업 제목<input required maxLength={160} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="사용자에게 전달할 제목" /></label>
           <div className="admin-popup-content-editor">
             <label>내용</label>
-            <textarea required={!form.imageData || !contentParts(form.content).after.trim()} maxLength={5000} rows={6} value={contentParts(form.content).before} onChange={(e) => changeContent('before', e.target.value)} placeholder="안내 내용을 입력하세요." />
-            {form.imageData && <div className="admin-popup-inline-image"><span>본문 이미지</span><img src={form.imageData} alt="본문 이미지 미리보기" /><button type="button" className="secondary" onClick={() => setForm({ ...form, imageData: '', content: contentParts(form.content).before + contentParts(form.content).after })}>본문 이미지 제거</button></div>}
-            {form.imageData && <textarea maxLength={5000} rows={4} value={contentParts(form.content).after} onChange={(e) => changeContent('after', e.target.value)} placeholder="이미지 아래에 이어질 내용을 입력하세요." />}
-            <label
-              className={form.imageData ? 'admin-popup-image-dropzone has-image' : 'admin-popup-image-dropzone'}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={dropContentImage}
-              onPaste={pasteContentImage}
-              tabIndex={0}
-            >
-              <span className="admin-popup-upload-icon" aria-hidden="true">＋</span>
-              <strong>{form.imageData ? '본문 이미지 바꾸기' : '본문 이미지 추가'}</strong>
-              <small>이미지를 끌어놓거나 복사 후 Ctrl+V · 클릭해서 파일 선택</small>
-              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={readContentImage} />
-            </label>
+            <div className="admin-popup-rich-editor" onDragOver={(event) => event.preventDefault()} onDrop={dropContentImage}>
+              <textarea onPaste={pasteContentImage} required={!form.imageData || !contentParts(form.content).after.trim()} maxLength={5000} rows={8} value={contentParts(form.content).before} onChange={(e) => changeContent('before', e.target.value)} placeholder="안내 내용을 입력하세요. 이미지는 이 입력란에 끌어놓거나 Ctrl+V로 붙여넣을 수 있습니다." />
+              {form.imageData && <div className="admin-popup-inline-image"><img src={form.imageData} alt="본문 이미지 미리보기" /><button type="button" className="secondary" onClick={() => setForm({ ...form, imageData: '', content: contentParts(form.content).before + contentParts(form.content).after })}>이미지 삭제</button></div>}
+              {form.imageData && <textarea onPaste={pasteContentImage} maxLength={5000} rows={4} value={contentParts(form.content).after} onChange={(e) => changeContent('after', e.target.value)} placeholder="이미지 아래에 이어질 내용을 입력하세요." />}
+              <div className="admin-popup-editor-toolbar">
+                <span>이미지 드래그 또는 Ctrl+V</span>
+                <label>이미지 선택<input type="file" accept="image/png,image/jpeg,image/webp" onChange={readContentImage} /></label>
+              </div>
+            </div>
           </div>
           <div className="admin-popup-attachment">
             <div><strong>첨부파일 업로드</strong><small>선택 · 900KB 이하</small></div>
-            <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.hwp" onChange={readAttachment} />
+            <label className="admin-attachment-picker">파일 선택<input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.hwp" onChange={readAttachment} /></label>
             {form.attachmentData && <div><span>{form.attachmentName}</span><button type="button" className="secondary" onClick={() => setForm({ ...form, attachmentName: '', attachmentType: '', attachmentData: '' })}>첨부 삭제</button></div>}
           </div>
         </div>
@@ -4556,7 +4550,7 @@ function AdminServicePopups({ securePost }) {
             {form.imageData && <img src={form.imageData} alt="팝업 본문 미리보기" />}
             {contentParts(form.content).after && <p>{contentParts(form.content).after}</p>}
           </div>
-          <button disabled={busy}>{busy ? '저장 중…' : form.id ? '변경사항 저장' : '팝업 등록'}</button>
+          <button className="admin-popup-submit" disabled={busy}>{busy ? '저장 중…' : form.id ? '변경사항 저장' : '팝업 등록'}</button>
           {form.id && <button type="button" className="secondary" onClick={() => setForm(blank)}>편집 취소</button>}
         </aside>
       </form>
