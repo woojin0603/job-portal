@@ -1469,8 +1469,102 @@ body > #root > main {
 .mypage-tabs button {
   min-height: 46px;
   color: #43584d;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 750;
+}
+
+/* 마이페이지 핵심 메뉴는 멀리서도 구분되도록 충분한 크기를 확보한다. */
+.mypage-tabs button b {
+  font-size: 12px;
+}
+
+/* 지원 현황·맞춤 알림 달력 안의 글자는 강조를 줄여 일정표처럼 자연스럽게 읽힌다. */
+.application-calendar :is(strong, b, span, small, button),
+.alerts-calendar :is(strong, b, span, small, button) {
+  font-weight: 400 !important;
+}
+
+.service-alert-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin: 0 auto 18px;
+  padding: 13px 18px;
+  max-width: 1240px;
+  border: 1px solid #cfded6;
+  border-radius: 10px;
+  background: #f3f8f5;
+  color: #264b3c;
+}
+.service-alert-bar span {
+  overflow: hidden;
+  color: #52675e;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.service-alert-bar button {
+  border: 0;
+  background: transparent;
+  color: #18563f;
+  text-decoration: underline;
+}
+.service-popup-layer {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(18, 28, 23, 0.24);
+}
+.service-popup-layer > section {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 30px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 22px 65px rgba(16, 36, 27, 0.22);
+}
+.service-popup-layer img {
+  display: block;
+  width: 100%;
+  max-height: 300px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.service-popup-layer h2 { margin: 0 36px 12px 0; color: #173a2c; }
+.service-popup-layer p { margin: 0; color: #52635b; line-height: 1.75; white-space: pre-wrap; }
+.service-popup-layer > section > div { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+.service-popup-close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border: 0; background: transparent; color: #52635b; font-size: 28px; }
+
+.admin-popup-manager { display: grid; gap: 18px; }
+.admin-popup-manager > form { display: grid; gap: 13px; padding: 20px; border: 1px solid #d9e2dd; border-radius: 12px; background: #fff; }
+.admin-popup-manager label { display: grid; gap: 7px; color: #334c41; font-weight: 700; }
+.admin-popup-manager textarea { resize: vertical; }
+.admin-popup-manager form > div:last-child { display: flex; gap: 8px; }
+.admin-popup-preview { display: flex; align-items: end; gap: 12px; }
+.admin-popup-preview img { width: 180px; max-height: 120px; border-radius: 8px; object-fit: contain; }
+.admin-popup-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.admin-popup-list article { display: grid; gap: 9px; padding: 17px; border: 1px solid #dce5e0; border-radius: 11px; background: #fff; }
+.admin-popup-list article > div { display: flex; justify-content: space-between; gap: 10px; }
+.admin-popup-list article p { margin: 0; color: #5b6c64; white-space: pre-wrap; }
+.admin-popup-list article span { color: #287052; font-size: 12px; }
+.admin-popup-list article small { color: #7a8981; }
+.admin-popup-list article > div:last-child { justify-content: flex-start; }
+
+@media (max-width: 700px) {
+  .mypage-tabs button { font-size: 15px; }
+  .service-alert-bar { grid-template-columns: minmax(0, 1fr) auto; margin: 0 12px 12px; padding: 11px 13px; }
+  .service-alert-bar strong { grid-column: 1; }
+  .service-alert-bar span { grid-column: 1 / -1; grid-row: 2; }
+  .service-alert-bar button { grid-column: 2; grid-row: 1; }
+  .service-popup-layer { align-items: center; padding: 14px; }
+  .service-popup-layer > section { padding: 24px 20px; }
+  .admin-popup-list { grid-template-columns: 1fr; }
 }
 .mypage-tabs button:hover:not(.active) {
   background: #f0f5f2;

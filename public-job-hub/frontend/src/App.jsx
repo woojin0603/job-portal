@@ -1883,6 +1883,18 @@ function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
     // 로그인 계정이 바뀔 때 해당 회원의 알림만 다시 읽는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email, refreshVersion])
+  useEffect(() => {
+    const latest = items.find((item) => item.fresh)
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+    if (!standalone || !latest || !('Notification' in window) || Notification.permission !== 'granted') return
+    const seenKey = `jobhub-native-notification-${user?.email}`
+    if (window.localStorage.getItem(seenKey) === latest.key) return
+    new Notification(latest.category || '새 알림', {
+      body: `${latest.organization || ''} ${latest.title || latest.reason || ''}`.trim(),
+      icon: '/pwa-192x192.png',
+    })
+    window.localStorage.setItem(seenKey, latest.key)
+  }, [items, user?.email])
 
   const readAll = async () => {
     try {
@@ -1965,6 +1977,12 @@ function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
               </button>
             )}
           </div>
+          {window.matchMedia('(display-mode: standalone)').matches &&
+            'Notification' in window && Notification.permission === 'default' && (
+              <button className="enable-native-notification" type="button" onClick={() => Notification.requestPermission()}>
+                앱 푸시 알림 켜기
+              </button>
+            )}
           {message && <p className="notification-message">{message}</p>}
           <div className="notification-list">
             {items.map((item) => (
@@ -4403,6 +4421,63 @@ function AdminInstitutionLogos({ securePost }) {
   )
 }
 
+function AdminServicePopups({ securePost }) {
+  const blank = { id: null, title: '', content: '', imageData: '', active: true }
+  const [items, setItems] = useState([])
+  const [form, setForm] = useState(blank)
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+  const load = useCallback(() => getJson('/api/admin/service-popups').then(setItems).catch((e) => setMessage(e.message)), [])
+  useEffect(load, [load])
+  async function readImage(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/') || file.size > 700 * 1024) {
+      setMessage('이미지는 700KB 이하의 JPG, PNG, WEBP 파일만 첨부할 수 있습니다.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => setForm((current) => ({ ...current, imageData: String(reader.result) }))
+    reader.readAsDataURL(file)
+  }
+  async function save(event) {
+    event.preventDefault(); setBusy(true); setMessage('')
+    try {
+      await securePost(`/api/admin/service-popups${form.id ? `/${form.id}` : ''}`, JSON.stringify(form), 'application/json')
+      setForm(blank); setMessage('사용자 안내 팝업을 저장했습니다.'); await load()
+    } catch (e) { setMessage(e.message) } finally { setBusy(false) }
+  }
+  async function remove(id) {
+    if (!window.confirm('이 팝업을 삭제할까요?')) return
+    setBusy(true)
+    try { await securePost(`/api/admin/service-popups/${id}/delete`); setForm(blank); await load() }
+    catch (e) { setMessage(e.message) } finally { setBusy(false) }
+  }
+  return (
+    <section className="admin-popup-manager">
+      <div className="operations-heading"><div><h2>사용자 팝업</h2><span>웹 상단 안내와 설치형 앱 알림에 함께 사용됩니다.</span></div></div>
+      <form onSubmit={save}>
+        <label>제목<input required maxLength={160} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
+        <label>내용<textarea required maxLength={5000} rows={5} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} /></label>
+        <label>이미지 <small>선택 · 700KB 이하</small><input type="file" accept="image/png,image/jpeg,image/webp" onChange={readImage} /></label>
+        {form.imageData && <div className="admin-popup-preview"><img src={form.imageData} alt="첨부 미리보기" /><button type="button" onClick={() => setForm({ ...form, imageData: '' })}>이미지 제거</button></div>}
+        <label className="check"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> 사용자에게 노출</label>
+        <div><button disabled={busy}>{busy ? '저장 중…' : form.id ? '수정 저장' : '팝업 등록'}</button>{form.id && <button type="button" className="secondary" onClick={() => setForm(blank)}>취소</button>}</div>
+      </form>
+      {message && <p className="status">{message}</p>}
+      <div className="admin-popup-list">
+        {items.map((item) => <article key={item.id}>
+          <div><strong>{item.title}</strong><span>{item.active ? '노출 중' : '숨김'}</span></div>
+          <p>{item.content}</p>
+          <small>{new Date(item.updatedAt).toLocaleString('ko-KR')}</small>
+          <div><button type="button" onClick={() => setForm(item)}>수정</button><button type="button" className="danger" onClick={() => remove(item.id)}>삭제</button></div>
+        </article>)}
+        {!items.length && <p className="empty">등록된 팝업이 없습니다.</p>}
+      </div>
+    </section>
+  )
+}
+
 function AdminReviewPanel({ user, securePost }) {
   const [section, setSection] = useState('overview')
   const [items, setItems] = useState([])
@@ -4666,6 +4741,7 @@ function AdminReviewPanel({ user, securePost }) {
           ['incidents', `장애 대응${operationIssues.length ? ` ${operationIssues.length}` : ''}`],
           ['collection', '수집 관리'],
           ['logos', '기관 로고'],
+          ['popups', '사용자 팝업'],
           [
             'review',
             `공고 검수${dashboard?.qualityAttention ? ` ${dashboard.qualityAttention}` : ''}`,
@@ -5128,6 +5204,7 @@ function AdminReviewPanel({ user, securePost }) {
         </section>
       )}
       {section === 'logos' && <AdminInstitutionLogos securePost={securePost} />}
+      {section === 'popups' && <AdminServicePopups securePost={securePost} />}
       {section === 'collection' && crawlInfo?.apiStatus?.validation?.pagesScanned > 0 && (
         <section className="collection-audit" aria-label="최근 공고 수집 검증 결과">
           <div className="collection-audit-head">
@@ -5924,6 +6001,28 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState(null)
   const [online, setOnline] = useState(navigator.onLine)
   const [updateAvailable, setUpdateAvailable] = useState(false)
+  const [servicePopups, setServicePopups] = useState([])
+  const [popupOpen, setPopupOpen] = useState(null)
+
+  useEffect(() => {
+    getJson('/api/service-popups').then((items) => {
+      setServicePopups(items)
+      const first = items.find((item) => window.localStorage.getItem(`jobhub-popup-${item.id}-${item.updatedAt}`) !== 'dismissed')
+      if (first) setPopupOpen(first)
+      const standalone = window.matchMedia('(display-mode: standalone)').matches
+      if (standalone && first && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification(first.title, { body: first.content.slice(0, 140), icon: '/pwa-192x192.png' })
+      }
+    }).catch(() => {})
+  }, [])
+
+  function dismissServicePopup(item) {
+    window.localStorage.setItem(`jobhub-popup-${item.id}-${item.updatedAt}`, 'dismissed')
+    setPopupOpen(null)
+  }
+  async function enableAppNotifications() {
+    if ('Notification' in window) await Notification.requestPermission()
+  }
 
   useEffect(() => {
     setMobileMenuOpen(false)
@@ -6639,6 +6738,13 @@ export default function App() {
         </div>
       </header>
       <main className={landingView ? 'landing-main' : undefined}>
+        {servicePopups.length > 0 && (
+          <section className="service-alert-bar" aria-label="서비스 알림">
+            <strong>{servicePopups[0].title}</strong>
+            <span>{servicePopups[0].content}</span>
+            <button type="button" onClick={() => setPopupOpen(servicePopups[0])}>자세히</button>
+          </section>
+        )}
         {updateAvailable && (
           <div className="update-banner" role="status">
             <span>새 버전이 준비되었습니다.</span>
@@ -7252,6 +7358,20 @@ export default function App() {
           }}
           onSubmit={deleteAccount}
         />
+      )}
+      {popupOpen && (
+        <div className="service-popup-layer" role="presentation">
+          <section role="dialog" aria-modal="true" aria-labelledby="service-popup-title">
+            <button className="service-popup-close" type="button" aria-label="닫기" onClick={() => dismissServicePopup(popupOpen)}>×</button>
+            {popupOpen.imageData && <img src={popupOpen.imageData} alt="" />}
+            <h2 id="service-popup-title">{popupOpen.title}</h2>
+            <p>{popupOpen.content}</p>
+            <div>
+              {window.matchMedia('(display-mode: standalone)').matches && 'Notification' in window && Notification.permission !== 'granted' && <button type="button" className="secondary" onClick={enableAppNotifications}>앱 알림 켜기</button>}
+              <button type="button" onClick={() => dismissServicePopup(popupOpen)}>확인</button>
+            </div>
+          </section>
+        </div>
       )}
     </>
   )
