@@ -1553,8 +1553,13 @@ body > #root > main {
 .admin-popup-inline-image { display: grid; justify-items: start; gap: 9px; padding: 14px; border: 1px dashed #b9ccc2; border-radius: 10px; background: #f6faf8; }
 .admin-popup-inline-image span { color: #416052; font-size: 12px; font-weight: 750; }
 .admin-popup-inline-image img { width: min(100%, 430px); max-height: 260px; border-radius: 8px; object-fit: contain; background: #fff; }
-.admin-popup-file-button { display: inline-flex !important; width: max-content; min-height: 38px; align-items: center; padding: 0 14px; border: 1px solid #b9ccc2; border-radius: 8px; background: #f5f9f7; color: #285642 !important; cursor: pointer; font-size: 13px; }
-.admin-popup-file-button input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.admin-popup-image-dropzone { display: grid !important; min-height: 138px; place-items: center; align-content: center; gap: 5px; padding: 20px; border: 1.5px dashed #9eb9ab; border-radius: 12px; background: #f7fbf9; color: #2a5843 !important; cursor: pointer; text-align: center; transition: border-color 0.16s, background 0.16s, transform 0.16s; }
+.admin-popup-image-dropzone:hover,
+.admin-popup-image-dropzone:focus-within { border-color: #315f50; background: #eff7f3; transform: translateY(-1px); }
+.admin-popup-image-dropzone.has-image { min-height: 92px; }
+.admin-popup-image-dropzone small { color: #708078; font-weight: 500; }
+.admin-popup-image-dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.admin-popup-upload-icon { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; background: #315f50; color: #fff; font-size: 22px; font-weight: 400; }
 .admin-popup-attachment { display: grid; gap: 10px; padding: 16px; border: 1px solid #dbe4df; border-radius: 10px; }
 .admin-popup-attachment > div:first-child { display: flex; align-items: baseline; justify-content: space-between; }
 .admin-popup-attachment small { color: #7b8982; }
@@ -1565,6 +1570,11 @@ body > #root > main {
 .admin-popup-options > p { margin: 0 0 8px; color: #6b7d74; font-size: 12px; line-height: 1.6; }
 .admin-popup-options .check { display: flex; align-items: center; gap: 8px; padding: 11px; border-radius: 8px; background: #fff; font-size: 13px; }
 .admin-popup-options .check input { width: 17px; height: 17px; }
+.admin-popup-live-preview { display: grid; gap: 8px; margin: 4px 0 8px; padding: 14px; border: 1px solid #d8e3dd; border-radius: 10px; background: #fff; }
+.admin-popup-live-preview > small { color: #718179; font-size: 10px; letter-spacing: 0.08em; }
+.admin-popup-live-preview > strong { overflow: hidden; color: #1c4332; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-popup-live-preview > p { display: -webkit-box; overflow: hidden; margin: 0; color: #607169; font-size: 11px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.admin-popup-live-preview > img { width: 100%; max-height: 135px; border-radius: 7px; object-fit: contain; background: #f5f7f6; }
 .admin-popup-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .admin-popup-list article { display: grid; gap: 9px; padding: 17px; border: 1px solid #dce5e0; border-radius: 11px; background: #fff; }
 .admin-popup-list article > div { display: flex; justify-content: space-between; gap: 10px; }
@@ -1574,6 +1584,13 @@ body > #root > main {
 .admin-popup-list article > div:last-child { justify-content: flex-start; }
 .service-popup-content-image { margin: 18px 0 !important; }
 .service-popup-attachment { display: flex; align-items: center; width: 100%; min-height: 42px; margin-top: 18px; padding: 0 13px; border: 1px solid #d2ded8; border-radius: 8px; background: #f6faf8; color: #285642; font-weight: 700; text-decoration: none; }
+.report-siren-icon { display: block; width: 23px; height: 23px; overflow: visible; fill: none; stroke: #a13a32; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.posting-list-inline-report .report-siren-icon { width: 25px; height: 25px; }
+.admin-recovery-panel { display: grid; justify-items: start; gap: 10px; max-width: 720px; margin: 40px auto; padding: 28px; border: 1px solid #e1d8d1; border-radius: 14px; background: #fff; box-shadow: 0 12px 35px rgba(49, 35, 27, 0.08); }
+.admin-recovery-panel > span { color: #a6493d; font-size: 12px; font-weight: 800; }
+.admin-recovery-panel h2,
+.admin-recovery-panel p { margin: 0; }
+.admin-recovery-panel p { color: #65736c; line-height: 1.65; }
 
 /* 모바일에서도 신고와 스크랩을 웹과 같은 원형 크기와 기준선에 맞춘다. */
 @media (max-width: 620px) {
@@ -1589,7 +1606,7 @@ body > #root > main {
     padding: 0 !important;
     line-height: 1 !important;
   }
-  .grid .card-tools .card-report-tool { font-size: 22px !important; }
+  .grid .card-tools .card-report-tool .report-siren-icon { width: 23px; height: 23px; }
   .grid .card-tools .scrap-star { display: block; font-size: 22px !important; line-height: 1 !important; }
   .posting-list-inline-tools { top: 82px; height: 34px; align-items: center; gap: 1px; }
   .posting-list-inline-report,
@@ -1602,6 +1619,9 @@ body > #root > main {
     font-size: 25px !important;
     line-height: 1 !important;
   }
+  .posting-list-inline-report .report-siren-icon { width: 25px; height: 25px; }
+  .grid .career-actions { display: block !important; }
+  .grid .career-actions button { display: block !important; width: 100%; min-height: 40px; }
 }
 
 @media (max-width: 700px) {

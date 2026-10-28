@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Component, useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 /** 모든 API 요청에서 JSON 응답을 읽고 HTTP 오류를 화면에서 처리할 예외로 변환한다. */
@@ -7,6 +7,32 @@ async function getJson(url, options = {}) {
   const data = await response.json().catch(() => ({}))
   if (!response.ok) throw new Error(data.error || data.detail || `요청 실패 (${response.status})`)
   return data
+}
+
+function ReportIcon() {
+  return (
+    <svg className="report-siren-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 14V9a4 4 0 0 1 8 0v5" />
+      <path d="M6 17h12M7 14h10l1 3H6l1-3ZM12 2v2M4.9 4.9l1.4 1.4M19.1 4.9l-1.4 1.4M3 11h2M19 11h2" />
+    </svg>
+  )
+}
+
+class AdminErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null } }
+  static getDerivedStateFromError(error) { return { error } }
+  componentDidCatch(error, info) { console.error('관리자 화면 오류', error, info) }
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <section className="admin-recovery-panel" role="alert">
+        <span>화면을 불러오지 못했습니다</span>
+        <h2>관리자 화면을 안전하게 중단했습니다.</h2>
+        <p>일시적인 응답 오류일 수 있습니다. 다시 불러오면 입력하지 않은 변경사항만 초기화됩니다.</p>
+        <button type="button" onClick={() => this.setState({ error: null })}>관리자 화면 다시 불러오기</button>
+      </section>
+    )
+  }
 }
 
 const REGION_LEVELS = [
@@ -406,7 +432,7 @@ function PostingListRow({
           title="공고 정보 오류 신고"
           onClick={() => onReport(job)}
         >
-          <span aria-hidden="true">🚨</span>
+          <ReportIcon />
         </button>
         <span
           className={job.scrapped ? 'posting-list-star saved' : 'posting-list-star'}
@@ -563,7 +589,7 @@ function JobCard({
             aria-label="공고 정보 오류 신고"
             title="공고 정보 오류 신고"
           >
-            <span aria-hidden="true">🚨</span>
+            <ReportIcon />
           </button>
           <button
             type="button"
@@ -647,15 +673,11 @@ function JobCard({
             과거 채용 분석
           </button>
         </div>
-        {memberActions && (
-          <>
-            <div className="career-actions">
-              <button disabled={matchBusy} onClick={() => onMatch(job)}>
-                {matchBusy ? '분석 중...' : '내 스펙 매칭'}
-              </button>
-            </div>
-          </>
-        )}
+        <div className="career-actions">
+          <button disabled={matchBusy} onClick={() => onMatch(job)}>
+            {matchBusy ? '분석 중...' : '내 스펙 매칭'}
+          </button>
+        </div>
       </div>
       {trackingOpen &&
         createPortal(
@@ -3217,7 +3239,7 @@ const QUALIFICATION_TYPE_LABELS = {
   ACCREDITED_PRIVATE: '국가공인 민간',
   PUBLIC_OFFICIAL: '공공기관 시행',
 }
-const STANDARD_CERT_GRADES = ['단일등급', '기술사', '기능장', '기사', '산업기사', '기능사', '직접입력']
+const STANDARD_CERT_GRADES = ['단일등급', '기술사', '기능장', '산업기사', '기사', '기능사', '직접입력']
 const PROFILE_JOB_FIELDS = [
   '행정·사무', '기획·전략', '인사·노무', '법무', '회계·재무', '홍보·마케팅',
   '전산·IT', '데이터·통계', '정보보안', '연구', '교육', '문화·예술',
@@ -4445,8 +4467,7 @@ function AdminServicePopups({ securePost }) {
     const combined = form.imageData ? `${before}${imageMarker}${after}` : before
     if (combined.length <= 5000) setForm({ ...form, content: combined })
   }
-  async function readContentImage(event) {
-    const file = event.target.files?.[0]
+  function applyContentImage(file) {
     if (!file) return
     if (!file.type.startsWith('image/') || file.size > 700 * 1024) {
       setMessage('이미지는 700KB 이하의 JPG, PNG, WEBP 파일만 첨부할 수 있습니다.')
@@ -4459,6 +4480,16 @@ function AdminServicePopups({ securePost }) {
       content: current.content.includes(imageMarker) ? current.content : `${current.content}${imageMarker}`,
     }))
     reader.readAsDataURL(file)
+  }
+  function readContentImage(event) { applyContentImage(event.target.files?.[0]) }
+  function pasteContentImage(event) {
+    const file = [...(event.clipboardData?.items || [])]
+      .find((item) => item.type.startsWith('image/'))?.getAsFile()
+    if (file) { event.preventDefault(); applyContentImage(file) }
+  }
+  function dropContentImage(event) {
+    event.preventDefault()
+    applyContentImage([...(event.dataTransfer?.files || [])].find((file) => file.type.startsWith('image/')))
   }
   async function readAttachment(event) {
     const file = event.target.files?.[0]
@@ -4495,7 +4526,18 @@ function AdminServicePopups({ securePost }) {
             <textarea required={!form.imageData || !contentParts(form.content).after.trim()} maxLength={5000} rows={6} value={contentParts(form.content).before} onChange={(e) => changeContent('before', e.target.value)} placeholder="안내 내용을 입력하세요." />
             {form.imageData && <div className="admin-popup-inline-image"><span>본문 이미지</span><img src={form.imageData} alt="본문 이미지 미리보기" /><button type="button" className="secondary" onClick={() => setForm({ ...form, imageData: '', content: contentParts(form.content).before + contentParts(form.content).after })}>본문 이미지 제거</button></div>}
             {form.imageData && <textarea maxLength={5000} rows={4} value={contentParts(form.content).after} onChange={(e) => changeContent('after', e.target.value)} placeholder="이미지 아래에 이어질 내용을 입력하세요." />}
-            <label className="admin-popup-file-button">본문에 이미지 넣기<input type="file" accept="image/png,image/jpeg,image/webp" onChange={readContentImage} /></label>
+            <label
+              className={form.imageData ? 'admin-popup-image-dropzone has-image' : 'admin-popup-image-dropzone'}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={dropContentImage}
+              onPaste={pasteContentImage}
+              tabIndex={0}
+            >
+              <span className="admin-popup-upload-icon" aria-hidden="true">＋</span>
+              <strong>{form.imageData ? '본문 이미지 바꾸기' : '본문 이미지 추가'}</strong>
+              <small>이미지를 끌어놓거나 복사 후 Ctrl+V · 클릭해서 파일 선택</small>
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={readContentImage} />
+            </label>
           </div>
           <div className="admin-popup-attachment">
             <div><strong>첨부파일 업로드</strong><small>선택 · 900KB 이하</small></div>
@@ -4507,6 +4549,13 @@ function AdminServicePopups({ securePost }) {
           <strong>게시 설정</strong>
           <label className="check"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> 지금 사용자에게 노출</label>
           <p>노출 중인 팝업은 웹 상단 알림과 설치형 앱 알림에 표시됩니다.</p>
+          <div className="admin-popup-live-preview">
+            <small>미리보기</small>
+            <strong>{form.title || '팝업 제목'}</strong>
+            <p>{contentParts(form.content).before || '작성한 안내 내용이 이곳에 표시됩니다.'}</p>
+            {form.imageData && <img src={form.imageData} alt="팝업 본문 미리보기" />}
+            {contentParts(form.content).after && <p>{contentParts(form.content).after}</p>}
+          </div>
           <button disabled={busy}>{busy ? '저장 중…' : form.id ? '변경사항 저장' : '팝업 등록'}</button>
           {form.id && <button type="button" className="secondary" onClick={() => setForm(blank)}>편집 취소</button>}
         </aside>
@@ -4542,32 +4591,21 @@ function AdminReviewPanel({ user, securePost }) {
   const [compensationFile, setCompensationFile] = useState(null)
   const loadReviews = useCallback(
     () =>
-      Promise.all([
+      Promise.allSettled([
         getJson('/api/admin/reviews'),
         getJson('/api/admin/reviews/quality'),
         getJson('/api/admin/dashboard'),
         getJson('/api/admin/operations/status'),
         getJson('/api/admin/statistics'),
         getJson('/api/admin/security/overview'),
-      ])
-        .then(
-          ([
-            reviews,
-            report,
-            dashboardReport,
-            operationsReport,
-            statisticsReport,
-            securityReport,
-          ]) => {
-            setItems(reviews)
-            setQuality(report)
-            setDashboard(dashboardReport)
-            setOperationsStatus(operationsReport)
-            setStatistics(statisticsReport)
-            setSecurityOverview(securityReport)
-          },
-        )
-        .catch((e) => setMessage(e.message)),
+      ]).then((results) => {
+        const setters = [setItems, setQuality, setDashboard, setOperationsStatus, setStatistics, setSecurityOverview]
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') setters[index](result.value)
+        })
+        const failures = results.filter((result) => result.status === 'rejected')
+        setMessage(failures.length ? `일부 운영 정보를 불러오지 못했습니다 (${failures.length}개). 나머지 기능은 계속 사용할 수 있습니다.` : '')
+      }),
     [],
   )
   useEffect(() => {
@@ -6825,7 +6863,9 @@ export default function App() {
             }}
           />
         ) : adminView ? (
-          <AdminReviewPanel user={user} securePost={securePost} />
+          <AdminErrorBoundary key={user?.email || 'admin'}>
+            <AdminReviewPanel user={user} securePost={securePost} />
+          </AdminErrorBoundary>
         ) : successView ? (
           <SuccessBoard
             user={user}

@@ -25,7 +25,8 @@ public class QualificationController {
   if(name.contains("워드프로세서")||name.equalsIgnoreCase("SQLD")||name.equalsIgnoreCase("SQLP")
     ||name.equalsIgnoreCase("ADsP")||name.equalsIgnoreCase("ADP"))
    return List.of("단일등급","직접입력");
-  for(String grade:List.of("기술사","기능장","기사","산업기사","기능사"))if(name.endsWith(grade))return List.of(grade,"직접입력");
+  // "산업기사"도 "기사"로 끝나므로 더 긴 등급명을 먼저 검사해야 한다.
+  for(String grade:List.of("기술사","기능장","산업기사","기사","기능사"))if(name.endsWith(grade))return List.of(grade,"직접입력");
   if("NATIONAL_TECHNICAL".equals(qualification.type))
    return List.of("단일등급","기술사","기능장","기사","산업기사","기능사","직접입력");
   return List.of("단일등급","직접입력");
