@@ -15,6 +15,12 @@ public class ServicePopup {
     public String content;
     @Lob @Column(name = "image_data", columnDefinition = "LONGTEXT")
     public String imageData;
+    @Column(name = "attachment_name", length = 255)
+    public String attachmentName;
+    @Column(name = "attachment_type", length = 120)
+    public String attachmentType;
+    @Lob @Column(name = "attachment_data", columnDefinition = "LONGTEXT")
+    public String attachmentData;
     @Column(nullable = false)
     public boolean active = true;
     @Column(name = "created_at", nullable = false)

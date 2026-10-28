@@ -1542,12 +1542,29 @@ body > #root > main {
 .service-popup-close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border: 0; background: transparent; color: #52635b; font-size: 28px; }
 
 .admin-popup-manager { display: grid; gap: 18px; }
-.admin-popup-manager > form { display: grid; gap: 13px; padding: 20px; border: 1px solid #d9e2dd; border-radius: 12px; background: #fff; }
+.admin-popup-manager > form { display: grid; gap: 0; border: 1px solid #d9e2dd; border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 8px 28px rgba(26, 55, 42, 0.07); }
 .admin-popup-manager label { display: grid; gap: 7px; color: #334c41; font-weight: 700; }
 .admin-popup-manager textarea { resize: vertical; }
-.admin-popup-manager form > div:last-child { display: flex; gap: 8px; }
-.admin-popup-preview { display: flex; align-items: end; gap: 12px; }
-.admin-popup-preview img { width: 180px; max-height: 120px; border-radius: 8px; object-fit: contain; }
+.admin-popup-editor { grid-template-columns: minmax(0, 1fr) 260px; }
+.admin-popup-editor-main { display: grid; gap: 20px; padding: 26px; }
+.admin-popup-content-editor { display: grid; gap: 10px; }
+.admin-popup-content-editor > label:first-child { color: #334c41; font-weight: 700; }
+.admin-popup-content-editor textarea { width: 100%; border-color: #ccd9d2; background: #fcfdfc; line-height: 1.65; }
+.admin-popup-inline-image { display: grid; justify-items: start; gap: 9px; padding: 14px; border: 1px dashed #b9ccc2; border-radius: 10px; background: #f6faf8; }
+.admin-popup-inline-image span { color: #416052; font-size: 12px; font-weight: 750; }
+.admin-popup-inline-image img { width: min(100%, 430px); max-height: 260px; border-radius: 8px; object-fit: contain; background: #fff; }
+.admin-popup-file-button { display: inline-flex !important; width: max-content; min-height: 38px; align-items: center; padding: 0 14px; border: 1px solid #b9ccc2; border-radius: 8px; background: #f5f9f7; color: #285642 !important; cursor: pointer; font-size: 13px; }
+.admin-popup-file-button input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.admin-popup-attachment { display: grid; gap: 10px; padding: 16px; border: 1px solid #dbe4df; border-radius: 10px; }
+.admin-popup-attachment > div:first-child { display: flex; align-items: baseline; justify-content: space-between; }
+.admin-popup-attachment small { color: #7b8982; }
+.admin-popup-attachment > div:last-child { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 11px; border-radius: 7px; background: #f3f7f5; }
+.admin-popup-attachment > div:last-child span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-popup-options { display: grid; align-content: start; gap: 13px; padding: 26px 20px; border-left: 1px solid #dde6e1; background: #f7faf8; }
+.admin-popup-options > strong { color: #183e2e; font-size: 16px; }
+.admin-popup-options > p { margin: 0 0 8px; color: #6b7d74; font-size: 12px; line-height: 1.6; }
+.admin-popup-options .check { display: flex; align-items: center; gap: 8px; padding: 11px; border-radius: 8px; background: #fff; font-size: 13px; }
+.admin-popup-options .check input { width: 17px; height: 17px; }
 .admin-popup-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .admin-popup-list article { display: grid; gap: 9px; padding: 17px; border: 1px solid #dce5e0; border-radius: 11px; background: #fff; }
 .admin-popup-list article > div { display: flex; justify-content: space-between; gap: 10px; }
@@ -1555,6 +1572,37 @@ body > #root > main {
 .admin-popup-list article span { color: #287052; font-size: 12px; }
 .admin-popup-list article small { color: #7a8981; }
 .admin-popup-list article > div:last-child { justify-content: flex-start; }
+.service-popup-content-image { margin: 18px 0 !important; }
+.service-popup-attachment { display: flex; align-items: center; width: 100%; min-height: 42px; margin-top: 18px; padding: 0 13px; border: 1px solid #d2ded8; border-radius: 8px; background: #f6faf8; color: #285642; font-weight: 700; text-decoration: none; }
+
+/* 모바일에서도 신고와 스크랩을 웹과 같은 원형 크기와 기준선에 맞춘다. */
+@media (max-width: 620px) {
+  .grid .card-tools .card-report-tool,
+  .grid .card-tools .scrap-tool,
+  .grid .card-tools .scrap-tool.active {
+    display: inline-grid !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    place-items: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+  }
+  .grid .card-tools .card-report-tool { font-size: 22px !important; }
+  .grid .card-tools .scrap-star { display: block; font-size: 22px !important; line-height: 1 !important; }
+  .posting-list-inline-tools { top: 82px; height: 34px; align-items: center; gap: 1px; }
+  .posting-list-inline-report,
+  .posting-list-inline-tools .posting-list-star {
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 25px !important;
+    line-height: 1 !important;
+  }
+}
 
 @media (max-width: 700px) {
   .mypage-tabs button { font-size: 15px; }
@@ -1565,6 +1613,9 @@ body > #root > main {
   .service-popup-layer { align-items: center; padding: 14px; }
   .service-popup-layer > section { padding: 24px 20px; }
   .admin-popup-list { grid-template-columns: 1fr; }
+  .admin-popup-editor { grid-template-columns: 1fr; }
+  .admin-popup-editor-main { padding: 19px 16px; }
+  .admin-popup-options { padding: 18px 16px; border-top: 1px solid #dde6e1; border-left: 0; }
 }
 .mypage-tabs button:hover:not(.active) {
   background: #f0f5f2;

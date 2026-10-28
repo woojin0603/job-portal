@@ -16,8 +16,12 @@ public class ServicePopupController {
     public record PopupRequest(@NotBlank @Size(max=160) String title,
                                @NotBlank @Size(max=5000) String content,
                                @Size(max=1_000_000) String imageData,
+                               @Size(max=255) String attachmentName,
+                               @Size(max=120) String attachmentType,
+                               @Size(max=1_500_000) String attachmentData,
                                boolean active) {}
     public record PopupView(Long id, String title, String content, String imageData,
+                            String attachmentName, String attachmentType, String attachmentData,
                             boolean active, Instant createdAt, Instant updatedAt) {}
     private final ServicePopupRepository popups;
     public ServicePopupController(ServicePopupRepository popups) { this.popups = popups; }
@@ -48,7 +52,11 @@ public class ServicePopupController {
     private void apply(ServicePopup value, PopupRequest request) {
         value.title=request.title().trim(); value.content=request.content().trim();
         value.imageData=request.imageData()==null||request.imageData().isBlank()?null:request.imageData();
+        value.attachmentName=clean(request.attachmentName()); value.attachmentType=clean(request.attachmentType());
+        value.attachmentData=request.attachmentData()==null||request.attachmentData().isBlank()?null:request.attachmentData();
         value.active=request.active(); value.updatedAt=Instant.now();
     }
-    private PopupView view(ServicePopup value) { return new PopupView(value.id,value.title,value.content,value.imageData,value.active,value.createdAt,value.updatedAt); }
+    private String clean(String value) { return value==null||value.isBlank()?null:value.trim(); }
+    private PopupView view(ServicePopup value) { return new PopupView(value.id,value.title,value.content,value.imageData,
+            value.attachmentName,value.attachmentType,value.attachmentData,value.active,value.createdAt,value.updatedAt); }
 }

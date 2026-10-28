@@ -3245,6 +3245,10 @@ function certificationGradeOptions(item) {
   if (item.allowedGrades?.length) return item.allowedGrades
   if ((item.name || '').includes('한국사능력검정'))
     return ['심화 1급', '심화 2급', '심화 3급', '기본 4급', '기본 5급', '기본 6급', '직접입력']
+  if ((item.name || '').includes('컴퓨터활용능력')) return ['1급', '2급', '직접입력']
+  if (/사회복지사\s*1급$/.test(item.name || '')) return ['1급', '직접입력']
+  if (/사회복지사\s*2급$/.test(item.name || '')) return ['2급', '직접입력']
+  if ((item.name || '') === '사회복지사') return ['1급', '2급', '직접입력']
   const matched = STANDARD_CERT_GRADES.find(
     (grade) => grade !== '직접입력' && (item.name || '').endsWith(grade),
   )
@@ -4422,14 +4426,26 @@ function AdminInstitutionLogos({ securePost }) {
 }
 
 function AdminServicePopups({ securePost }) {
-  const blank = { id: null, title: '', content: '', imageData: '', active: true }
+  const imageMarker = '\n[[본문 이미지]]\n'
+  const blank = { id: null, title: '', content: '', imageData: '', attachmentName: '', attachmentType: '', attachmentData: '', active: true }
   const [items, setItems] = useState([])
   const [form, setForm] = useState(blank)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const load = useCallback(() => getJson('/api/admin/service-popups').then(setItems).catch((e) => setMessage(e.message)), [])
   useEffect(load, [load])
-  async function readImage(event) {
+  const contentParts = (value) => {
+    const parts = (value || '').split(imageMarker)
+    return { before: parts[0] || '', after: parts.slice(1).join(imageMarker) }
+  }
+  const changeContent = (field, value) => {
+    const parts = contentParts(form.content)
+    const before = field === 'before' ? value : parts.before
+    const after = field === 'after' ? value : parts.after
+    const combined = form.imageData ? `${before}${imageMarker}${after}` : before
+    if (combined.length <= 5000) setForm({ ...form, content: combined })
+  }
+  async function readContentImage(event) {
     const file = event.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith('image/') || file.size > 700 * 1024) {
@@ -4437,7 +4453,22 @@ function AdminServicePopups({ securePost }) {
       return
     }
     const reader = new FileReader()
-    reader.onload = () => setForm((current) => ({ ...current, imageData: String(reader.result) }))
+    reader.onload = () => setForm((current) => ({
+      ...current,
+      imageData: String(reader.result),
+      content: current.content.includes(imageMarker) ? current.content : `${current.content}${imageMarker}`,
+    }))
+    reader.readAsDataURL(file)
+  }
+  async function readAttachment(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (file.size > 900 * 1024) {
+      setMessage('첨부파일은 900KB 이하만 등록할 수 있습니다.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => setForm((current) => ({ ...current, attachmentName: file.name, attachmentType: file.type || 'application/octet-stream', attachmentData: String(reader.result) }))
     reader.readAsDataURL(file)
   }
   async function save(event) {
@@ -4455,20 +4486,36 @@ function AdminServicePopups({ securePost }) {
   }
   return (
     <section className="admin-popup-manager">
-      <div className="operations-heading"><div><h2>사용자 팝업</h2><span>웹 상단 안내와 설치형 앱 알림에 함께 사용됩니다.</span></div></div>
-      <form onSubmit={save}>
-        <label>제목<input required maxLength={160} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
-        <label>내용<textarea required maxLength={5000} rows={5} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} /></label>
-        <label>이미지 <small>선택 · 700KB 이하</small><input type="file" accept="image/png,image/jpeg,image/webp" onChange={readImage} /></label>
-        {form.imageData && <div className="admin-popup-preview"><img src={form.imageData} alt="첨부 미리보기" /><button type="button" onClick={() => setForm({ ...form, imageData: '' })}>이미지 제거</button></div>}
-        <label className="check"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> 사용자에게 노출</label>
-        <div><button disabled={busy}>{busy ? '저장 중…' : form.id ? '수정 저장' : '팝업 등록'}</button>{form.id && <button type="button" className="secondary" onClick={() => setForm(blank)}>취소</button>}</div>
+      <div className="operations-heading"><div><p className="eyebrow">USER NOTICE</p><h2>사용자 팝업 관리</h2><span>중요 안내를 작성하고 실제 노출 모습을 미리 확인하세요.</span></div></div>
+      <form className="admin-popup-editor" onSubmit={save}>
+        <div className="admin-popup-editor-main">
+          <label>팝업 제목<input required maxLength={160} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="사용자에게 전달할 제목" /></label>
+          <div className="admin-popup-content-editor">
+            <label>내용</label>
+            <textarea required={!form.imageData || !contentParts(form.content).after.trim()} maxLength={5000} rows={6} value={contentParts(form.content).before} onChange={(e) => changeContent('before', e.target.value)} placeholder="안내 내용을 입력하세요." />
+            {form.imageData && <div className="admin-popup-inline-image"><span>본문 이미지</span><img src={form.imageData} alt="본문 이미지 미리보기" /><button type="button" className="secondary" onClick={() => setForm({ ...form, imageData: '', content: contentParts(form.content).before + contentParts(form.content).after })}>본문 이미지 제거</button></div>}
+            {form.imageData && <textarea maxLength={5000} rows={4} value={contentParts(form.content).after} onChange={(e) => changeContent('after', e.target.value)} placeholder="이미지 아래에 이어질 내용을 입력하세요." />}
+            <label className="admin-popup-file-button">본문에 이미지 넣기<input type="file" accept="image/png,image/jpeg,image/webp" onChange={readContentImage} /></label>
+          </div>
+          <div className="admin-popup-attachment">
+            <div><strong>첨부파일 업로드</strong><small>선택 · 900KB 이하</small></div>
+            <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.hwp" onChange={readAttachment} />
+            {form.attachmentData && <div><span>{form.attachmentName}</span><button type="button" className="secondary" onClick={() => setForm({ ...form, attachmentName: '', attachmentType: '', attachmentData: '' })}>첨부 삭제</button></div>}
+          </div>
+        </div>
+        <aside className="admin-popup-options">
+          <strong>게시 설정</strong>
+          <label className="check"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> 지금 사용자에게 노출</label>
+          <p>노출 중인 팝업은 웹 상단 알림과 설치형 앱 알림에 표시됩니다.</p>
+          <button disabled={busy}>{busy ? '저장 중…' : form.id ? '변경사항 저장' : '팝업 등록'}</button>
+          {form.id && <button type="button" className="secondary" onClick={() => setForm(blank)}>편집 취소</button>}
+        </aside>
       </form>
       {message && <p className="status">{message}</p>}
       <div className="admin-popup-list">
         {items.map((item) => <article key={item.id}>
           <div><strong>{item.title}</strong><span>{item.active ? '노출 중' : '숨김'}</span></div>
-          <p>{item.content}</p>
+          <p>{item.content.replace(imageMarker, ' [본문 이미지] ')}</p>
           <small>{new Date(item.updatedAt).toLocaleString('ko-KR')}</small>
           <div><button type="button" onClick={() => setForm(item)}>수정</button><button type="button" className="danger" onClick={() => remove(item.id)}>삭제</button></div>
         </article>)}
@@ -6741,7 +6788,7 @@ export default function App() {
         {servicePopups.length > 0 && (
           <section className="service-alert-bar" aria-label="서비스 알림">
             <strong>{servicePopups[0].title}</strong>
-            <span>{servicePopups[0].content}</span>
+            <span>{servicePopups[0].content.replace(/\s*\[\[본문 이미지\]\]\s*/g, ' ')}</span>
             <button type="button" onClick={() => setPopupOpen(servicePopups[0])}>자세히</button>
           </section>
         )}
@@ -7363,9 +7410,11 @@ export default function App() {
         <div className="service-popup-layer" role="presentation">
           <section role="dialog" aria-modal="true" aria-labelledby="service-popup-title">
             <button className="service-popup-close" type="button" aria-label="닫기" onClick={() => dismissServicePopup(popupOpen)}>×</button>
-            {popupOpen.imageData && <img src={popupOpen.imageData} alt="" />}
             <h2 id="service-popup-title">{popupOpen.title}</h2>
-            <p>{popupOpen.content}</p>
+            <p>{popupOpen.content.split('\n[[본문 이미지]]\n')[0]}</p>
+            {popupOpen.imageData && <img className="service-popup-content-image" src={popupOpen.imageData} alt="팝업 본문 이미지" />}
+            {popupOpen.content.includes('\n[[본문 이미지]]\n') && <p>{popupOpen.content.split('\n[[본문 이미지]]\n').slice(1).join('\n[[본문 이미지]]\n')}</p>}
+            {popupOpen.attachmentData && <a className="service-popup-attachment" href={popupOpen.attachmentData} download={popupOpen.attachmentName || '첨부파일'}>첨부파일 · {popupOpen.attachmentName || '다운로드'}</a>}
             <div>
               {window.matchMedia('(display-mode: standalone)').matches && 'Notification' in window && Notification.permission !== 'granted' && <button type="button" className="secondary" onClick={enableAppNotifications}>앱 알림 켜기</button>}
               <button type="button" onClick={() => dismissServicePopup(popupOpen)}>확인</button>

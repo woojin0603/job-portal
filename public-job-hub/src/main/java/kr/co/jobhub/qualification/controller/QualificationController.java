@@ -19,6 +19,9 @@ public class QualificationController {
   String name=qualification.name==null?"":qualification.name.trim();
   if(name.contains("한국사능력검정"))return List.of("심화 1급","심화 2급","심화 3급","기본 4급","기본 5급","기본 6급","직접입력");
   if(name.contains("컴퓨터활용능력"))return List.of("1급","2급","직접입력");
+  if(name.equals("사회복지사")||name.equals("사회복지사 자격"))return List.of("1급","2급","직접입력");
+  if(name.matches(".*사회복지사\\s*1급$"))return List.of("1급","직접입력");
+  if(name.matches(".*사회복지사\\s*2급$"))return List.of("2급","직접입력");
   if(name.contains("워드프로세서")||name.equalsIgnoreCase("SQLD")||name.equalsIgnoreCase("SQLP")
     ||name.equalsIgnoreCase("ADsP")||name.equalsIgnoreCase("ADP"))
    return List.of("단일등급","직접입력");
