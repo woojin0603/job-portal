@@ -6086,7 +6086,8 @@ export default function App() {
   useEffect(() => {
     getJson('/api/service-popups').then((items) => {
       setServicePopups(items)
-      const first = items.find((item) => window.localStorage.getItem(`jobhub-popup-${item.id}-${item.updatedAt}`) !== 'dismissed')
+      const today = new Date().toLocaleDateString('sv-SE')
+      const first = items.find((item) => window.localStorage.getItem(`jobhub-popup-hide-date-${item.id}`) !== today)
       if (first) setPopupOpen(first)
       const standalone = window.matchMedia('(display-mode: standalone)').matches
       if (standalone && first && 'Notification' in window && Notification.permission === 'granted') {
@@ -6095,8 +6096,9 @@ export default function App() {
     }).catch(() => {})
   }, [])
 
-  function dismissServicePopup(item) {
-    window.localStorage.setItem(`jobhub-popup-${item.id}-${item.updatedAt}`, 'dismissed')
+  function dismissServicePopup() { setPopupOpen(null) }
+  function hideServicePopupToday(item) {
+    window.localStorage.setItem(`jobhub-popup-hide-date-${item.id}`, new Date().toLocaleDateString('sv-SE'))
     setPopupOpen(null)
   }
   async function enableAppNotifications() {
@@ -6621,6 +6623,7 @@ export default function App() {
           'application/json',
         )
       }
+      setLandingView(false)
       setAdminView(true)
       setMine(false)
       setCommunityView(false)
@@ -6817,13 +6820,6 @@ export default function App() {
         </div>
       </header>
       <main className={landingView ? 'landing-main' : undefined}>
-        {servicePopups.length > 0 && (
-          <section className="service-alert-bar" aria-label="서비스 알림">
-            <strong>{servicePopups[0].title}</strong>
-            <span>{servicePopups[0].content.replace(/\s*\[\[본문 이미지\]\]\s*/g, ' ')}</span>
-            <button type="button" onClick={() => setPopupOpen(servicePopups[0])}>자세히</button>
-          </section>
-        )}
         {updateAvailable && (
           <div className="update-banner" role="status">
             <span>새 버전이 준비되었습니다.</span>
@@ -7443,15 +7439,16 @@ export default function App() {
       {popupOpen && (
         <div className="service-popup-layer" role="presentation">
           <section role="dialog" aria-modal="true" aria-labelledby="service-popup-title">
-            <button className="service-popup-close" type="button" aria-label="닫기" onClick={() => dismissServicePopup(popupOpen)}>×</button>
+            <button className="service-popup-close" type="button" aria-label="닫기" onClick={dismissServicePopup}>×</button>
             <h2 id="service-popup-title">{popupOpen.title}</h2>
             <p>{popupOpen.content.split('\n[[본문 이미지]]\n')[0]}</p>
             {popupOpen.imageData && <img className="service-popup-content-image" src={popupOpen.imageData} alt="팝업 본문 이미지" />}
             {popupOpen.content.includes('\n[[본문 이미지]]\n') && <p>{popupOpen.content.split('\n[[본문 이미지]]\n').slice(1).join('\n[[본문 이미지]]\n')}</p>}
             {popupOpen.attachmentData && <a className="service-popup-attachment" href={popupOpen.attachmentData} download={popupOpen.attachmentName || '첨부파일'}>첨부파일 · {popupOpen.attachmentName || '다운로드'}</a>}
             <div>
+              <button type="button" className="service-popup-hide-today" onClick={() => hideServicePopupToday(popupOpen)}>오늘 하루 보지 않기</button>
               {window.matchMedia('(display-mode: standalone)').matches && 'Notification' in window && Notification.permission !== 'granted' && <button type="button" className="secondary" onClick={enableAppNotifications}>앱 알림 켜기</button>}
-              <button type="button" onClick={() => dismissServicePopup(popupOpen)}>확인</button>
+              <button type="button" onClick={dismissServicePopup}>확인</button>
             </div>
           </section>
         </div>
