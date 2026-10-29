@@ -1763,6 +1763,22 @@ body > #root > main {
     min-height: 44px;
     padding: 0 14px;
   }
+  .service-popup-hide-today {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-bottom: 2px;
+  }
+  .service-popup-notification {
+    width: 100%;
+    grid-column: 1;
+    grid-row: 2;
+    align-self: stretch;
+  }
+  .service-popup-confirm {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: stretch;
+  }
 }
 
 /* 모바일 카드의 마감 정보는 고정 높이에서 분리해 다른 정보와 겹치지 않게 한다. */
