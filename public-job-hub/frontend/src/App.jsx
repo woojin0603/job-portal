@@ -5,7 +5,11 @@ import { createPortal } from 'react-dom'
 async function getJson(url, options = {}) {
   const response = await fetch(url, { credentials: 'same-origin', ...options })
   const data = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(data.error || data.detail || `요청 실패 (${response.status})`)
+  if (!response.ok) {
+    const error = new Error(data.error || data.detail || `요청 실패 (${response.status})`)
+    error.status = response.status
+    throw error
+  }
   return data
 }
 
@@ -395,10 +399,17 @@ function PostingListRow({
   const region = summarizeList(position?.workRegion || job.region || '지역 미정', 1)
   return (
     <article className={`posting-list-entry ${urgent ? 'urgent' : ''}`}>
-      <button
-        type="button"
+      <div
         className="posting-list-row"
+        role="button"
+        tabIndex={0}
         onClick={onOpen}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onOpen()
+          }
+        }}
         aria-label={`${job.organization} ${job.title}, ${deadlineLabel}, 마감일 ${job.deadline || '미정'}`}
       >
         <span className="posting-list-organization">
@@ -423,23 +434,26 @@ function PostingListRow({
           <strong className="posting-list-deadline">{deadlineLabel}</strong>
           <time dateTime={job.deadline || undefined}>{job.deadline || '마감일 미정'}</time>
         </span>
-      </button>
-      <div className="posting-list-inline-tools" aria-label="공고 도구">
-        <button
-          type="button"
-          className="posting-list-inline-report"
-          aria-label="공고 정보 오류 신고"
-          title="공고 정보 오류 신고"
-          onClick={() => onReport(job)}
-        >
-          <ReportIcon />
-        </button>
-        <span
-          className={job.scrapped ? 'posting-list-star saved' : 'posting-list-star'}
-          aria-label={job.scrapped ? '스크랩됨' : '스크랩하지 않음'}
-        >
-          {job.scrapped ? '★' : '☆'}
-        </span>
+        <div className="posting-list-inline-tools" aria-label="공고 도구">
+          <button
+            type="button"
+            className="posting-list-inline-report"
+            aria-label="공고 정보 오류 신고"
+            title="공고 정보 오류 신고"
+            onClick={(event) => {
+              event.stopPropagation()
+              onReport(job)
+            }}
+          >
+            <ReportIcon />
+          </button>
+          <span
+            className={job.scrapped ? 'posting-list-star saved' : 'posting-list-star'}
+            aria-label={job.scrapped ? '스크랩됨' : '스크랩하지 않음'}
+          >
+            {job.scrapped ? '★' : '☆'}
+          </span>
+        </div>
       </div>
       <div className="posting-list-actions" aria-label="공고 부가 정보">
         <button type="button" className="posting-list-original" onClick={onOpen}>원문보기</button>
@@ -6084,16 +6098,22 @@ export default function App() {
   const [popupOpen, setPopupOpen] = useState(null)
 
   useEffect(() => {
-    getJson('/api/service-popups').then((items) => {
-      setServicePopups(items)
-      const today = new Date().toLocaleDateString('sv-SE')
-      const first = items.find((item) => window.localStorage.getItem(`jobhub-popup-hide-date-${item.id}`) !== today)
-      if (first) setPopupOpen(first)
-      const standalone = window.matchMedia('(display-mode: standalone)').matches
-      if (standalone && first && 'Notification' in window && Notification.permission === 'granted') {
-        new Notification(first.title, { body: first.content.slice(0, 140), icon: '/pwa-192x192.png' })
-      }
-    }).catch(() => {})
+    const loadPopups = () => getJson(`/api/service-popups?refresh=${Date.now()}`).then((items) => {
+        setServicePopups(items)
+        const today = new Date().toLocaleDateString('sv-SE')
+        const first = items.find((item) => window.localStorage.getItem(`jobhub-popup-hide-date-${item.id}`) !== today)
+        if (first) setPopupOpen((current) => current || first)
+        const standalone = window.matchMedia('(display-mode: standalone)').matches
+        if (standalone && first && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification(first.title, { body: first.content.slice(0, 140), icon: '/pwa-192x192.png' })
+        }
+      }).catch(() => {})
+    loadPopups()
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadPopups()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
   function dismissServicePopup() { setPopupOpen(null) }
@@ -6292,15 +6312,24 @@ export default function App() {
 
   /** 모든 변경 요청에 서버 세션의 CSRF 토큰을 헤더로 포함한다. */
   async function securePost(url, body, contentType) {
+    const send = (token) => getJson(url, {
+        method: 'POST',
+        headers: {
+          [token.headerName]: token.token,
+          ...(contentType ? { 'Content-Type': contentType } : {}),
+        },
+        body,
+      })
     const token = csrf || (await getJson('/api/auth/csrf'))
-    return getJson(url, {
-      method: 'POST',
-      headers: {
-        [token.headerName]: token.token,
-        ...(contentType ? { 'Content-Type': contentType } : {}),
-      },
-      body,
-    })
+    try {
+      return await send(token)
+    } catch (error) {
+      if (error.status !== 403) throw error
+      // 서버 재배포 후 브라우저에 남은 이전 세션 토큰은 한 번 새로 발급해 복구한다.
+      const refreshed = await getJson(`/api/auth/csrf?refresh=${Date.now()}`)
+      setCsrf(refreshed)
+      return send(refreshed)
+    }
   }
   async function secureDelete(url) {
     const token = csrf || (await getJson('/api/auth/csrf'))

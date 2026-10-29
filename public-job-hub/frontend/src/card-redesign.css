@@ -852,13 +852,11 @@
   position: relative;
 }
 .posting-list-inline-tools {
-  position: absolute;
-  z-index: 3;
-  top: 36px;
-  right: 18px;
   display: flex;
+  width: 100%;
   height: 36px;
   align-items: center;
+  justify-content: center;
   gap: 2px;
 }
 .posting-list-inline-report,
@@ -1642,15 +1640,18 @@ body > #root > main {
   .posting-list-inline-tools {
     position: static;
     display: flex;
-    width: 100%;
-    height: 40px;
+    width: auto;
+    height: 34px;
+    grid-column: 2;
+    grid-row: 3;
     align-items: center;
     justify-content: flex-end;
-    gap: 2px;
+    align-self: center;
+    gap: 0;
     margin: 0;
-    padding: 2px 10px;
-    border-top: 1px solid #e8edea;
-    background: #fbfcfb;
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
   .posting-list-inline-report,
   .posting-list-inline-tools .posting-list-star {
@@ -1673,8 +1674,29 @@ body > #root > main {
   .service-alert-bar strong { grid-column: 1; }
   .service-alert-bar span { grid-column: 1 / -1; grid-row: 2; }
   .service-alert-bar button { grid-column: 2; grid-row: 1; }
-  .service-popup-layer { align-items: center; padding: 14px; }
-  .service-popup-layer > section { padding: 24px 20px; }
+  .service-popup-layer {
+    align-items: end;
+    padding: 0;
+    background: rgba(12, 23, 18, .34);
+  }
+  .service-popup-layer > section {
+    width: 100%;
+    max-height: min(88dvh, 760px);
+    padding: 26px 20px max(20px, env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -12px 38px rgba(14, 34, 24, .18);
+  }
+  .service-popup-layer h2 { margin-right: 38px; font-size: 21px; line-height: 1.35; }
+  .service-popup-layer p { font-size: 14px; line-height: 1.7; }
+  .service-popup-layer > section > div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px;
+  }
+  .service-popup-layer > section > div > button:not(.service-popup-hide-today) { min-height: 42px; }
+  .service-popup-hide-today { justify-self: start; margin-right: 0; }
+  .service-popup-content-image { max-height: 34dvh !important; }
   .admin-popup-list { grid-template-columns: 1fr; }
   .admin-popup-editor { grid-template-columns: 1fr; }
   .admin-popup-editor-main { padding: 19px 16px; }
