@@ -1613,6 +1613,29 @@ body > #root > main {
 .service-popup-content-image { margin: 18px 0 !important; }
 .service-popup-attachment { display: flex; align-items: center; width: 100%; min-height: 42px; margin-top: 18px; padding: 0 13px; border: 1px solid #d2ded8; border-radius: 8px; background: #f6faf8; color: #285642; font-weight: 700; text-decoration: none; }
 .service-popup-hide-today { margin-right: auto; border: 0 !important; background: transparent !important; color: #6e7d75 !important; font-size: 12px; font-weight: 600; text-decoration: underline; box-shadow: none !important; }
+.service-popup-notification,
+.service-popup-confirm {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: none;
+}
+.service-popup-notification {
+  border: 1px solid #c9d6cf;
+  background: #f7faf8;
+  color: #315545;
+}
+.service-popup-notification:hover { border-color: #9eb5a9; background: #eef4f0; }
+.service-popup-confirm {
+  min-width: 84px;
+  border: 1px solid #285b46;
+  background: #285b46;
+  color: #fff;
+}
+.service-popup-confirm:hover { border-color: #1f4b39; background: #1f4b39; }
 .report-siren-icon { display: block; width: 23px; height: 23px; overflow: visible; fill: none; stroke: #a13a32; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .posting-list-inline-report .report-siren-icon { width: 25px; height: 25px; }
 .admin-recovery-panel { display: grid; justify-items: start; gap: 10px; max-width: 720px; margin: 40px auto; padding: 28px; border: 1px solid #e1d8d1; border-radius: 14px; background: #fff; box-shadow: 0 12px 35px rgba(49, 35, 27, 0.08); }
@@ -1704,6 +1727,42 @@ body > #root > main {
   .admin-popup-title-field input { min-height: 52px; }
   .admin-popup-editor-toolbar { align-items: flex-start; flex-direction: column; }
   .admin-popup-editor-toolbar > label { width: 100%; }
+}
+
+/* 앱 첫 화면은 헤더를 제외한 실제 남은 높이만 사용해 불필요한 세로 스크롤을 없앤다. */
+@media (max-width: 700px) {
+  body:has(> #root > main.landing-main) {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+  body:has(> #root > main.landing-main) > #root {
+    display: flex;
+    height: 100dvh;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  body > #root > main.landing-main {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+  }
+  .landing-main .landing-page {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .landing-main + .site-footer { display: none; }
+  .service-popup-notification,
+  .service-popup-confirm {
+    min-height: 44px;
+    padding: 0 14px;
+  }
 }
 
 /* 모바일 카드의 마감 정보는 고정 높이에서 분리해 다른 정보와 겹치지 않게 한다. */

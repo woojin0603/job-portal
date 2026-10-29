@@ -4597,6 +4597,36 @@ function AdminReviewPanel({ user, securePost }) {
   const [qualificationType, setQualificationType] = useState('AUTO')
   const [qualificationEncoding, setQualificationEncoding] = useState('AUTO')
   const [compensationFile, setCompensationFile] = useState(null)
+  const normalizeAdminResponse = useCallback((index, value) => {
+    if (index === 0) return Array.isArray(value) ? value : []
+    if (index === 1) return value && typeof value === 'object' ? value : {}
+    if (index === 2) {
+      return {
+        ...(value && typeof value === 'object' ? value : {}),
+        sources: Array.isArray(value?.sources) ? value.sources : [],
+        recentActivities: Array.isArray(value?.recentActivities) ? value.recentActivities : [],
+      }
+    }
+    if (index === 3) {
+      return {
+        ...(value && typeof value === 'object' ? value : {}),
+        server: value?.server && typeof value.server === 'object' ? value.server : {},
+        jobs: Array.isArray(value?.jobs) ? value.jobs : [],
+      }
+    }
+    if (index === 4) {
+      return {
+        ...(value && typeof value === 'object' ? value : {}),
+        daily: Array.isArray(value?.daily) ? value.daily : [],
+        sources: Array.isArray(value?.sources) ? value.sources : [],
+      }
+    }
+    return {
+      ...(value && typeof value === 'object' ? value : {}),
+      checks: Array.isArray(value?.checks) ? value.checks : [],
+      loginFailures: Array.isArray(value?.loginFailures) ? value.loginFailures : [],
+    }
+  }, [])
   const loadReviews = useCallback(
     () =>
       Promise.allSettled([
@@ -4609,12 +4639,12 @@ function AdminReviewPanel({ user, securePost }) {
       ]).then((results) => {
         const setters = [setItems, setQuality, setDashboard, setOperationsStatus, setStatistics, setSecurityOverview]
         results.forEach((result, index) => {
-          if (result.status === 'fulfilled') setters[index](result.value)
+          if (result.status === 'fulfilled') setters[index](normalizeAdminResponse(index, result.value))
         })
         const failures = results.filter((result) => result.status === 'rejected')
         setMessage(failures.length ? `일부 운영 정보를 불러오지 못했습니다 (${failures.length}개). 나머지 기능은 계속 사용할 수 있습니다.` : '')
       }),
-    [],
+    [normalizeAdminResponse],
   )
   useEffect(() => {
     loadReviews()
@@ -7476,8 +7506,8 @@ export default function App() {
             {popupOpen.attachmentData && <a className="service-popup-attachment" href={popupOpen.attachmentData} download={popupOpen.attachmentName || '첨부파일'}>첨부파일 · {popupOpen.attachmentName || '다운로드'}</a>}
             <div>
               <button type="button" className="service-popup-hide-today" onClick={() => hideServicePopupToday(popupOpen)}>오늘 하루 보지 않기</button>
-              {window.matchMedia('(display-mode: standalone)').matches && 'Notification' in window && Notification.permission !== 'granted' && <button type="button" className="secondary" onClick={enableAppNotifications}>앱 알림 켜기</button>}
-              <button type="button" onClick={dismissServicePopup}>확인</button>
+              {window.matchMedia('(display-mode: standalone)').matches && 'Notification' in window && Notification.permission !== 'granted' && <button type="button" className="service-popup-notification" onClick={enableAppNotifications}>앱 알림 켜기</button>}
+              <button type="button" className="service-popup-confirm" onClick={dismissServicePopup}>확인</button>
             </div>
           </section>
         </div>
