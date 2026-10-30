@@ -36,14 +36,18 @@ public class PostingInsightController {
     public SimilarView similar(@PathVariable Long id) {
         JobPosting current = posting(id);
         Set<String> currentCategories = categories(id);
-        List<SimilarItem> items = postings.findAll().stream()
+        List<JobPosting> candidates = postings.findAll().stream()
                 .filter(value -> !value.id.equals(id) && sameOrganization(current.organization, value.organization))
                 .sorted(Comparator.comparing((JobPosting value) -> value.postedAt,
                         Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+        Map<Long, List<RecruitmentPosition>> positionsByPosting = positionsByPosting(candidates);
+        List<SimilarItem> items = candidates.stream()
                 .map(value -> {
-                    Set<String> categories = categories(value.id);
+                    List<RecruitmentPosition> rows = positionsByPosting.getOrDefault(value.id, List.of());
+                    Set<String> categories = categories(rows);
                     boolean sameCategory = !Collections.disjoint(currentCategories, categories);
-                    Integer headcount = positions.findByPostingIdOrderById(value.id).stream()
+                    Integer headcount = rows.stream()
                             .map(row -> row.headcount).filter(Objects::nonNull).reduce(0, Integer::sum);
                     return new SimilarItem(value.id, value.title, value.postedAt, value.deadline,
                             value.employmentType, headcount, categories.stream().sorted().toList(),
@@ -60,10 +64,13 @@ public class PostingInsightController {
         JobPosting current = posting(id);
         List<JobPosting> values = postings.findAll().stream()
                 .filter(value -> sameOrganization(current.organization, value.organization)).toList();
-        List<Integer> headcounts = values.stream().map(value -> positions.findByPostingIdOrderById(value.id).stream()
+        Map<Long, List<RecruitmentPosition>> positionsByPosting = positionsByPosting(values);
+        List<Integer> headcounts = values.stream().map(value -> positionsByPosting
+                        .getOrDefault(value.id, List.of()).stream()
                         .map(row -> row.headcount).filter(Objects::nonNull).reduce(0, Integer::sum))
                 .filter(value -> value > 0).toList();
-        Map<String, Long> categoryCounts = values.stream().flatMap(value -> categories(value.id).stream())
+        Map<String, Long> categoryCounts = values.stream()
+                .flatMap(value -> categories(positionsByPosting.getOrDefault(value.id, List.of())).stream())
                 .collect(Collectors.groupingBy(value -> value, Collectors.counting()));
         Map<Integer, Long> monthCounts = values.stream().map(value -> value.postedAt)
                 .filter(Objects::nonNull).collect(Collectors.groupingBy(LocalDate::getMonthValue, Collectors.counting()));
@@ -82,12 +89,39 @@ public class PostingInsightController {
         return postings.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
     private Set<String> categories(Long id) {
-        return positions.findByPostingIdOrderById(id).stream().map(value -> value.standardCategory)
+        return categories(positions.findByPostingIdOrderById(id));
+    }
+    private Set<String> categories(List<RecruitmentPosition> rows) {
+        return rows.stream().map(value -> value.standardCategory)
                 .filter(Objects::nonNull).flatMap(value -> Arrays.stream(value.split("[,，]")))
                 .map(String::trim).filter(value -> !value.isBlank()).collect(Collectors.toSet());
     }
-    private boolean sameOrganization(String left, String right) { return normalize(left).equals(normalize(right)); }
-    private String normalize(String value) { return value == null ? "" : value.toLowerCase(Locale.KOREA).replaceAll("[^가-힣a-z0-9]", ""); }
-    private List<String> top(Map<String, Long> values) { return values.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed()).limit(5).map(Map.Entry::getKey).toList(); }
-    private List<Integer> topMonths(Map<Integer, Long> values) { return values.entrySet().stream().sorted(Map.Entry.<Integer, Long>comparingByValue().reversed()).limit(3).map(Map.Entry::getKey).toList(); }
+    private Map<Long, List<RecruitmentPosition>> positionsByPosting(List<JobPosting> values) {
+        if (values.isEmpty()) return Map.of();
+        return positions.findByPostingIdIn(values.stream().map(value -> value.id).toList()).stream()
+                .collect(Collectors.groupingBy(value -> value.posting.getId()));
+    }
+    private boolean sameOrganization(String left, String right) {
+        return normalize(left).equals(normalize(right));
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.KOREA).replaceAll("[^가-힣a-z0-9]", "");
+    }
+
+    private List<String> top(Map<String, Long> values) {
+        return values.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .map(Map.Entry::getKey)
+                .toList();
+    }
+
+    private List<Integer> topMonths(Map<Integer, Long> values) {
+        return values.entrySet().stream()
+                .sorted(Map.Entry.<Integer, Long>comparingByValue().reversed())
+                .limit(3)
+                .map(Map.Entry::getKey)
+                .toList();
+    }
 }

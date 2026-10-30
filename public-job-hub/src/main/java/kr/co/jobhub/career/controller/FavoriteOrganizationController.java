@@ -10,6 +10,7 @@ import kr.co.jobhub.career.repository.FavoriteOrganizationRepository;
 import kr.co.jobhub.posting.domain.JobPosting;
 import kr.co.jobhub.posting.repository.JobPostingRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -42,14 +43,9 @@ public class FavoriteOrganizationController {
 
     @GetMapping("/search")
     public List<OrganizationOption> search(@RequestParam(defaultValue = "") String q) {
-        String query = q.trim().toLowerCase(Locale.KOREA);
-        return postings.findAll().stream()
-                .map(value -> value.organization).filter(Objects::nonNull)
-                .filter(value -> query.isBlank() || value.toLowerCase(Locale.KOREA).contains(query))
-                .collect(java.util.stream.Collectors.groupingBy(value -> value, java.util.stream.Collectors.counting()))
-                .entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed()
-                        .thenComparing(Map.Entry.comparingByKey()))
-                .limit(20).map(entry -> new OrganizationOption(entry.getKey(), entry.getValue())).toList();
+        return postings.searchOrganizationCandidates(q.trim(), PageRequest.of(0, 20)).stream()
+                .map(row -> new OrganizationOption((String) row[0], ((Number) row[1]).longValue()))
+                .toList();
     }
 
     @GetMapping
@@ -84,7 +80,8 @@ public class FavoriteOrganizationController {
             favorites.delete(existing.get());
             return new ToggleResult(false);
         }
-        boolean known = postings.findAll().stream().anyMatch(value -> normalized.equals(normalize(value.organization)));
+        boolean known = postings.existsByOrganizationIgnoreCase(name)
+                || postings.findAll().stream().anyMatch(value -> normalized.equals(normalize(value.organization)));
         if (!known) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "수집된 공고에서 기관을 찾을 수 없습니다.");
         FavoriteOrganization value = new FavoriteOrganization();
         value.user = user;

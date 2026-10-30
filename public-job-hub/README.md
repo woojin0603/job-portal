@@ -85,7 +85,7 @@ $env:JOBHUB_ADMIN_EMAILS='admin@example.com'
 .\gradlew.bat --gradle-user-home .gradle-user-home bootRun
 ```
 
-운영 서버에서는 인증서가 설정된 MySQL을 사용하고 JDBC 주소의 `useSSL`을 `true`로 바꾸세요. 연결 풀 크기는 `MYSQL_MAX_POOL_SIZE`, 최소 유휴 연결은 `MYSQL_MIN_IDLE`로 조절할 수 있습니다. 현재 설정은 최초 전환을 위해 Hibernate `ddl-auto=update`를 사용합니다. 실제 운영 데이터를 투입하기 전에는 Flyway 같은 버전 관리형 마이그레이션으로 고정하는 것이 다음 단계입니다.
+운영 서버에서는 인증서가 설정된 MySQL을 사용하고 JDBC 주소의 `useSSL`을 `true`로 바꾸세요. 연결 풀 크기는 `MYSQL_MAX_POOL_SIZE`, 최소 유휴 연결은 `MYSQL_MIN_IDLE`로 조절할 수 있습니다. 로컬 MySQL 프로필은 개발 편의를 위해 `ddl-auto=update`를 사용하지만, 운영 프로필은 기본적으로 `JOBHUB_DDL_AUTO=validate`로 스키마를 검증만 합니다. 운영 스키마 변경이 필요한 배포에서만 일시적으로 `update`를 사용하고 정상 기동을 확인한 뒤 다시 `validate`로 복구하세요.
 
 기존 H2 데이터는 일반 앱 실행만으로 MySQL에 복사되지 않습니다. 아래의 전용 이관 절차를 사용하고, 결과가 검증될 때까지 `data` 폴더를 삭제하지 마세요.
 

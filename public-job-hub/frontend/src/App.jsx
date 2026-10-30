@@ -1,4 +1,4 @@
-import { Component, useCallback, useEffect, useState } from 'react'
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 /** 모든 API 요청에서 JSON 응답을 읽고 HTTP 오류를 화면에서 처리할 예외로 변환한다. */
@@ -457,7 +457,8 @@ function PostingGroup({ jobs, mode, renderJob }) {
 }
 
 function PostingGroups({ items, mode, renderJob }) {
-  return groupPostingsByOrganizationAndDeadline(items).map((group) => (
+  const groups = useMemo(() => groupPostingsByOrganizationAndDeadline(items), [items])
+  return groups.map((group) => (
     <PostingGroup key={group.key} jobs={group.jobs} mode={mode} renderJob={renderJob} />
   ))
 }
@@ -617,7 +618,6 @@ function JobCard({
   onInsight,
   onReport,
   matchBusy,
-  memberActions = true,
 }) {
   const institutionClass =
     job.organizationType === 'PRIVATE'
@@ -4735,7 +4735,9 @@ function AdminReviewPanel({ user, securePost }) {
   useEffect(() => {
     loadReviews()
     let wasRunning = false
-    const refresh = () =>
+    const refresh = () => {
+      if (document.visibilityState === 'hidden') return Promise.resolve()
+      return (
       getJson('/api/admin/crawl')
         .then((next) => {
           if (wasRunning && !next.running) loadReviews()
@@ -4743,9 +4745,18 @@ function AdminReviewPanel({ user, securePost }) {
           setCrawlInfo(next)
         })
         .catch((e) => setMessage(e.message))
+      )
+    }
     refresh()
-    const timer = window.setInterval(refresh, 3000)
-    return () => window.clearInterval(timer)
+    const timer = window.setInterval(refresh, 5000)
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
   }, [loadReviews])
   async function startCrawl() {
     setBusy('crawl')
@@ -6210,12 +6221,15 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState(null)
   const [online, setOnline] = useState(navigator.onLine)
   const [updateAvailable, setUpdateAvailable] = useState(false)
-  const [servicePopups, setServicePopups] = useState([])
   const [popupOpen, setPopupOpen] = useState(null)
+  const lastPopupLoadAt = useRef(0)
 
   useEffect(() => {
-    const loadPopups = () => getJson(`/api/service-popups?refresh=${Date.now()}`).then((items) => {
-        setServicePopups(items)
+    const loadPopups = () => {
+      const now = Date.now()
+      if (now - lastPopupLoadAt.current < 300000) return Promise.resolve()
+      lastPopupLoadAt.current = now
+      return getJson(`/api/service-popups?refresh=${now}`).then((items) => {
         const today = new Date().toLocaleDateString('sv-SE')
         const first = items.find((item) => window.localStorage.getItem(`jobhub-popup-hide-date-${item.id}`) !== today)
         if (first) setPopupOpen((current) => current || first)
@@ -6223,7 +6237,10 @@ export default function App() {
         if (standalone && first && 'Notification' in window && Notification.permission === 'granted') {
           new Notification(first.title, { body: first.content.slice(0, 140), icon: '/pwa-192x192.png' })
         }
-      }).catch(() => {})
+      }).catch(() => {
+        lastPopupLoadAt.current = 0
+      })
+    }
     loadPopups()
     const onVisible = () => {
       if (document.visibilityState === 'visible') loadPopups()
@@ -6371,7 +6388,7 @@ export default function App() {
       .catch(() => {})
   }, [])
 
-  /** 현재 검색 조건에 해당하는 20개 공고를 로드하고 요청 오류를 표시한다. */
+  /** 현재 검색 조건에 해당하는 12개 공고를 로드하고 요청 오류를 표시한다. */
   const load = useCallback(
     async (signal) => {
       try {
@@ -6396,7 +6413,7 @@ export default function App() {
         if (e.name !== 'AbortError')
           setError('공고를 불러오지 못했습니다. Spring Boot 서버를 확인해 주세요.')
       } finally {
-        setLoading(false)
+        if (!signal?.aborted) setLoading(false)
       }
     },
     [
@@ -7311,7 +7328,6 @@ export default function App() {
                         onInsight={openInsight}
                         onReport={openReport}
                         matchBusy={matchBusyId === job.id}
-                        memberActions={Boolean(user)}
                       />
                     )
                   } />
@@ -7438,7 +7454,6 @@ export default function App() {
                         onInsight={openInsight}
                         onReport={openReport}
                         matchBusy={matchBusyId === job.id}
-                        memberActions={Boolean(user)}
                       />
                     )
                   } />

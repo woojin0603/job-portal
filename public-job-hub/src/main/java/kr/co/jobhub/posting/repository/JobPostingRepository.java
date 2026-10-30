@@ -23,6 +23,14 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
     @Query("select p.organization, count(p.id), min(p.id) from JobPosting p group by p.organization")
     List<Object[]> organizationLogoCandidates();
 
+    /** 관심기관 자동완성은 전체 공고를 메모리에 올리지 않고 DB에서 기관별로 집계한다. */
+    @Query("select p.organization, count(p.id) from JobPosting p " +
+           "where (:q = '' or lower(p.organization) like lower(concat('%', :q, '%'))) " +
+           "group by p.organization order by count(p.id) desc, p.organization asc")
+    List<Object[]> searchOrganizationCandidates(@Param("q") String q, Pageable pageable);
+
+    boolean existsByOrganizationIgnoreCase(String organization);
+
     /**
      * 공개 중인 공고를 제목·기관명으로 검색하고 20건씩 페이지로 나눈다.
      * mine이 참이면 지정 회원이 스크랩한 공고만 DB 쿼리 단계에서 필터링한다.
