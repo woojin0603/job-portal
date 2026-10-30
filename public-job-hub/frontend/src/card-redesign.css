@@ -2152,3 +2152,155 @@ body > #root > main {
     margin-right: 0;
   }
 }
+
+/* 같은 기관·마감일의 공고는 하나의 요약 카드에서 펼쳐 확인한다. */
+.posting-group {
+  min-width: 0;
+}
+.grid > .posting-group-card {
+  align-self: start;
+}
+.grid > .posting-group-card.expanded {
+  grid-column: 1 / -1;
+}
+.posting-group-summary {
+  display: grid;
+  width: 100%;
+  min-height: 174px;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  gap: 12px 14px;
+  padding: 22px;
+  border: 1px solid #d9dfdb;
+  border-radius: 13px;
+  background: #fff;
+  color: #24342c;
+  text-align: left;
+  box-shadow: 0 5px 18px rgba(31, 54, 43, .055);
+  transition: border-color .16s, box-shadow .16s, transform .16s;
+}
+.posting-group-summary:hover {
+  border-color: #afbeb6;
+  box-shadow: 0 8px 22px rgba(31, 54, 43, .09);
+  transform: translateY(-1px);
+}
+.posting-group.urgent .posting-group-summary { border-top: 4px solid #bd3e37; }
+.posting-group-symbol {
+  position: relative;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  grid-row: 1;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #e1e6e3;
+  border-radius: 50%;
+  background: #f4f7f5;
+  color: #315c49;
+}
+.posting-group-symbol b { font-size: 19px; }
+.posting-group-symbol img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 7px;
+  background: #fff;
+  object-fit: contain;
+}
+.posting-group-copy { display: grid; min-width: 0; gap: 5px; }
+.posting-group-copy small { color: #65746c; font-size: 11px; }
+.posting-group-copy strong { overflow: hidden; font-size: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.posting-group-copy > span { overflow: hidden; color: #526159; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.posting-group-deadline { display: grid; justify-items: end; gap: 4px; }
+.posting-group-deadline strong { color: #244d3c; font-size: 18px; }
+.posting-group.urgent .posting-group-deadline strong { color: #b8322d; }
+.posting-group-deadline small { color: #78857e; font-size: 11px; }
+.posting-group-toggle {
+  display: inline-flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid #edf0ee;
+  color: #315c49;
+  font-size: 12px;
+  font-weight: 700;
+}
+.posting-group-toggle i { font-style: normal; transition: transform .16s; }
+.posting-group.expanded .posting-group-toggle i { transform: rotate(180deg); }
+.posting-group-items {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #dce4df;
+  border-radius: 13px;
+  background: #f1f5f2;
+}
+.posting-group-card .posting-group-items > .card,
+.posting-group-card .posting-group-items > .card.deadline-urgent {
+  height: 420px;
+}
+.posting-group-list {
+  border-bottom: 1px solid #e3e8e5;
+}
+.posting-group-list .posting-group-summary {
+  min-height: 94px;
+  grid-template-columns: 48px minmax(0, 1fr) 130px 92px;
+  grid-template-rows: 1fr;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.posting-group-list .posting-group-symbol { width: 46px; height: 46px; }
+.posting-group-list .posting-group-toggle {
+  grid-column: 4;
+  grid-row: 1;
+  justify-content: flex-end;
+  padding: 0;
+  border: 0;
+}
+.posting-group-list .posting-group-items {
+  display: block;
+  margin: 0 14px 14px;
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+}
+.posting-group-list .posting-group-items .posting-list-entry:last-child { border-bottom: 0; }
+
+@media (max-width: 980px) {
+  .posting-group-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .posting-group-summary {
+    min-height: 126px;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 9px 10px;
+    padding: 14px;
+  }
+  .posting-group-symbol { width: 42px; height: 42px; }
+  .posting-group-copy strong { font-size: 15px; }
+  .posting-group-copy > span { font-size: 11px; }
+  .posting-group-deadline strong { font-size: 15px; }
+  .posting-group-items { grid-template-columns: 1fr; gap: 10px; margin-top: 10px; padding: 10px; }
+  .posting-group-list .posting-group-summary {
+    min-height: 116px;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    padding: 13px 12px;
+  }
+  .posting-group-list .posting-group-symbol { width: 40px; height: 40px; }
+  .posting-group-list .posting-group-deadline { grid-column: 3; grid-row: 1; }
+  .posting-group-list .posting-group-toggle {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    justify-content: flex-end;
+  }
+  .posting-group-list .posting-group-items { margin: 0 8px 10px; }
+}

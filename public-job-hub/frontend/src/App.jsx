@@ -376,6 +376,72 @@ function postingDeadlineLabel(deadline) {
   return days === 0 ? 'D-Day' : `D-${days}`
 }
 
+function groupPostingsByOrganizationAndDeadline(items = []) {
+  const groups = new Map()
+  items.forEach((job) => {
+    const organization = String(job.organization || '기관 미확인').trim().toLocaleLowerCase('ko-KR')
+    const deadline = job.deadline || '마감일 미정'
+    const key = `${organization}::${deadline}`
+    if (!groups.has(key)) groups.set(key, { key, jobs: [] })
+    groups.get(key).jobs.push(job)
+  })
+  return [...groups.values()]
+}
+
+function PostingGroup({ jobs, mode, renderJob }) {
+  const [expanded, setExpanded] = useState(false)
+  if (jobs.length === 1) return renderJob(jobs[0])
+
+  const representative = jobs[0]
+  const deadlineLabel = postingDeadlineLabel(representative.deadline)
+  const urgent = deadlineLabel === 'D-Day' || /^D-[12]$/.test(deadlineLabel)
+  const titles = jobs.slice(0, 2).map((job) => job.title).filter(Boolean)
+  const groupId = `posting-group-${representative.id}`
+
+  return (
+    <section className={`posting-group posting-group-${mode} ${expanded ? 'expanded' : ''} ${urgent ? 'urgent' : ''}`}>
+      <button
+        type="button"
+        className="posting-group-summary"
+        aria-expanded={expanded}
+        aria-controls={groupId}
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <span className="posting-group-symbol" aria-hidden="true">
+          <b>{representative.organization?.trim()?.charAt(0) || 'J'}</b>
+          <img
+            src={sourceIconUrl(representative)}
+            alt=""
+            loading="lazy"
+            onError={(event) => { event.currentTarget.style.display = 'none' }}
+          />
+        </span>
+        <span className="posting-group-copy">
+          <small>{institutionClassification(representative)} · 공고 {jobs.length}건</small>
+          <strong>{representative.organization || '기관 미확인'}</strong>
+          <span>{titles.join(' · ')}{jobs.length > titles.length ? ` 외 ${jobs.length - titles.length}건` : ''}</span>
+        </span>
+        <span className="posting-group-deadline">
+          <strong>{deadlineLabel}</strong>
+          <small>{representative.deadline || '마감일 미정'}</small>
+        </span>
+        <span className="posting-group-toggle">{expanded ? '접기' : '펼쳐보기'} <i aria-hidden="true">⌄</i></span>
+      </button>
+      {expanded && (
+        <div id={groupId} className="posting-group-items">
+          {jobs.map((job) => renderJob(job))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function PostingGroups({ items, mode, renderJob }) {
+  return groupPostingsByOrganizationAndDeadline(items).map((group) => (
+    <PostingGroup key={group.key} jobs={group.jobs} mode={mode} renderJob={renderJob} />
+  ))
+}
+
 /** 게시판형 목록도 로고·기관 분류·직렬·지역·마감일을 한 행에서 비교할 수 있게 표시한다. */
 function PostingListRow({
   job,
@@ -6159,6 +6225,19 @@ export default function App() {
     setMobileMenuOpen(false)
   }, [landingView, mine, communityView, successView, adminView, detailId, user?.email])
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined
+    const closeMenuOnScroll = () => setMobileMenuOpen(false)
+    window.addEventListener('scroll', closeMenuOnScroll, { passive: true })
+    window.addEventListener('touchmove', closeMenuOnScroll, { passive: true })
+    document.addEventListener('scroll', closeMenuOnScroll, true)
+    return () => {
+      window.removeEventListener('scroll', closeMenuOnScroll)
+      window.removeEventListener('touchmove', closeMenuOnScroll)
+      document.removeEventListener('scroll', closeMenuOnScroll, true)
+    }
+  }, [mobileMenuOpen])
+
   function changePostingView(mode) {
     setPostingViewMode(mode)
     window.localStorage.setItem('jobhub-posting-view-v2', mode)
@@ -7184,7 +7263,7 @@ export default function App() {
                   aria-label="스크랩한 채용공고 목록"
                 >
                   {postingViewMode === 'list' && <PostingListHeader />}
-                  {data.items.map((job) =>
+                  <PostingGroups items={data.items} mode={postingViewMode} renderJob={(job) =>
                     postingViewMode === 'list' ? (
                       <PostingListRow
                         key={job.id}
@@ -7214,8 +7293,8 @@ export default function App() {
                         matchBusy={matchBusyId === job.id}
                         memberActions={Boolean(user)}
                       />
-                    ),
-                  )}
+                    )
+                  } />
                 </section>
               ))}
             {mine && scrapsOpen && !loading && data.items.length === 0 && (
@@ -7311,7 +7390,7 @@ export default function App() {
                   aria-label="채용공고 목록"
                 >
                   {postingViewMode === 'list' && <PostingListHeader />}
-                  {data.items.map((job) =>
+                  <PostingGroups items={data.items} mode={postingViewMode} renderJob={(job) =>
                     postingViewMode === 'list' ? (
                       <PostingListRow
                         key={job.id}
@@ -7341,8 +7420,8 @@ export default function App() {
                         matchBusy={matchBusyId === job.id}
                         memberActions={Boolean(user)}
                       />
-                    ),
-                  )}
+                    )
+                  } />
                 </section>
               ))}
             {!mine && !loading && data.items.length === 0 && (
