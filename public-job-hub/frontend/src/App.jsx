@@ -389,7 +389,7 @@ function groupPostingsByOrganizationAndDeadline(items = []) {
 }
 
 function PostingGroup({ jobs, mode, renderJob }) {
-  const [expanded, setExpanded] = useState(false)
+  const [open, setOpen] = useState(false)
   if (jobs.length === 1) return renderJob(jobs[0])
 
   const representative = jobs[0]
@@ -399,13 +399,14 @@ function PostingGroup({ jobs, mode, renderJob }) {
   const groupId = `posting-group-${representative.id}`
 
   return (
-    <section className={`posting-group posting-group-${mode} ${expanded ? 'expanded' : ''} ${urgent ? 'urgent' : ''}`}>
+    <section className={`posting-group posting-group-${mode} ${urgent ? 'urgent' : ''}`}>
       <button
         type="button"
         className="posting-group-summary"
-        aria-expanded={expanded}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         aria-controls={groupId}
-        onClick={() => setExpanded((value) => !value)}
+        onClick={() => setOpen(true)}
       >
         <span className="posting-group-symbol" aria-hidden="true">
           <b>{representative.organization?.trim()?.charAt(0) || 'J'}</b>
@@ -425,12 +426,31 @@ function PostingGroup({ jobs, mode, renderJob }) {
           <strong>{deadlineLabel}</strong>
           <small>{representative.deadline || '마감일 미정'}</small>
         </span>
-        <span className="posting-group-toggle">{expanded ? '접기' : '펼쳐보기'} <i aria-hidden="true">⌄</i></span>
+        <span className="posting-group-toggle">공고 {jobs.length}건 보기 <i aria-hidden="true">›</i></span>
       </button>
-      {expanded && (
-        <div id={groupId} className="posting-group-items">
-          {jobs.map((job) => renderJob(job))}
-        </div>
+      {open && createPortal(
+        <div className="posting-group-overlay" onMouseDown={() => setOpen(false)}>
+          <section
+            id={groupId}
+            className={`posting-group-dialog posting-group-dialog-${mode}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`${groupId}-title`}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="posting-group-dialog-head">
+              <div>
+                <small>{representative.deadline || '마감일 미정'} 마감 · 공고 {jobs.length}건</small>
+                <h2 id={`${groupId}-title`}>{representative.organization || '기관 미확인'}</h2>
+              </div>
+              <button type="button" onClick={() => setOpen(false)} aria-label="묶음 공고 닫기">×</button>
+            </header>
+            <div className={`posting-group-dialog-body ${mode === 'card' ? 'grid' : 'posting-list'}`}>
+              {jobs.map((job) => renderJob(job))}
+            </div>
+          </section>
+        </div>,
+        document.body,
       )}
     </section>
   )
