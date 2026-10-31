@@ -1,6 +1,7 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { reportClientError } from './client-error.js'
+import { registerPushNotifications, unregisterPushNotifications } from './firebase-push.js'
 
 /** 모든 API 요청에서 JSON 응답을 읽고 HTTP 오류를 화면에서 처리할 예외로 변환한다. */
 async function getJson(url, options = {}) {
@@ -1945,7 +1946,7 @@ function SecurityCenter({ user, securePost, onClose }) {
   )
 }
 
-function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
+function NotificationCenter({ user, securePost, onOpen, onEnablePush, refreshVersion }) {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
@@ -2103,12 +2104,15 @@ function NotificationCenter({ user, securePost, onOpen, refreshVersion }) {
               </button>
             )}
           </div>
-          {window.matchMedia('(display-mode: standalone)').matches &&
-            'Notification' in window && Notification.permission === 'default' && (
-              <button className="enable-native-notification" type="button" onClick={() => Notification.requestPermission()}>
-                앱 푸시 알림 켜기
-              </button>
-            )}
+          {'Notification' in window && Notification.permission !== 'denied' && (
+            <button
+              className="enable-native-notification"
+              type="button"
+              onClick={() => onEnablePush().catch((error) => setMessage(error.message))}
+            >
+              {Notification.permission === 'granted' ? '푸시 알림 다시 연결' : '앱 푸시 알림 켜기'}
+            </button>
+          )}
           {message && <p className="notification-message">{message}</p>}
           <div className="notification-list">
             {items.map((item) => (
@@ -6354,8 +6358,32 @@ export default function App() {
     setPopupOpen(null)
   }
   async function enableAppNotifications() {
-    if ('Notification' in window) await Notification.requestPermission()
+    if (!user) {
+      setAuthMode('login')
+      throw new Error('로그인 후 푸시 알림을 연결할 수 있습니다.')
+    }
+    const token = await registerPushNotifications(securePost, true)
+    const test = await securePost('/api/tools/push-subscriptions/test')
+    if (!test.configured || test.delivered < 1) {
+      throw new Error('기기는 등록됐지만 테스트 알림 전송에 실패했습니다.')
+    }
+    setError('푸시 알림 연결과 테스트 전송을 완료했습니다.')
+    setNotificationRefresh((value) => value + 1)
+    return token
   }
+
+  useEffect(() => {
+    if (!user || !('Notification' in window) || Notification.permission !== 'granted') return
+    registerPushNotifications(securePost, false).catch((pushError) => {
+      console.warn('푸시 알림 자동 연결을 건너뜁니다.', pushError)
+    })
+  }, [user?.email])
+
+  useEffect(() => {
+    const refresh = () => setNotificationRefresh((value) => value + 1)
+    window.addEventListener('jobhub:push-received', refresh)
+    return () => window.removeEventListener('jobhub:push-received', refresh)
+  }, [])
 
   useEffect(() => {
     setMobileMenuOpen(false)
@@ -6696,6 +6724,7 @@ export default function App() {
   /** 서버 세션을 종료하고 공고 목록 화면으로 돌아간다. */
   async function logout() {
     try {
+      await unregisterPushNotifications(securePost).catch(() => {})
       await securePost('/api/auth/logout')
       await refreshAuth()
       setMine(false)
@@ -7089,6 +7118,7 @@ export default function App() {
                 user={user}
                 securePost={securePost}
                 onOpen={openSource}
+                onEnablePush={enableAppNotifications}
                 refreshVersion={notificationRefresh}
               />
             )}
@@ -7799,7 +7829,7 @@ export default function App() {
             {popupOpen.attachmentData && <a className="service-popup-attachment" href={popupOpen.attachmentData} download={popupOpen.attachmentName || '첨부파일'}>첨부파일 · {popupOpen.attachmentName || '다운로드'}</a>}
             <div>
               <button type="button" className="service-popup-hide-today" onClick={() => hideServicePopupToday(popupOpen)}>오늘 하루 보지 않기</button>
-              {window.matchMedia('(display-mode: standalone)').matches && 'Notification' in window && Notification.permission !== 'granted' && <button type="button" className="service-popup-notification" onClick={enableAppNotifications}>앱 알림 켜기</button>}
+              {window.matchMedia('(display-mode: standalone)').matches && 'Notification' in window && Notification.permission !== 'granted' && <button type="button" className="service-popup-notification" onClick={() => enableAppNotifications().catch((pushError) => setError(pushError.message))}>앱 알림 켜기</button>}
               <button type="button" className="service-popup-confirm" onClick={dismissServicePopup}>확인</button>
             </div>
           </section>

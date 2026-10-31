@@ -35,6 +35,17 @@ jobhub:
     mail-enabled: ${JOBHUB_PASSWORD_RESET_MAIL_ENABLED:false}
     public-url: ${JOBHUB_PUBLIC_URL:http://localhost:8080}
     from: ${JOBHUB_MAIL_FROM:no-reply@localhost}
+  push:
+    enabled: ${JOBHUB_PUSH_ENABLED:false}
+    credentials-file: ${JOBHUB_FIREBASE_CREDENTIALS:}
+    project-id: ${JOBHUB_FIREBASE_PROJECT_ID:}
+    web:
+      api-key: ${JOBHUB_FIREBASE_API_KEY:}
+      auth-domain: ${JOBHUB_FIREBASE_AUTH_DOMAIN:}
+      storage-bucket: ${JOBHUB_FIREBASE_STORAGE_BUCKET:}
+      messaging-sender-id: ${JOBHUB_FIREBASE_MESSAGING_SENDER_ID:}
+      app-id: ${JOBHUB_FIREBASE_APP_ID:}
+      vapid-key: ${JOBHUB_FIREBASE_VAPID_KEY:}
   operations:
     status-directory: ${JOBHUB_OPERATIONS_STATUS_DIR:./backups/monitor-state}
   # 실제 사이트 목록을 읽는 예약 작업의 활성화 여부와 기본 출처.

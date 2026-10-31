@@ -8,6 +8,7 @@ import kr.co.jobhub.auth.domain.AppUser;
 import kr.co.jobhub.auth.repository.AppUserRepository;
 import kr.co.jobhub.career.domain.PushSubscription;
 import kr.co.jobhub.career.repository.PushSubscriptionRepository;
+import kr.co.jobhub.career.service.PushNotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,13 +23,17 @@ public class PushSubscriptionController {
     public record SubscriptionRequest(@NotBlank @Size(max = 500) String deviceToken,
                                       @NotBlank @Pattern(regexp = "ANDROID|IOS|WEB") String platform) {}
     public record SubscriptionStatus(long activeDevices) {}
+    public record TestResult(boolean configured, int delivered) {}
 
     private final PushSubscriptionRepository subscriptions;
     private final AppUserRepository users;
+    private final PushNotificationService notifications;
 
-    public PushSubscriptionController(PushSubscriptionRepository subscriptions, AppUserRepository users) {
+    public PushSubscriptionController(PushSubscriptionRepository subscriptions, AppUserRepository users,
+                                      PushNotificationService notifications) {
         this.subscriptions = subscriptions;
         this.users = users;
+        this.notifications = notifications;
     }
 
     @GetMapping
@@ -62,6 +67,14 @@ public class PushSubscriptionController {
                     subscriptions.save(value);
                 });
         return status(principal);
+    }
+
+    @PostMapping("/test")
+    public TestResult test(Principal principal) {
+        AppUser user = user(principal);
+        int delivered = notifications.sendToUser(user.id, "JOB HUB 알림 테스트",
+                "실제 푸시 알림 연결이 완료되었습니다.", "/mypage", "연결 테스트");
+        return new TestResult(notifications.enabled(), delivered);
     }
 
     private AppUser user(Principal principal) {

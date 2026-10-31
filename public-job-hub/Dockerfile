@@ -14,7 +14,8 @@ RUN gradle bootJar -x buildFrontend --no-daemon
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-RUN addgroup -S jobhub && adduser -S jobhub -G jobhub
+# OCI Ubuntu 기본 계정과 UID를 맞춰 600 권한의 읽기 전용 비밀키를 안전하게 읽는다.
+RUN addgroup -g 1000 -S jobhub && adduser -u 1000 -S jobhub -G jobhub
 COPY --from=backend-build /workspace/build/libs/public-job-hub-0.1.0.jar /app/jobhub.jar
 USER jobhub
 EXPOSE 8080

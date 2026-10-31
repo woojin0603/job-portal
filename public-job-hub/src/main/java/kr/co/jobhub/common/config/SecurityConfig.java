@@ -80,8 +80,9 @@ public class SecurityConfig {
                         .frameOptions(frame -> frame.sameOrigin())
                         .referrerPolicy(policy -> policy.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
-                                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
-                                        "img-src 'self' data: https:; connect-src 'self'; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'")))
+                                "default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; " +
+                                        "img-src 'self' data: https:; connect-src 'self' https://firebaseinstallations.googleapis.com https://fcmregistrations.googleapis.com; " +
+                                        "worker-src 'self'; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/client-errors").permitAll()

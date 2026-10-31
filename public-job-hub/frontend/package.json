@@ -11,6 +11,8 @@
     "format:check": "prettier --check src/App.jsx src/main.jsx src/style.css vite.config.js"
   },
   "dependencies": {
+    "@firebase/app": "^0.14.6",
+    "@firebase/messaging": "^0.12.23",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
