@@ -38,7 +38,7 @@ public class AccountDeletionService {
             throw new ResponseStatusException(BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다.");
 
         Long id = user.id;
-        for (String table : new String[]{"posting_reports", "inquiries", "push_subscriptions",
+        for (String table : new String[]{"password_reset_tokens", "posting_reports", "inquiries", "push_subscriptions",
                 "user_notification_states", "posting_change_cursors", "favorite_organizations",
                 "job_alert_preferences", "scraps", "user_profiles"}) {
             jdbc.update("DELETE FROM " + table + " WHERE user_id = ?", id);

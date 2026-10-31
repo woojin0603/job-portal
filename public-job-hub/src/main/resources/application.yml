@@ -31,6 +31,10 @@ jobhub:
   security:
     login-max-failures: ${JOBHUB_LOGIN_MAX_FAILURES:5}
     login-window-minutes: ${JOBHUB_LOGIN_WINDOW_MINUTES:15}
+  password-reset:
+    mail-enabled: ${JOBHUB_PASSWORD_RESET_MAIL_ENABLED:false}
+    public-url: ${JOBHUB_PUBLIC_URL:http://localhost:8080}
+    from: ${JOBHUB_MAIL_FROM:no-reply@localhost}
   operations:
     status-directory: ${JOBHUB_OPERATIONS_STATUS_DIR:./backups/monitor-state}
   # 실제 사이트 목록을 읽는 예약 작업의 활성화 여부와 기본 출처.

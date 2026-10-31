@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 import App from './App.jsx'
+import { reportClientError } from './client-error.js'
 import './style.css'
 import './card-redesign.css'
 
@@ -10,6 +11,7 @@ class RootErrorBoundary extends Component {
   static getDerivedStateFromError(error) { return { error } }
   componentDidCatch(error, info) {
     console.error('화면 렌더링 오류', error, info)
+    reportClientError(error, info, 'ROOT_RENDER')
     window.sessionStorage.setItem('jobhub-last-ui-error', String(error?.message || error))
   }
   render() {
@@ -43,3 +45,5 @@ const updateSW = registerSW({
   },
 })
 window.addEventListener('jobhub:apply-update', () => updateSW(true))
+window.addEventListener('error', (event) => reportClientError(event.error || event.message, {}, 'WINDOW'))
+window.addEventListener('unhandledrejection', (event) => reportClientError(event.reason, {}, 'PROMISE'))

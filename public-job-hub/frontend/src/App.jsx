@@ -1,5 +1,6 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { reportClientError } from './client-error.js'
 
 /** 모든 API 요청에서 JSON 응답을 읽고 HTTP 오류를 화면에서 처리할 예외로 변환한다. */
 async function getJson(url, options = {}) {
@@ -25,7 +26,10 @@ function ReportIcon() {
 class AdminErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { error: null } }
   static getDerivedStateFromError(error) { return { error } }
-  componentDidCatch(error, info) { console.error('관리자 화면 오류', error, info) }
+  componentDidCatch(error, info) {
+    console.error('관리자 화면 오류', error, info)
+    reportClientError(error, info, 'ADMIN_RENDER')
+  }
   render() {
     if (!this.state.error) return this.props.children
     return (
@@ -3058,7 +3062,7 @@ function ConsentFields({ terms, privacy, onTerms, onPrivacy, onOpenLegal }) {
 }
 
 /** 로그인·회원가입을 같은 입력 패널에서 처리하는 대화상자. */
-function AuthDialog({ mode, onClose, onSubmit, onSwitch, onOpenLegal, busy, error }) {
+function AuthDialog({ mode, onClose, onSubmit, onSwitch, onForgot, onOpenLegal, busy, error }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -3165,13 +3169,52 @@ function AuthDialog({ mode, onClose, onSubmit, onSwitch, onOpenLegal, busy, erro
           </button>
         </form>
         {mode === 'login' && (
-          <div className="auth-switch">
-            <span>계정이 없으신가요?</span>
-            <button type="button" onClick={onSwitch}>
-              회원가입
+          <div className="auth-secondary-actions">
+            <button type="button" className="forgot-password-button" onClick={onForgot}>
+              비밀번호를 잊으셨나요?
             </button>
+            <div className="auth-switch">
+              <span>계정이 없으신가요?</span>
+              <button type="button" onClick={onSwitch}>회원가입</button>
+            </div>
           </div>
         )}
+      </section>
+    </div>
+  )
+}
+
+function PasswordResetDialog({ token, busy, error, message, onClose, onRequest, onConfirm }) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [passwordConfirm, setPasswordConfirm] = useState('')
+  const confirming = Boolean(token)
+  return (
+    <div className="overlay" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="auth-dialog password-reset-dialog" role="dialog" aria-modal="true" aria-labelledby="password-reset-title">
+        <button className="close" type="button" onClick={onClose} aria-label="닫기">×</button>
+        <p className="eyebrow">ACCOUNT RECOVERY</p>
+        <h2 id="password-reset-title">{confirming ? '새 비밀번호 설정' : '비밀번호 찾기'}</h2>
+        <p>{confirming
+          ? '영문과 숫자를 포함해 10자 이상의 새 비밀번호를 입력해 주세요.'
+          : '가입한 이메일로 30분 동안 사용할 수 있는 재설정 링크를 보내드립니다.'}</p>
+        <form onSubmit={(event) => {
+          event.preventDefault()
+          if (confirming) onConfirm(password, passwordConfirm)
+          else onRequest(email)
+        }}>
+          {confirming ? (
+            <>
+              <label>새 비밀번호<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={10} required autoComplete="new-password" /></label>
+              <label>새 비밀번호 확인<input type="password" value={passwordConfirm} onChange={(event) => setPasswordConfirm(event.target.value)} minLength={10} required autoComplete="new-password" /></label>
+            </>
+          ) : (
+            <label>가입 이메일<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>
+          )}
+          {error && <p className="error" role="alert">{error}</p>}
+          {message && <p className="password-reset-message" role="status">{message}</p>}
+          <button className="primary" disabled={busy}>{busy ? '처리 중...' : confirming ? '비밀번호 변경' : '재설정 링크 받기'}</button>
+        </form>
       </section>
     </div>
   )
@@ -4668,6 +4711,51 @@ function AdminServicePopups({ securePost }) {
   )
 }
 
+function AdminClientErrors({ securePost }) {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [message, setMessage] = useState('')
+  const load = useCallback(() => {
+    setLoading(true)
+    return getJson('/api/admin/client-errors')
+      .then(setItems)
+      .catch((error) => setMessage(error.message))
+      .finally(() => setLoading(false))
+  }, [])
+  useEffect(() => { load() }, [load])
+  async function resolve(id) {
+    try {
+      await securePost(`/api/admin/client-errors/${id}/resolve`)
+      setItems((values) => values.filter((value) => value.id !== id))
+    } catch (error) {
+      setMessage(error.message)
+    }
+  }
+  return (
+    <section className="admin-client-errors" aria-label="클라이언트 오류 진단">
+      <div className="operations-heading">
+        <div><p className="eyebrow">CLIENT DIAGNOSTICS</p><h2>화면 오류 진단</h2><span>사용자의 브라우저에서 발생한 미해결 화면 오류를 확인합니다.</span></div>
+        <button type="button" onClick={load}>새로고침</button>
+      </div>
+      {message && <p className="error" role="alert">{message}</p>}
+      {loading ? <p className="empty">오류 기록을 불러오는 중입니다.</p> : (
+        <div className="admin-client-error-list">
+          {items.map((item) => (
+            <article key={item.id}>
+              <div><span>{item.scope}</span><time>{new Date(item.occurredAt).toLocaleString('ko-KR')}</time></div>
+              <strong>{item.message}</strong>
+              <small>{item.path || '화면 경로 없음'}{item.account ? ` · ${item.account}` : ''}</small>
+              <details><summary>기술 정보</summary><pre>{item.stack || item.componentStack || item.userAgent || '추가 정보 없음'}</pre></details>
+              <button type="button" onClick={() => resolve(item.id)}>해결 처리</button>
+            </article>
+          ))}
+          {!items.length && <p className="empty">현재 확인할 화면 오류가 없습니다.</p>}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function AdminReviewPanel({ user, securePost }) {
   const [section, setSection] = useState('overview')
   const [items, setItems] = useState([])
@@ -4962,6 +5050,7 @@ function AdminReviewPanel({ user, securePost }) {
           ['collection', '수집 관리'],
           ['logos', '기관 로고'],
           ['popups', '사용자 팝업'],
+          ['client-errors', '화면 오류'],
           [
             'review',
             `공고 검수${dashboard?.qualityAttention ? ` ${dashboard.qualityAttention}` : ''}`,
@@ -5425,6 +5514,7 @@ function AdminReviewPanel({ user, securePost }) {
       )}
       {section === 'logos' && <AdminInstitutionLogos securePost={securePost} />}
       {section === 'popups' && <AdminServicePopups securePost={securePost} />}
+      {section === 'client-errors' && <AdminClientErrors securePost={securePost} />}
       {section === 'collection' && crawlInfo?.apiStatus?.validation?.pagesScanned > 0 && (
         <section className="collection-audit" aria-label="최근 공고 수집 검증 결과">
           <div className="collection-audit-head">
@@ -6118,6 +6208,15 @@ export default function App() {
   const [authReturn, setAuthReturn] = useState(null)
   const [authError, setAuthError] = useState('')
   const [authBusy, setAuthBusy] = useState(false)
+  const initialPasswordResetToken =
+    new URLSearchParams(window.location.hash.replace(/^#/, '')).get('resetToken') ||
+    new URLSearchParams(window.location.search).get('resetToken') ||
+    ''
+  const [passwordResetOpen, setPasswordResetOpen] = useState(Boolean(initialPasswordResetToken))
+  const [passwordResetToken, setPasswordResetToken] = useState(initialPasswordResetToken)
+  const [passwordResetBusy, setPasswordResetBusy] = useState(false)
+  const [passwordResetError, setPasswordResetError] = useState('')
+  const [passwordResetMessage, setPasswordResetMessage] = useState('')
   const [pendingScrapId, setPendingScrapId] = useState(null)
   const [legalView, setLegalView] = useState(null)
   const [passwordOpen, setPasswordOpen] = useState(false)
@@ -6485,6 +6584,57 @@ export default function App() {
       headers: { [token.headerName]: token.token },
     })
     if (!response.ok) throw new Error('게시물을 삭제하지 못했습니다.')
+  }
+  async function requestPasswordReset(email) {
+    setPasswordResetBusy(true)
+    setPasswordResetError('')
+    setPasswordResetMessage('')
+    try {
+      const result = await securePost(
+        '/api/auth/password-reset/request',
+        JSON.stringify({ email }),
+        'application/json',
+      )
+      if (!result.mailEnabled) {
+        setPasswordResetError('현재 이메일 발송 설정이 완료되지 않았습니다. 운영자에게 문의해 주세요.')
+      } else {
+        setPasswordResetMessage('가입된 이메일이면 재설정 링크를 발송했습니다. 메일함을 확인해 주세요.')
+      }
+    } catch (e) {
+      setPasswordResetError(e.message)
+    } finally {
+      setPasswordResetBusy(false)
+    }
+  }
+  async function confirmPasswordReset(password, passwordConfirm) {
+    if (password !== passwordConfirm) {
+      setPasswordResetError('새 비밀번호가 서로 일치하지 않습니다.')
+      return
+    }
+    setPasswordResetBusy(true)
+    setPasswordResetError('')
+    try {
+      await securePost(
+        '/api/auth/password-reset/confirm',
+        JSON.stringify({ token: passwordResetToken, newPassword: password }),
+        'application/json',
+      )
+      setPasswordResetMessage('비밀번호를 변경했습니다. 새 비밀번호로 로그인해 주세요.')
+      setPasswordResetToken('')
+      const url = new URL(window.location.href)
+      url.searchParams.delete('resetToken')
+      url.hash = ''
+      window.history.replaceState({}, '', `${url.pathname}${url.search}`)
+      window.setTimeout(() => {
+        setPasswordResetOpen(false)
+        setPasswordResetMessage('')
+        setAuthMode('login')
+      }, 900)
+    } catch (e) {
+      setPasswordResetError(e.message)
+    } finally {
+      setPasswordResetBusy(false)
+    }
   }
   async function shareSuccessStory(value) {
     setSuccessShareBusy(true)
@@ -7572,9 +7722,38 @@ export default function App() {
             setAuthMode('register')
             setAuthError('')
           }}
+          onForgot={() => {
+            setAuthMode(null)
+            setPasswordResetToken('')
+            setPasswordResetError('')
+            setPasswordResetMessage('')
+            setPasswordResetOpen(true)
+          }}
           onOpenLegal={setLegalView}
           busy={authBusy}
           error={authError}
+        />
+      )}
+      {passwordResetOpen && (
+        <PasswordResetDialog
+          token={passwordResetToken}
+          busy={passwordResetBusy}
+          error={passwordResetError}
+          message={passwordResetMessage}
+          onClose={() => {
+            setPasswordResetOpen(false)
+            setPasswordResetError('')
+            setPasswordResetMessage('')
+            if (passwordResetToken) {
+              setPasswordResetToken('')
+              const url = new URL(window.location.href)
+              url.searchParams.delete('resetToken')
+              url.hash = ''
+              window.history.replaceState({}, '', `${url.pathname}${url.search}`)
+            }
+          }}
+          onRequest={requestPasswordReset}
+          onConfirm={confirmPasswordReset}
         />
       )}
       {user?.consentRequired && !authMode && (

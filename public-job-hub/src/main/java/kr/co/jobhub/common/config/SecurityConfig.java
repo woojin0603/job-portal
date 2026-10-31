@@ -74,7 +74,8 @@ public class SecurityConfig {
                                             LoginRateLimitFilter loginRateLimitFilter,
                                             AdminAuditService adminAuditService, AppUserRepository appUsers,
                                             LoginHistoryRepository loginHistories) throws Exception {
-        http.csrf(csrf -> csrf.csrfTokenRepository(tokens))
+        http.csrf(csrf -> csrf.csrfTokenRepository(tokens)
+                        .ignoringRequestMatchers("/api/client-errors"))
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin())
                         .referrerPolicy(policy -> policy.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
@@ -83,6 +84,7 @@ public class SecurityConfig {
                                         "img-src 'self' data: https:; connect-src 'self'; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/client-errors").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/community/notices").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/success-stories").permitAll()
