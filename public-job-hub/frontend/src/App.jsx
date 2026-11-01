@@ -6225,6 +6225,53 @@ function LandingPage({ user, onPostings, onMyPage, onCommunity }) {
   )
 }
 
+function AppSettingsDialog({ user, settings, onSettingsChange, preference, onPreferenceChange,
+  onPreferenceSave, onEnablePush, onClose, busy, message }) {
+  const updateSetting = (field, value) => onSettingsChange({ ...settings, [field]: value })
+  return createPortal(
+    <div className="app-settings-overlay" onMouseDown={onClose}>
+      <section className="app-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="app-settings-title" onMouseDown={(event) => event.stopPropagation()}>
+        <header className="app-settings-head">
+          <div><small>DEVICE &amp; ACCOUNT</small><h2 id="app-settings-title">앱 설정</h2></div>
+          <button type="button" onClick={onClose} aria-label="앱 설정 닫기">×</button>
+        </header>
+        <div className="app-settings-body">
+          <section className="app-settings-section">
+            <div className="app-settings-section-head">
+              <div><strong>알림 설정</strong><span>스크랩 일정과 관심 기관 소식을 관리합니다.</span></div>
+              {!user && <em>로그인 필요</em>}
+            </div>
+            <label className="app-setting-toggle">
+              <span><b>맞춤 알림 사용</b><small>마감일과 새 공고 알림을 받습니다.</small></span>
+              <input type="checkbox" disabled={!user} checked={Boolean(user && preference.enabled)} onChange={(event) => onPreferenceChange({ ...preference, enabled: event.target.checked, deadlineAlerts: event.target.checked })} />
+            </label>
+            <label className="app-setting-field">
+              <span>마감 알림 시점</span>
+              <select disabled={!user || !preference.enabled} value={preference.deadlineDays || '7,3,1'} onChange={(event) => onPreferenceChange({ ...preference, deadlineDays: event.target.value })}>
+                <option value="7,3,1">7일·3일·1일 전</option><option value="3,1">3일·1일 전</option>
+                <option value="1">1일 전</option><option value="14,7,3,1">14일·7일·3일·1일 전</option>
+              </select>
+            </label>
+            {user && <div className="app-settings-actions"><button type="button" onClick={() => onPreferenceSave(preference)} disabled={busy}>{busy ? '저장 중…' : '알림 설정 저장'}</button><button type="button" className="secondary" onClick={onEnablePush}>휴대폰 푸시 연결</button></div>}
+            {message && <p className="app-settings-message">{message}</p>}
+          </section>
+          <section className="app-settings-section">
+            <div className="app-settings-section-head"><div><strong>화면 설정</strong><span>이 기기에서만 적용됩니다.</span></div></div>
+            <label className="app-setting-field"><span>화면 테마</span><select value={settings.theme} onChange={(event) => updateSetting('theme', event.target.value)}><option value="system">기기 설정 사용</option><option value="light">라이트 모드</option><option value="dark">다크 모드</option></select></label>
+            <label className="app-setting-field"><span>글자 크기</span><select value={settings.textSize} onChange={(event) => updateSetting('textSize', event.target.value)}><option value="normal">기본</option><option value="large">크게</option></select></label>
+            <label className="app-setting-field"><span>기본 공고 보기</span><select value={settings.postingView} onChange={(event) => updateSetting('postingView', event.target.value)}><option value="list">게시판형</option><option value="card">카드형</option></select></label>
+            <label className="app-setting-toggle"><span><b>화면 전환 효과 줄이기</b><small>움직임을 줄여 눈의 피로와 배터리 부담을 낮춥니다.</small></span><input type="checkbox" checked={settings.reduceMotion} onChange={(event) => updateSetting('reduceMotion', event.target.checked)} /></label>
+          </section>
+          <section className="app-settings-section app-settings-about">
+            <div><strong>Public Job Hub</strong><span>설치형 웹 앱 · 버전 0.1</span></div>
+            <button type="button" onClick={() => onSettingsChange({ theme: 'system', textSize: 'normal', reduceMotion: false, postingView: 'list' })}>기기 설정 초기화</button>
+          </section>
+        </div>
+      </section>
+    </div>, document.body,
+  )
+}
+
 /** 검색·페이지 이동·인증·개인 상태와 원문 창을 조합하는 메인 화면. */
 export default function App() {
   // 현재 회원과 CSRF 토큰은 세션 변경 요청에 공통으로 사용한다.
@@ -6311,6 +6358,17 @@ export default function App() {
   const [profileMessage, setProfileMessage] = useState('')
   const [profileEditing, setProfileEditing] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [appSettingsOpen, setAppSettingsOpen] = useState(false)
+  const [deviceSettings, setDeviceSettings] = useState(() => {
+    try {
+      return {
+        theme: 'system', textSize: 'normal', reduceMotion: false, postingView: 'list',
+        ...JSON.parse(window.localStorage.getItem('jobhub-device-settings-v1') || '{}'),
+      }
+    } catch {
+      return { theme: 'system', textSize: 'normal', reduceMotion: false, postingView: 'list' }
+    }
+  })
   const [preference, setPreference] = useState({
     keywords: '',
     regions: '',
@@ -6412,6 +6470,34 @@ export default function App() {
   }, [landingView, mine, communityView, successView, adminView, detailId, user?.email])
 
   useEffect(() => {
+    if (!appSettingsOpen || !user) return
+    getJson('/api/tools/preferences')
+      .then(setPreference)
+      .catch((settingsError) => setToolsMessage(settingsError.message))
+  }, [appSettingsOpen, user?.email])
+
+  useEffect(() => {
+    const root = document.documentElement
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)')
+    const applyAppearance = () => {
+      const resolvedTheme = deviceSettings.theme === 'system'
+        ? (systemDark.matches ? 'dark' : 'light')
+        : deviceSettings.theme
+      root.dataset.appTheme = resolvedTheme
+      root.dataset.appTextSize = deviceSettings.textSize
+      root.dataset.reduceMotion = deviceSettings.reduceMotion ? 'true' : 'false'
+    }
+    applyAppearance()
+    systemDark.addEventListener('change', applyAppearance)
+    window.localStorage.setItem('jobhub-device-settings-v1', JSON.stringify(deviceSettings))
+    if (postingViewMode !== deviceSettings.postingView) {
+      setPostingViewMode(deviceSettings.postingView)
+      window.localStorage.setItem('jobhub-posting-view-v2', deviceSettings.postingView)
+    }
+    return () => systemDark.removeEventListener('change', applyAppearance)
+  }, [deviceSettings, postingViewMode])
+
+  useEffect(() => {
     if (!mobileMenuOpen) return undefined
     const closeMenuOnScroll = (event) => {
       const target = event?.target
@@ -6430,6 +6516,7 @@ export default function App() {
 
   function changePostingView(mode) {
     setPostingViewMode(mode)
+    setDeviceSettings((current) => ({ ...current, postingView: mode }))
     window.localStorage.setItem('jobhub-posting-view-v2', mode)
   }
 
@@ -6865,13 +6952,14 @@ export default function App() {
       setCapabilityLoading(false)
     }
   }
-  async function savePreference() {
+  async function savePreference(nextPreference = preference) {
+    const value = nextPreference?.deadlineDays !== undefined ? nextPreference : preference
     setToolsBusy(true)
     setToolsMessage('')
     try {
       const saved = await securePost(
         '/api/tools/preferences',
-        JSON.stringify(preference),
+        JSON.stringify(value),
         'application/json',
       )
       setPreference(saved)
@@ -7172,6 +7260,16 @@ export default function App() {
                 관리자 운영
               </button>
             )}
+            <button
+              type="button"
+              className="app-settings-nav"
+              onClick={() => {
+                setMobileMenuOpen(false)
+                setAppSettingsOpen(true)
+              }}
+            >
+              앱 설정
+            </button>
             {user ? (
               <>
                 <span className="user-name">{user.displayName}님</span>
@@ -7762,6 +7860,22 @@ export default function App() {
             setCapabilityOpen(false)
             navigate(true)
           }}
+        />
+      )}
+      {appSettingsOpen && (
+        <AppSettingsDialog
+          user={user}
+          settings={deviceSettings}
+          onSettingsChange={setDeviceSettings}
+          preference={preference}
+          onPreferenceChange={setPreference}
+          onPreferenceSave={savePreference}
+          onEnablePush={() => enableAppNotifications()
+            .then(() => setToolsMessage('휴대폰 푸시 알림 연결을 확인했습니다.'))
+            .catch((pushError) => setToolsMessage(pushError.message))}
+          onClose={() => setAppSettingsOpen(false)}
+          busy={toolsBusy}
+          message={toolsMessage}
         />
       )}
       {authMode && (
