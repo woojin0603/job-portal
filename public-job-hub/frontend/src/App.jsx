@@ -1948,6 +1948,7 @@ function SecurityCenter({ user, securePost, onClose }) {
 
 function NotificationCenter({ user, securePost, onOpen, onEnablePush, refreshVersion }) {
   const [open, setOpen] = useState(false)
+  const [mobileViewport, setMobileViewport] = useState(() => window.matchMedia('(max-width: 760px)').matches)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -2010,6 +2011,12 @@ function NotificationCenter({ user, securePost, onOpen, onEnablePush, refreshVer
     // 로그인 계정이 바뀔 때 해당 회원의 알림만 다시 읽는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email, refreshVersion])
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 760px)')
+    const updateViewport = (event) => setMobileViewport(event.matches)
+    query.addEventListener('change', updateViewport)
+    return () => query.removeEventListener('change', updateViewport)
+  }, [])
   useEffect(() => {
     const latest = items.find((item) => item.fresh)
     const standalone = window.matchMedia('(display-mode: standalone)').matches
@@ -2078,6 +2085,68 @@ function NotificationCenter({ user, securePost, onOpen, onEnablePush, refreshVer
     }
   }
   const unread = items.filter((item) => item.fresh).length
+  const notificationPanel = (
+    <section className="notification-popover" onMouseDown={(event) => event.stopPropagation()}>
+      <div className="notification-popover-head">
+        <div>
+          <strong>알림센터</strong>
+          <span>스크랩 일정과 관심 기관의 새 공고를 알려드립니다.</span>
+        </div>
+        <div className="notification-head-actions">
+          {unread > 0 && (
+            <button type="button" onClick={readAll}>
+              모두 확인
+            </button>
+          )}
+          {mobileViewport && (
+            <button className="notification-close" type="button" onClick={() => setOpen(false)} aria-label="알림센터 닫기">
+              ×
+            </button>
+          )}
+        </div>
+      </div>
+      {'Notification' in window && Notification.permission !== 'denied' && (
+        <button
+          className="enable-native-notification"
+          type="button"
+          onClick={() => onEnablePush().catch((error) => setMessage(error.message))}
+        >
+          {Notification.permission === 'granted' ? '푸시 알림 다시 연결' : '앱 푸시 알림 켜기'}
+        </button>
+      )}
+      {message && <p className="notification-message">{message}</p>}
+      <div className="notification-list">
+        {items.map((item) => (
+          <article
+            key={item.key}
+            className={`${item.important ? 'important' : ''} ${item.fresh ? 'fresh' : ''}`}
+          >
+            <button className="notification-main" type="button" onClick={() => openItem(item)}>
+              <span className="notification-labels">
+                {item.important && <b>중요</b>}
+                <em>{item.category}</em>
+                {item.fresh && <i>NEW</i>}
+              </span>
+              <strong>{item.title}</strong>
+              <span>{item.organization}</span>
+              <small>{item.reason}</small>
+              {item.detail && <p>{item.detail}</p>}
+            </button>
+            <button
+              className="notification-delete"
+              type="button"
+              aria-label="이 알림 삭제"
+              onClick={() => deleteItem(item)}
+            >
+              ×
+            </button>
+          </article>
+        ))}
+        {loading && <p className="empty">알림을 불러오는 중...</p>}
+        {!loading && !items.length && <p className="empty">현재 확인할 알림이 없습니다.</p>}
+      </div>
+    </section>
+  )
 
   return (
     <div className="notification-center">
@@ -2091,61 +2160,14 @@ function NotificationCenter({ user, securePost, onOpen, onEnablePush, refreshVer
         <span aria-hidden="true">●</span> 알림
         {unread > 0 && <b className="nav-notification">{unread}</b>}
       </button>
-      {open && (
-        <section className="notification-popover">
-          <div className="notification-popover-head">
-            <div>
-              <strong>알림센터</strong>
-              <span>스크랩 일정과 관심 기관의 새 공고를 알려드립니다.</span>
-            </div>
-            {unread > 0 && (
-              <button type="button" onClick={readAll}>
-                모두 확인
-              </button>
-            )}
-          </div>
-          {'Notification' in window && Notification.permission !== 'denied' && (
-            <button
-              className="enable-native-notification"
-              type="button"
-              onClick={() => onEnablePush().catch((error) => setMessage(error.message))}
-            >
-              {Notification.permission === 'granted' ? '푸시 알림 다시 연결' : '앱 푸시 알림 켜기'}
-            </button>
-          )}
-          {message && <p className="notification-message">{message}</p>}
-          <div className="notification-list">
-            {items.map((item) => (
-              <article
-                key={item.key}
-                className={`${item.important ? 'important' : ''} ${item.fresh ? 'fresh' : ''}`}
-              >
-                <button className="notification-main" type="button" onClick={() => openItem(item)}>
-                  <span className="notification-labels">
-                    {item.important && <b>중요</b>}
-                    <em>{item.category}</em>
-                    {item.fresh && <i>NEW</i>}
-                  </span>
-                  <strong>{item.title}</strong>
-                  <span>{item.organization}</span>
-                  <small>{item.reason}</small>
-                  {item.detail && <p>{item.detail}</p>}
-                </button>
-                <button
-                  className="notification-delete"
-                  type="button"
-                  aria-label="이 알림 삭제"
-                  onClick={() => deleteItem(item)}
-                >
-                  ×
-                </button>
-              </article>
-            ))}
-            {loading && <p className="empty">알림을 불러오는 중...</p>}
-            {!loading && !items.length && <p className="empty">현재 확인할 알림이 없습니다.</p>}
-          </div>
-        </section>
-      )}
+      {open && (mobileViewport
+        ? createPortal(
+            <div className="notification-overlay" onMouseDown={() => setOpen(false)}>
+              {notificationPanel}
+            </div>,
+            document.body,
+          )
+        : notificationPanel)}
     </div>
   )
 }

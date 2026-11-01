@@ -2262,6 +2262,17 @@ body > #root > main {
     grid-template-columns: 40px minmax(0, 1fr) auto;
     grid-template-rows: auto auto;
     padding: 13px 12px;
+    border: 1px solid #d7e0db;
+    border-radius: 12px;
+    background: #fbfcfb;
+    box-shadow: 0 4px 13px rgba(31, 54, 43, .06);
+  }
+  .posting-group-list {
+    margin: 8px 4px 12px;
+    border-bottom: 0;
+  }
+  .posting-group-list.urgent .posting-group-summary {
+    border-top: 4px solid #bd3e37;
   }
   .posting-group-list .posting-group-symbol { width: 40px; height: 40px; }
   .posting-group-list .posting-group-deadline { grid-column: 3; grid-row: 1; }
@@ -2400,10 +2411,27 @@ body > #root > main {
 
 /* 모바일 알림은 제목과 상세 내용을 생략하지 않고 한 화면 안에서 읽기 쉽게 표시한다. */
 @media (max-width: 760px) {
-  .notification-popover {
-    top: calc(58px + env(safe-area-inset-top));
-    max-height: calc(100dvh - 72px - env(safe-area-inset-top));
-    border-radius: 13px;
+  .notification-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 240;
+    display: grid;
+    align-items: center;
+    justify-items: center;
+    padding: max(18px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom));
+    background: rgba(20, 31, 25, .2);
+  }
+  .notification-overlay .notification-popover {
+    position: relative;
+    inset: auto;
+    display: grid;
+    width: min(560px, 100%);
+    height: min(78dvh, 720px);
+    max-height: none;
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    border-color: #d5dfda;
+    border-radius: 18px;
+    box-shadow: 0 22px 64px rgba(18, 37, 27, .24);
   }
   .notification-popover-head {
     align-items: flex-start;
@@ -2415,8 +2443,11 @@ body > #root > main {
   .notification-popover-head span {
     line-height: 1.45;
   }
-  .notification-list {
-    max-height: calc(100dvh - 220px - env(safe-area-inset-top));
+  .notification-overlay .notification-list {
+    max-height: none;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
   }
   .notification-main {
     gap: 5px;
@@ -2439,4 +2470,30 @@ body > #root > main {
     line-height: 1.5;
     -webkit-line-clamp: unset;
   }
+}
+
+.notification-head-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+}
+.notification-head-actions > button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: #edf4f0;
+  padding: 7px 10px;
+  color: #285b46;
+  font-size: 11px;
+  font-weight: 700;
+}
+.notification-head-actions > .notification-close {
+  width: 34px;
+  padding: 0;
+  background: #f3f5f4;
+  color: #52635a;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
 }
