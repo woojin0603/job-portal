@@ -2756,3 +2756,80 @@ html[data-app-theme='dark'] .app-settings-about span { color: #a8b7ae; }
 html[data-app-theme='dark'] .app-settings-message { background: #243a2f; color: #bce2cd; }
 
 html[data-app-theme='dark'] :focus-visible { outline-color: #8fc5a7; }
+
+/* 채용공고 카드·게시판과 사용자 팝업은 기존 고정 색상보다 높은 우선순위로 다크 팔레트를 사용한다. */
+html[data-app-theme='dark'] .grid > .card,
+html[data-app-theme='dark'] .grid > .card.deadline-urgent,
+html[data-app-theme='dark'] .grid > .card.deadline-urgent:hover {
+  background: #18211c !important;
+  border-color: #394a40 !important;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .24) !important;
+}
+html[data-app-theme='dark'] .grid .card-top,
+html[data-app-theme='dark'] .grid .card.deadline-urgent .card-top,
+html[data-app-theme='dark'] .grid .date,
+html[data-app-theme='dark'] .grid .card.deadline-urgent .date { border-color: #34443a; }
+html[data-app-theme='dark'] .grid .institution-badge,
+html[data-app-theme='dark'] .grid .institution-badge.institution-central,
+html[data-app-theme='dark'] .grid .institution-badge.institution-local,
+html[data-app-theme='dark'] .grid .institution-badge.institution-private,
+html[data-app-theme='dark'] .grid .institution-badge.institution-public {
+  background: #263a30;
+  color: #b8ddc8;
+}
+html[data-app-theme='dark'] .grid .card-heading > .organization-name { color: #b7c5bc; }
+html[data-app-theme='dark'] .grid .card h2,
+html[data-app-theme='dark'] .grid .card.deadline-urgent h2 { color: #f2f7f4; }
+html[data-app-theme='dark'] .grid .pills span,
+html[data-app-theme='dark'] .grid .position-list > span { background: #243029; color: #c7d5cc; }
+html[data-app-theme='dark'] .grid .date small { color: #9eada4; }
+html[data-app-theme='dark'] .grid .date strong,
+html[data-app-theme='dark'] .grid .card.deadline-urgent .date strong { color: #c6d3cb; }
+html[data-app-theme='dark'] .grid .card-dday { color: #edf4ef; }
+html[data-app-theme='dark'] .grid .card-dday.urgent { color: #ff9b92; }
+html[data-app-theme='dark'] .grid .card > .actions { background: #141c18 !important; border-color: #34443a; }
+html[data-app-theme='dark'] .grid .job-info-actions .preview-link,
+html[data-app-theme='dark'] .grid .career-actions button:not(:last-child) {
+  background: #222e27 !important;
+  border-color: #405147 !important;
+  color: #dce7e0 !important;
+}
+
+html[data-app-theme='dark'] .posting-list { background: #151d19 !important; border-color: #394a40; }
+html[data-app-theme='dark'] .posting-list-header { background: #243029; border-color: #3a4b41; color: #dce7e0; }
+html[data-app-theme='dark'] .posting-list-entry,
+html[data-app-theme='dark'] .posting-list-entry:nth-child(odd),
+html[data-app-theme='dark'] .posting-list-row,
+html[data-app-theme='dark'] .posting-list-entry.urgent .posting-list-row {
+  background: #18211c !important;
+  border-color: #34443a;
+  color: #e8f0eb;
+}
+html[data-app-theme='dark'] .posting-list-entry:nth-child(even) .posting-list-row { background: #1b251f !important; }
+html[data-app-theme='dark'] .posting-list-row:hover,
+html[data-app-theme='dark'] .posting-list-row:focus-visible { background: #223029 !important; box-shadow: inset 4px 0 #79b997; }
+html[data-app-theme='dark'] .posting-list-organization { color: #e4ede7; }
+html[data-app-theme='dark'] .posting-list-organization strong,
+html[data-app-theme='dark'] .posting-list-title { color: #f2f7f4; }
+html[data-app-theme='dark'] .posting-list-organization small { color: #a8b7ae; }
+html[data-app-theme='dark'] .posting-list-position i { background: #26332c; color: #c9d6ce; }
+html[data-app-theme='dark'] .posting-list-deadline { color: #edf4ef; }
+html[data-app-theme='dark'] .posting-list-entry.urgent .posting-list-deadline { color: #ff9188; }
+html[data-app-theme='dark'] .posting-list-actions { background: #141c18; border-color: #34443a; }
+html[data-app-theme='dark'] .posting-list-actions-context { color: #b3c1b8; }
+html[data-app-theme='dark'] .posting-list-actions-context strong { color: #dce7e0; }
+html[data-app-theme='dark'] .posting-list-actions-context small { color: #9caca2; border-color: #405147; }
+
+html[data-app-theme='dark'] .service-popup-layer { background: rgba(3, 8, 5, .62); }
+html[data-app-theme='dark'] .service-popup-layer > section {
+  background: #19221d !important;
+  border: 1px solid #3b4c41;
+  color: #edf4ef;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, .55);
+}
+html[data-app-theme='dark'] .service-popup-layer h2 { color: #f4f8f5 !important; }
+html[data-app-theme='dark'] .service-popup-layer p { color: #cbd7cf !important; }
+html[data-app-theme='dark'] .service-popup-close { color: #d4dfd8; }
+html[data-app-theme='dark'] .service-popup-attachment { background: #222f28; border-color: #405147; color: #a9d5bc; }
+html[data-app-theme='dark'] .service-popup-hide-today { color: #aebdb4 !important; }
+html[data-app-theme='dark'] .service-popup-notification { background: #243129; border-color: #46584c; color: #d8e5dd; }
