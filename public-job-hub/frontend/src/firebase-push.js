@@ -67,11 +67,17 @@ export async function registerPushNotifications(securePost, requestPermission = 
     onMessage(instance, (payload) => {
       const data = payload.data || {}
       if (Notification.permission === 'granted') {
-        new Notification(data.title || 'JOB HUB KOREA', {
+        const notification = new Notification(data.title || 'JOB HUB KOREA', {
           body: data.body || '새로운 채용 알림이 있습니다.',
           icon: '/icons/icon-192.png',
           tag: `${data.category || 'jobhub'}-${data.link || '/'}`,
+          data: { link: data.link || '/' },
         })
+        notification.onclick = () => {
+          notification.close()
+          window.focus()
+          window.location.assign(data.link || '/')
+        }
       }
       window.dispatchEvent(new CustomEvent('jobhub:push-received', { detail: data }))
     })

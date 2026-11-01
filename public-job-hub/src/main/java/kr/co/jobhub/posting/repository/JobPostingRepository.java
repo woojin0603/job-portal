@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +19,7 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
     Optional<JobPosting> findFirstByOrganizationAndTitleAndPostedAtAndDeadline(
             String organization, String title, LocalDate postedAt, LocalDate deadline);
     List<JobPosting> findByAlioInstitutionCodeOrderByPostedAtDesc(String alioInstitutionCode);
+    List<JobPosting> findByFirstSeenAtAfterOrderByFirstSeenAtDesc(Instant cutoff);
 
     /** 관리자 로고 관리 화면에 기관별 공고 수와 대표 공고 ID를 제공한다. */
     @Query("select p.organization, count(p.id), min(p.id) from JobPosting p group by p.organization")

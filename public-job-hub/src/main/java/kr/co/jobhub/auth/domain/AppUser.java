@@ -15,6 +15,9 @@ public class AppUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     public Long id;
 
+    /** 지연 로딩 프록시에서도 회원 ID를 안전하게 읽는다. */
+    public Long getId() { return id; }
+
     /** 중복을 허용하지 않는 로그인 이메일. */
     @Column(nullable = false, length = 255)
     public String email;

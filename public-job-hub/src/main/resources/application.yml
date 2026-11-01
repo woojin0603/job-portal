@@ -37,6 +37,9 @@ jobhub:
     from: ${JOBHUB_MAIL_FROM:no-reply@localhost}
   push:
     enabled: ${JOBHUB_PUSH_ENABLED:false}
+    automatic-enabled: ${JOBHUB_PUSH_AUTOMATIC_ENABLED:true}
+    automatic-delay-ms: ${JOBHUB_PUSH_AUTOMATIC_DELAY_MS:300000}
+    automatic-initial-delay-ms: ${JOBHUB_PUSH_AUTOMATIC_INITIAL_DELAY_MS:120000}
     credentials-file: ${JOBHUB_FIREBASE_CREDENTIALS:}
     project-id: ${JOBHUB_FIREBASE_PROJECT_ID:}
     web:
