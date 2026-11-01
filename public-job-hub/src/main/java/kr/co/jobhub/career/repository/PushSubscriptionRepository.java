@@ -7,6 +7,7 @@ import java.util.Optional;
 
 public interface PushSubscriptionRepository extends JpaRepository<PushSubscription, Long> {
     Optional<PushSubscription> findByDeviceToken(String deviceToken);
+    Optional<PushSubscription> findByDeviceTokenAndUserId(String deviceToken, Long userId);
     List<PushSubscription> findByUserIdAndEnabledTrue(Long userId);
     long countByUserIdAndEnabledTrue(Long userId);
 }

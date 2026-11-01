@@ -59,8 +59,7 @@ public class PushSubscriptionController {
     @PostMapping("/remove")
     public SubscriptionStatus remove(@Valid @RequestBody SubscriptionRequest request, Principal principal) {
         AppUser user = user(principal);
-        subscriptions.findByDeviceToken(request.deviceToken().trim())
-                .filter(value -> value.user.id.equals(user.id))
+        subscriptions.findByDeviceTokenAndUserId(request.deviceToken().trim(), user.id)
                 .ifPresent(value -> {
                     value.enabled = false;
                     value.updatedAt = Instant.now();
