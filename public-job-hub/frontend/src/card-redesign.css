@@ -2358,7 +2358,18 @@ body > #root > main {
 }
 
 @media (max-width: 700px) {
-  .grid > .posting-group-card { height: 420px; }
+  .grid > .posting-group-card {
+    height: 248px;
+    min-height: 248px;
+  }
+  .posting-group-card .posting-group-summary {
+    grid-template-rows: auto auto;
+    align-content: center;
+    padding: 16px 14px;
+  }
+  .posting-group-card .posting-group-copy {
+    align-content: center;
+  }
   .posting-group-overlay {
     align-items: end;
     padding: 0;
@@ -2367,17 +2378,65 @@ body > #root > main {
   }
   .posting-group-dialog {
     width: 100%;
-    max-height: 90dvh;
+    max-height: 82dvh;
     border-right: 0;
     border-bottom: 0;
     border-left: 0;
     border-radius: 18px 18px 0 0;
   }
-  .posting-group-dialog-head { padding: 17px 16px; }
+  .posting-group-dialog-head { padding: 14px 16px; }
   .posting-group-dialog-head h2 { font-size: 19px; }
   .posting-group-dialog-body {
     grid-template-columns: 1fr;
     gap: 11px;
     padding: 12px;
+  }
+  .posting-group-dialog-body > .card,
+  .posting-group-dialog-body > .card.deadline-urgent {
+    height: auto;
+    min-height: 380px;
+  }
+}
+
+/* 모바일 알림은 제목과 상세 내용을 생략하지 않고 한 화면 안에서 읽기 쉽게 표시한다. */
+@media (max-width: 760px) {
+  .notification-popover {
+    top: calc(58px + env(safe-area-inset-top));
+    max-height: calc(100dvh - 72px - env(safe-area-inset-top));
+    border-radius: 13px;
+  }
+  .notification-popover-head {
+    align-items: flex-start;
+    padding: 14px 15px;
+  }
+  .notification-popover-head > div {
+    min-width: 0;
+  }
+  .notification-popover-head span {
+    line-height: 1.45;
+  }
+  .notification-list {
+    max-height: calc(100dvh - 220px - env(safe-area-inset-top));
+  }
+  .notification-main {
+    gap: 5px;
+    padding: 14px 44px 14px 15px;
+  }
+  .notification-main > strong {
+    overflow: visible;
+    line-height: 1.4;
+    text-overflow: clip;
+    white-space: normal;
+  }
+  .notification-main > span:not(.notification-labels),
+  .notification-main > small {
+    line-height: 1.45;
+    white-space: normal;
+  }
+  .notification-main > p {
+    display: block;
+    overflow: visible;
+    line-height: 1.5;
+    -webkit-line-clamp: unset;
   }
 }

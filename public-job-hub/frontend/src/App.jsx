@@ -6391,7 +6391,11 @@ export default function App() {
 
   useEffect(() => {
     if (!mobileMenuOpen) return undefined
-    const closeMenuOnScroll = () => setMobileMenuOpen(false)
+    const closeMenuOnScroll = (event) => {
+      const target = event?.target
+      if (target instanceof Element && target.closest('.main-navigation.open')) return
+      setMobileMenuOpen(false)
+    }
     window.addEventListener('scroll', closeMenuOnScroll, { passive: true })
     window.addEventListener('touchmove', closeMenuOnScroll, { passive: true })
     document.addEventListener('scroll', closeMenuOnScroll, true)
