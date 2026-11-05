@@ -3523,3 +3523,85 @@ html[data-app-theme='dark'] .grid .date strong { color: #e8f0eb !important; }
     border-bottom-color: #79b997 !important;
   }
 }
+
+/* 웹 헤더와 시작 화면의 남은 사각형 장식을 완전히 제거한다. */
+@media (min-width: 761px) {
+  header .bar .main-navigation {
+    align-items: center;
+  }
+  .main-navigation > button,
+  .main-navigation > .notification-center > button,
+  .main-navigation > button:hover,
+  .main-navigation > .notification-center > button:hover,
+  .main-navigation > button:focus,
+  .main-navigation > .notification-center > button:focus,
+  .main-navigation > button:active,
+  .main-navigation > .notification-center > button:active {
+    height: 42px !important;
+    min-height: 42px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    outline: 0 !important;
+    border-top: 0 !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+    transform: none !important;
+    line-height: 1 !important;
+    appearance: none;
+  }
+  .main-navigation > .app-settings-nav {
+    position: static !important;
+    top: auto !important;
+    align-self: center !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  .main-navigation > .app-settings-nav > span {
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+    line-height: 1;
+  }
+
+  .landing-main .landing-page,
+  html[data-app-theme='dark'] .landing-main .landing-page {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .landing-main .landing-menu {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .landing-main .landing-card,
+  .landing-main .landing-card.postings,
+  .landing-main .landing-card.mypage,
+  .landing-main .landing-card.notice,
+  html[data-app-theme='dark'] .landing-main .landing-card,
+  html[data-app-theme='dark'] .landing-main .landing-card.postings,
+  html[data-app-theme='dark'] .landing-main .landing-card.mypage,
+  html[data-app-theme='dark'] .landing-main .landing-card.notice {
+    border: 0 !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .landing-main .landing-card:hover,
+  html[data-app-theme='dark'] .landing-main .landing-card:hover {
+    border: 0 !important;
+    background: rgba(49, 95, 80, .065) !important;
+    box-shadow: none !important;
+  }
+  html[data-app-theme='dark'] .landing-main .landing-card:hover {
+    background: rgba(121, 185, 151, .075) !important;
+  }
+}
