@@ -58,6 +58,8 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
            "or lower(p.title) like lower(concat('%', :employmentType, '%')) " +
            "or lower(p.employmentType) like lower(concat('%', :employmentTypeKeyword, '%')) " +
            "or lower(p.title) like lower(concat('%', :employmentTypeKeyword, '%'))) " +
+           "and (:employmentTypeExclude = '' or (lower(coalesce(p.employmentType, '')) not like lower(concat('%', :employmentTypeExclude, '%')) " +
+           "and lower(p.title) not like lower(concat('%', :employmentTypeExclude, '%')))) " +
            "and (:mine = false or exists (select s.id from Scrap s where s.posting = p and s.user.id = :userId)) " +
            "order by case when :preferredJobCategory <> '' and exists (select pref.id from RecruitmentPosition pref where pref.posting = p and lower(pref.standardCategory) like lower(concat('%', :preferredJobCategory, '%'))) then 0 else 1 end, " +
            "case when p.deadline >= :today then 0 when p.deadline is null then 1 else 2 end, " +
@@ -73,6 +75,7 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
                             @Param("jobCategoryKeyword") String jobCategoryKeyword,
                             @Param("employmentType") String employmentType,
                             @Param("employmentTypeKeyword") String employmentTypeKeyword,
+                            @Param("employmentTypeExclude") String employmentTypeExclude,
                             @Param("preferredJobCategory") String preferredJobCategory,
                             @Param("userId") Long userId, Pageable pageable);
 

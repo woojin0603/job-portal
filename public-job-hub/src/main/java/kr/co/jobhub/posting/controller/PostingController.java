@@ -280,9 +280,10 @@ public class PostingController {
         int safePage = Math.max(0, page);
         String jobCategoryKeyword = categoryKeyword(jobCategory);
         String employmentTypeKeyword = "무기".equals(employmentType) ? "공무직" : employmentType;
+        String employmentTypeExclude = "계약직".equals(employmentType) ? "무기" : "";
         var result = postings.search(q, mine, includeClosed, LocalDate.now(ZoneId.of("Asia/Seoul")), region, regionFull,
                 district, mobility, institutionScope, organizationForm, jobCategory, jobCategoryKeyword,
-                employmentType, employmentTypeKeyword, preferredJobCategory, userId,
+                employmentType, employmentTypeKeyword, employmentTypeExclude, preferredJobCategory, userId,
                 PageRequest.of(safePage, 12));
         Map<Long, Scrap> saved = scraps.findByUserId(userId).stream()
                 .collect(Collectors.toMap(s -> s.posting.getId(), Function.identity()));

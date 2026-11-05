@@ -343,14 +343,20 @@ const EMPLOYMENT_TYPE_OPTIONS = [
 /** 출처마다 다른 고용형태 문구를 목록에서 비교하기 쉬운 대표 명칭으로 표시한다. */
 function employmentTypeLabel(value, title = '') {
   const source = `${value || ''} ${title || ''}`.replace(/\s+/g, ' ')
-  if (/육아휴직.{0,8}(대체|대체인력)|대체.{0,8}육아휴직/i.test(source)) return '육아휴직 대체인력'
-  if (/체험형.{0,5}인턴|인턴.{0,5}체험형/i.test(source)) return '체험형 인턴'
-  if (/채용형.{0,5}인턴|인턴.{0,5}채용형/i.test(source)) return '채용형 인턴'
-  if (/무기계약|공무직|무기직/i.test(source)) return '무기계약직'
-  if (/기간제|기간제근로/i.test(source)) return '기간제'
-  if (/정규직/i.test(source)) return '정규직'
-  if (/계약직/i.test(source)) return '계약직'
-  if (/인턴/i.test(source)) return '인턴'
+  const types = []
+  const add = (label) => { if (!types.includes(label)) types.push(label) }
+  const replacement = /육아휴직.{0,8}(대체|대체인력)|대체.{0,8}육아휴직/i.test(source)
+  const experiential = /체험형.{0,5}인턴|인턴.{0,5}체험형/i.test(source)
+  const recruiting = /채용형.{0,5}인턴|인턴.{0,5}채용형/i.test(source)
+  if (/정규직/i.test(source)) add('정규직')
+  if (/무기계약|공무직|무기직/i.test(source)) add('무기계약직')
+  if (/기간제|기간제근로/i.test(source)) add('기간제')
+  if (replacement) add('육아휴직 대체인력')
+  if (experiential) add('체험형 인턴')
+  if (recruiting) add('채용형 인턴')
+  if (/계약직/i.test(source) && !/무기계약/i.test(source)) add('계약직')
+  if (/인턴/i.test(source) && !experiential && !recruiting) add('인턴')
+  if (types.length) return types.join(' · ')
   return value ? summarizeList(value, 1) : '고용형태 미확인'
 }
 
@@ -968,7 +974,7 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
           </div>
           <div>
             <dt>고용 형태</dt>
-            <dd>{job.employmentType || '공고문 확인'}</dd>
+            <dd>{employmentTypeLabel(job.employmentType, job.title)}</dd>
           </div>
         </dl>
       </header>

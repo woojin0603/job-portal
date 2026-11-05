@@ -3380,3 +3380,103 @@ html[data-app-theme='dark'] .grid .date strong { color: #e8f0eb !important; }
     color: #dce7e0 !important;
   }
 }
+
+/* 모바일 상세 화면은 요약 정보가 본문을 가리지 않으며 밝은 정보칸에 검은 글자를 사용한다. */
+@media (max-width: 760px) {
+  .posting-detail-page .detail-heading,
+  .posting-detail-page .detail-positions,
+  .posting-detail-page .detail-heading dl {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+  }
+  html[data-app-theme='dark'] .posting-detail-page .detail-heading dl div {
+    background: #f1f4f2 !important;
+    border: 1px solid #d5dcd8 !important;
+  }
+  html[data-app-theme='dark'] .posting-detail-page .detail-heading dt {
+    color: #4f5b55 !important;
+  }
+  html[data-app-theme='dark'] .posting-detail-page .detail-heading dd {
+    color: #111713 !important;
+  }
+  html[data-app-theme='dark'] .posting-detail-page .detail-position-chips > span {
+    background: #f1f4f2 !important;
+    border-color: #d5dcd8 !important;
+    color: #111713 !important;
+  }
+  html[data-app-theme='dark'] .posting-detail-page .detail-position-chips .detail-position-more {
+    background: #e5eae7 !important;
+    color: #303a35 !important;
+  }
+}
+
+/* 웹 시작 화면은 채도가 다른 박스 대신 동일한 중성 배경과 절제된 녹색 강조를 사용한다. */
+@media (min-width: 701px) {
+  body:has(> #root > main.landing-main) {
+    background: #f5f7f5;
+  }
+  body:has(> #root > main.landing-main) > #root > header {
+    background: rgba(250, 251, 250, .96);
+    border-bottom-color: #dfe5e1;
+  }
+  .landing-main .landing-page {
+    border: 0;
+    background: transparent;
+  }
+  .landing-main .landing-intro .eyebrow { color: #4f7562; }
+  .landing-main .landing-intro h1 { color: #17251e; }
+  .landing-main .landing-intro > p:last-child { color: #65736c; }
+  .landing-main .landing-card,
+  .landing-main .landing-card.postings,
+  .landing-main .landing-card.mypage,
+  .landing-main .landing-card.notice {
+    border: 1px solid #d9e0dc !important;
+    background: #fcfdfc !important;
+    color: #1d3026;
+    box-shadow: 0 4px 14px rgba(31, 50, 40, .045);
+  }
+  .landing-main .landing-card:hover,
+  .landing-main .landing-card.postings:hover,
+  .landing-main .landing-card.mypage:hover,
+  .landing-main .landing-card.notice:hover {
+    border-color: #94aa9e !important;
+    background: #f7faf8 !important;
+    box-shadow: 0 9px 22px rgba(31, 50, 40, .075);
+  }
+  .landing-main .landing-card > span,
+  .landing-main .landing-card.mypage > span,
+  .landing-main .landing-card.notice > span {
+    background: #e8eeea !important;
+    color: #315b46 !important;
+  }
+  .landing-main .landing-card strong { color: #203128 !important; }
+  .landing-main .landing-card::after { color: #718078; }
+}
+
+@media (min-width: 701px) {
+  html[data-app-theme='dark'] body:has(> #root > main.landing-main) { background: #0f1512; }
+  html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header {
+    background: rgba(20, 28, 24, .97);
+    border-bottom-color: #34443a;
+  }
+  html[data-app-theme='dark'] .landing-main .landing-card,
+  html[data-app-theme='dark'] .landing-main .landing-card.postings,
+  html[data-app-theme='dark'] .landing-main .landing-card.mypage,
+  html[data-app-theme='dark'] .landing-main .landing-card.notice {
+    background: #18211c !important;
+    border-color: #34443a !important;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, .18);
+  }
+  html[data-app-theme='dark'] .landing-main .landing-card:hover {
+    background: #202b25 !important;
+    border-color: #607568 !important;
+  }
+  html[data-app-theme='dark'] .landing-main .landing-card > span,
+  html[data-app-theme='dark'] .landing-main .landing-card.mypage > span,
+  html[data-app-theme='dark'] .landing-main .landing-card.notice > span {
+    background: #263a30 !important;
+    color: #a9d5bc !important;
+  }
+  html[data-app-theme='dark'] .landing-main .landing-card strong { color: #edf4ef !important; }
+}
