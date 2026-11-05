@@ -60,6 +60,18 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
            "or lower(p.title) like lower(concat('%', :employmentTypeKeyword, '%'))) " +
            "and (:employmentTypeExclude = '' or (lower(coalesce(p.employmentType, '')) not like lower(concat('%', :employmentTypeExclude, '%')) " +
            "and lower(p.title) not like lower(concat('%', :employmentTypeExclude, '%')))) " +
+           "and (:employmentType <> '정규직' or (" +
+           "lower(p.title) not like '%육아휴직%' and lower(p.title) not like '%대체%' " +
+           "and lower(p.title) not like '%인턴%' and lower(p.title) not like '%기간제%' " +
+           "and lower(p.title) not like '%무기%' and lower(p.title) not like '%공무직%' " +
+           "and lower(p.title) not like '%계약직%' " +
+           "and lower(coalesce(p.employmentType, '')) not like '%육아휴직%' " +
+           "and lower(coalesce(p.employmentType, '')) not like '%대체%' " +
+           "and lower(coalesce(p.employmentType, '')) not like '%인턴%' " +
+           "and lower(coalesce(p.employmentType, '')) not like '%기간제%' " +
+           "and lower(coalesce(p.employmentType, '')) not like '%무기%' " +
+           "and lower(coalesce(p.employmentType, '')) not like '%공무직%' " +
+           "and lower(coalesce(p.employmentType, '')) not like '%계약직%')) " +
            "and (:mine = false or exists (select s.id from Scrap s where s.posting = p and s.user.id = :userId)) " +
            "order by case when :preferredJobCategory <> '' and exists (select pref.id from RecruitmentPosition pref where pref.posting = p and lower(pref.standardCategory) like lower(concat('%', :preferredJobCategory, '%'))) then 0 else 1 end, " +
            "case when p.deadline >= :today then 0 when p.deadline is null then 1 else 2 end, " +

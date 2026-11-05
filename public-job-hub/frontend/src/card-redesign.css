@@ -3480,3 +3480,46 @@ html[data-app-theme='dark'] .grid .date strong { color: #e8f0eb !important; }
   }
   html[data-app-theme='dark'] .landing-main .landing-card strong { color: #edf4ef !important; }
 }
+
+/* 웹 상단 메뉴는 버튼 박스를 없애고 현재 위치만 얇은 밑줄로 표시한다. */
+@media (min-width: 761px) {
+  .main-navigation > button,
+  .main-navigation > .notification-center > button {
+    min-height: 42px;
+    border: 0 !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 10px !important;
+    box-shadow: none !important;
+  }
+  .main-navigation > button:hover,
+  .main-navigation > .notification-center > button:hover {
+    background: transparent !important;
+    color: #244f3c !important;
+    border-bottom-color: #a9b9b0 !important;
+  }
+  .main-navigation > button.active,
+  .main-navigation > .notification-center > button.active {
+    background: transparent !important;
+    color: #174f38 !important;
+    border-bottom-color: #315f50 !important;
+  }
+  html[data-app-theme='dark'] .main-navigation > button,
+  html[data-app-theme='dark'] .main-navigation > .notification-center > button {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: #d8e3dc !important;
+  }
+  html[data-app-theme='dark'] .main-navigation > button:hover,
+  html[data-app-theme='dark'] .main-navigation > .notification-center > button:hover {
+    color: #fff !important;
+    border-bottom-color: #607568 !important;
+  }
+  html[data-app-theme='dark'] .main-navigation > button.active,
+  html[data-app-theme='dark'] .main-navigation > .notification-center > button.active {
+    background: transparent !important;
+    color: #a9d5bc !important;
+    border-bottom-color: #79b997 !important;
+  }
+}

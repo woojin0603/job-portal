@@ -342,7 +342,18 @@ const EMPLOYMENT_TYPE_OPTIONS = [
 
 /** 출처마다 다른 고용형태 문구를 목록에서 비교하기 쉬운 대표 명칭으로 표시한다. */
 function employmentTypeLabel(value, title = '') {
-  const source = `${value || ''} ${title || ''}`.replace(/\s+/g, ' ')
+  const titleText = String(title || '').replace(/\s+/g, ' ')
+  const replacementTitle = /육아휴직.{0,10}(대체|대체인력)|대체.{0,10}육아휴직/i.test(titleText)
+  const experientialTitle = /체험형.{0,6}인턴|인턴.{0,6}체험형/i.test(titleText)
+  const recruitingTitle = /채용형.{0,6}인턴|인턴.{0,6}채용형/i.test(titleText)
+  if (replacementTitle) return '육아휴직 대체인력'
+  if (experientialTitle) return '체험형 인턴'
+  if (recruitingTitle) return '채용형 인턴'
+  if (/기간제|기간제근로/i.test(titleText)) return '기간제'
+  if (/무기계약|공무직|무기직/i.test(titleText)) return '무기계약직'
+  if (/정규직/i.test(titleText)) return '정규직'
+
+  const source = String(value || '').replace(/\s+/g, ' ')
   const types = []
   const add = (label) => { if (!types.includes(label)) types.push(label) }
   const replacement = /육아휴직.{0,8}(대체|대체인력)|대체.{0,8}육아휴직/i.test(source)
