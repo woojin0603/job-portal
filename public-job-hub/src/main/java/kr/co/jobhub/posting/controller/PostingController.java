@@ -271,14 +271,18 @@ public class PostingController {
                             @RequestParam(defaultValue = "") String mobility,
                             @RequestParam(defaultValue = "") String institutionScope,
                             @RequestParam(defaultValue = "") String organizationForm,
-                            @RequestParam(defaultValue = "") String jobCategory, Principal principal) {
+                            @RequestParam(defaultValue = "") String jobCategory,
+                            @RequestParam(defaultValue = "") String employmentType, Principal principal) {
         AppUser currentUser = principal == null ? null : user(principal);
         long userId = currentUser == null ? 0L : currentUser.id;
         String preferredJobCategory = currentUser == null || currentUser.preferredJobCategory == null
                 || !jobCategory.isBlank() || mine ? "" : currentUser.preferredJobCategory;
         int safePage = Math.max(0, page);
+        String jobCategoryKeyword = categoryKeyword(jobCategory);
+        String employmentTypeKeyword = "무기".equals(employmentType) ? "공무직" : employmentType;
         var result = postings.search(q, mine, includeClosed, LocalDate.now(ZoneId.of("Asia/Seoul")), region, regionFull,
-                district, mobility, institutionScope, organizationForm, jobCategory, preferredJobCategory, userId,
+                district, mobility, institutionScope, organizationForm, jobCategory, jobCategoryKeyword,
+                employmentType, employmentTypeKeyword, preferredJobCategory, userId,
                 PageRequest.of(safePage, 12));
         Map<Long, Scrap> saved = scraps.findByUserId(userId).stream()
                 .collect(Collectors.toMap(s -> s.posting.getId(), Function.identity()));
@@ -302,6 +306,14 @@ public class PostingController {
                 .toList();
         return new PostingPage(items, result.getTotalElements(), safePage, result.getTotalPages(),
                 result.hasNext(), crawler.status());
+    }
+
+    /** 표준 직렬의 구분점이 원문 NCS 명칭과 달라도 대표 단어로 함께 검색한다. */
+    private String categoryKeyword(String category) {
+        if (category == null || category.isBlank()) return "";
+        String value = category.trim();
+        String[] tokens = value.split("[·./,，\\s]+", 2);
+        return tokens.length == 0 || tokens[0].isBlank() ? value : tokens[0];
     }
 
     /** 마감된 과거 공고를 기관·직렬·지역·연도·고용형태로 검색한다. */

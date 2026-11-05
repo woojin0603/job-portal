@@ -329,6 +329,31 @@ function summarizeList(value, limit = 2) {
   return `${items.slice(0, limit).join(' · ')} 외 ${items.length - limit}개`
 }
 
+const EMPLOYMENT_TYPE_OPTIONS = [
+  ['정규직', '정규직'],
+  ['무기', '무기계약직'],
+  ['기간제', '기간제'],
+  ['계약직', '계약직'],
+  ['육아휴직', '육아휴직 대체인력'],
+  ['체험형', '체험형 인턴'],
+  ['채용형', '채용형 인턴'],
+  ['인턴', '인턴'],
+]
+
+/** 출처마다 다른 고용형태 문구를 목록에서 비교하기 쉬운 대표 명칭으로 표시한다. */
+function employmentTypeLabel(value, title = '') {
+  const source = `${value || ''} ${title || ''}`.replace(/\s+/g, ' ')
+  if (/육아휴직.{0,8}(대체|대체인력)|대체.{0,8}육아휴직/i.test(source)) return '육아휴직 대체인력'
+  if (/체험형.{0,5}인턴|인턴.{0,5}체험형/i.test(source)) return '체험형 인턴'
+  if (/채용형.{0,5}인턴|인턴.{0,5}채용형/i.test(source)) return '채용형 인턴'
+  if (/무기계약|공무직|무기직/i.test(source)) return '무기계약직'
+  if (/기간제|기간제근로/i.test(source)) return '기간제'
+  if (/정규직/i.test(source)) return '정규직'
+  if (/계약직/i.test(source)) return '계약직'
+  if (/인턴/i.test(source)) return '인턴'
+  return value ? summarizeList(value, 1) : '고용형태 미확인'
+}
+
 function institutionLabel(job) {
   if (job.organizationType === 'PRIVATE') return '민간기업'
   if (job.publicInstitutionType === 'LOCAL_PUBLIC') return '지방공기업'
@@ -489,6 +514,7 @@ function PostingListRow({
     1,
   )
   const region = summarizeList(position?.workRegion || job.region || '지역 미정', 1)
+  const employment = employmentTypeLabel(job.employmentType, job.title)
   return (
     <article className={`posting-list-entry ${urgent ? 'urgent' : ''}`}>
       <div
@@ -521,10 +547,12 @@ function PostingListRow({
         <span className="posting-list-position">
           <i>{category}</i>
           <i>{region}</i>
+          <i>{employment}</i>
         </span>
         <span className="posting-list-date">
           <strong className="posting-list-deadline">{deadlineLabel}</strong>
           <time dateTime={job.deadline || undefined}>{job.deadline || '마감일 미정'}</time>
+          <small>게시 {job.postedAt || '미확인'}</small>
         </span>
         <div className="posting-list-inline-tools" aria-label="공고 도구">
           <button
@@ -644,6 +672,7 @@ function JobCard({
   const iconUrl = sourceIconUrl(job)
   const institutionType = institutionLabel(job)
   const institutionClassificationText = institutionClassification(job)
+  const employmentLabel = employmentTypeLabel(job.employmentType, job.title)
   const visiblePositions = (job.positions || []).slice(0, 2)
   const hiddenPositionCount = Math.max(0, (job.positions?.length || 0) - visiblePositions.length)
   const [tracking, setTracking] = useState({
@@ -723,9 +752,7 @@ function JobCard({
       </div>
       <div className="details">
         <div className="pills">
-          {job.employmentType && (
-            <span title={job.employmentType}>{summarizeList(job.employmentType)}</span>
-          )}
+          <span title={job.employmentType || employmentLabel}>{employmentLabel}</span>
           {job.region && <span title={job.region}>{summarizeList(job.region, 1)}</span>}
         </div>
         {job.positions?.length > 0 && (
@@ -754,6 +781,10 @@ function JobCard({
         )}
       </div>
       <div className="date">
+        <div>
+          <small>원문 게시일</small>
+          <strong>{job.postedAt || '미확인'}</strong>
+        </div>
         <div>
           <small>마감일</small>
           <strong>
@@ -6316,6 +6347,7 @@ export default function App() {
   const [institutionScope, setInstitutionScope] = useState('')
   const [organizationForm, setOrganizationForm] = useState('')
   const [jobCategory, setJobCategory] = useState('')
+  const [employmentType, setEmploymentType] = useState('')
   const [showClosed, setShowClosed] = useState(false)
   const [filterExpanded, setFilterExpanded] = useState(false)
   const [postingViewMode, setPostingViewMode] = useState(
@@ -6646,6 +6678,7 @@ export default function App() {
           institutionScope: mine ? '' : institutionScope,
           organizationForm: mine ? '' : organizationForm,
           jobCategory: mine ? '' : jobCategory,
+          employmentType: mine ? '' : employmentType,
         })
         setData(await getJson(`/api/postings?${params}`, { signal }))
         setError('')
@@ -6667,6 +6700,7 @@ export default function App() {
       institutionScope,
       organizationForm,
       jobCategory,
+      employmentType,
       showClosed,
     ],
   )
@@ -7143,6 +7177,7 @@ export default function App() {
     setInstitutionScope('')
     setOrganizationForm('')
     setJobCategory('')
+    setEmploymentType('')
     setShowClosed(false)
     setPage(0)
     setMatchDialog(null)
@@ -7511,6 +7546,21 @@ export default function App() {
                           ))}
                         </select>
                       </label>
+                      <label>
+                        고용 형태
+                        <select
+                          value={employmentType}
+                          onChange={(e) => {
+                            setEmploymentType(e.target.value)
+                            setPage(0)
+                          }}
+                        >
+                          <option value="">전체 고용형태</option>
+                          {EMPLOYMENT_TYPE_OPTIONS.map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                      </label>
                       <label className="closed-posting-toggle">
                         <input
                           type="checkbox"
@@ -7528,6 +7578,7 @@ export default function App() {
                         institutionScope ||
                         organizationForm ||
                         jobCategory ||
+                        employmentType ||
                         showClosed) && (
                         <button
                           type="button"
@@ -7538,6 +7589,7 @@ export default function App() {
                             setInstitutionScope('')
                             setOrganizationForm('')
                             setJobCategory('')
+                            setEmploymentType('')
                             setShowClosed(false)
                             setPage(0)
                           }}

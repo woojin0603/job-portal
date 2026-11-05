@@ -3251,3 +3251,132 @@ html[data-app-theme='dark'] .posting-change-values span,
 html[data-app-theme='dark'] :where(.favorite-list, .favorite-postings, .organization-options) :where(span, small) {
   color: #aebcb3 !important;
 }
+
+/* 공고 메타 정보와 웹 패널 테두리를 한 가지 중성 팔레트로 정리한다. */
+.grid .date { justify-content: flex-start; }
+.grid .date > div { min-width: 104px; }
+.grid .card-dday { margin-left: auto; }
+.posting-list-date small { color: #8a958f; font-size: 10px; white-space: nowrap; }
+.posting-filter-panel,
+.posting-view-switch,
+.mypage-tabs,
+.application-dashboard,
+.favorite-organizations,
+.posting-changes-panel,
+.profile-summary,
+.profile-editor,
+.community-content,
+.detail-heading,
+.detail-positions,
+.original-preview {
+  border-color: #d9e1dd;
+}
+.posting-filter-panel,
+.application-dashboard,
+.favorite-organizations,
+.posting-changes-panel,
+.profile-summary,
+.profile-editor { box-shadow: 0 5px 18px rgba(33, 55, 44, .055); }
+.posting-advanced-filters { border-color: #e1e7e4; background: #f7f9f8; }
+.posting-list-position i { border: 1px solid #e1e6e3; }
+
+html[data-app-theme='dark'] .posting-list-position i {
+  background: #26332c !important;
+  border-color: #3d4d43 !important;
+  color: #cbd8d0 !important;
+}
+html[data-app-theme='dark'] .posting-list-date time,
+html[data-app-theme='dark'] .posting-list-date small { color: #aab8b0 !important; }
+html[data-app-theme='dark'] .grid .date small { color: #9fafa6 !important; }
+html[data-app-theme='dark'] .grid .date strong { color: #e8f0eb !important; }
+
+/* 설치형 앱의 모바일 화면은 각 페이지의 고정 글자색까지 다크 팔레트로 덮는다. */
+@media (max-width: 760px) {
+  .grid .date { flex-wrap: wrap; gap: 10px 18px; }
+  .grid .date > div { min-width: calc(50% - 10px); }
+  .grid .card-dday { margin-left: 0; }
+
+  html[data-app-theme='dark'] .main-navigation.open {
+    background: #151d19 !important;
+    border-color: #394a40 !important;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, .55) !important;
+  }
+  html[data-app-theme='dark'] .main-navigation.open :where(button, .user-name) {
+    color: #e7efe9 !important;
+    border-color: #34443a !important;
+  }
+  html[data-app-theme='dark'] :where(
+    .heading, .landing-intro, .posting-filter-panel, .posting-view-switch,
+    .posting-list-entry, .posting-group-summary, .mypage-tabs,
+    .application-dashboard, .favorite-organizations, .posting-changes-panel,
+    .profile-summary, .profile-editor, .community-content, .success-story-list article,
+    .detail-heading, .detail-positions, .original-preview
+  ) :where(h1, h2, h3, h4, strong, b) { color: #f0f5f2 !important; }
+  html[data-app-theme='dark'] :where(
+    .heading, .landing-intro, .posting-filter-panel, .posting-view-switch,
+    .posting-list-entry, .posting-group-summary, .mypage-tabs,
+    .application-dashboard, .favorite-organizations, .posting-changes-panel,
+    .profile-summary, .profile-editor, .community-content, .success-story-list article,
+    .detail-heading, .detail-positions, .original-preview
+  ) :where(p, span, small, time, label, em, dt, dd) { color: #b7c4bc; }
+  html[data-app-theme='dark'] :where(
+    .posting-filter-panel, .posting-view-switch, .posting-list-entry,
+    .posting-group-summary, .application-dashboard, .favorite-organizations,
+    .posting-changes-panel, .profile-summary, .profile-editor,
+    .community-content, .success-story-list article, .detail-heading,
+    .detail-positions, .original-preview
+  ) {
+    background: #18211c !important;
+    border-color: #394a40 !important;
+  }
+  html[data-app-theme='dark'] .mypage-tabs {
+    background: #151d19 !important;
+    border-color: #394a40 !important;
+  }
+  html[data-app-theme='dark'] .mypage-tabs button { color: #c5d2ca !important; }
+  html[data-app-theme='dark'] .mypage-tabs button.active { background: #47735d !important; color: #fff !important; }
+  html[data-app-theme='dark'] .profile-summary-grid > article,
+  html[data-app-theme='dark'] .profile-summary-item,
+  html[data-app-theme='dark'] .capability-item,
+  html[data-app-theme='dark'] .spec-section {
+    background: #202b25 !important;
+    border-color: #405147 !important;
+  }
+  html[data-app-theme='dark'] :where(.profile-summary-item, .capability-item, .spec-section) :where(strong, b) {
+    color: #edf4ef !important;
+  }
+  html[data-app-theme='dark'] :where(.profile-summary-item, .capability-item, .spec-section) :where(span, small, p) {
+    color: #afbeb5 !important;
+  }
+  html[data-app-theme='dark'] :where(
+    .tracking-dialog, .match-dialog, .salary-dialog, .competition-dialog,
+    .insight-dialog, .report-dialog, .qualification-dialog, .capability-dialog,
+    .application-spec-dialog, .auth-dialog, .legal-dialog, .password-dialog,
+    .account-deletion-dialog, .notification-popover
+  ) {
+    background: #17201b !important;
+    border-color: #405147 !important;
+    color: #edf4ef !important;
+  }
+  html[data-app-theme='dark'] :where(
+    .tracking-dialog, .match-dialog, .salary-dialog, .competition-dialog,
+    .insight-dialog, .report-dialog, .qualification-dialog, .capability-dialog,
+    .application-spec-dialog, .auth-dialog, .legal-dialog, .password-dialog,
+    .account-deletion-dialog, .notification-popover
+  ) :where(h1, h2, h3, strong, b) { color: #f1f6f3 !important; }
+  html[data-app-theme='dark'] :where(
+    .tracking-dialog, .match-dialog, .salary-dialog, .competition-dialog,
+    .insight-dialog, .report-dialog, .qualification-dialog, .capability-dialog,
+    .application-spec-dialog, .auth-dialog, .legal-dialog, .password-dialog,
+    .account-deletion-dialog, .notification-popover
+  ) :where(p, span, small, label, em, dt, dd) { color: #b8c6bd; }
+  html[data-app-theme='dark'] .posting-list-actions {
+    background: #141c18 !important;
+    border-color: #34443a !important;
+  }
+  html[data-app-theme='dark'] .posting-list-actions button {
+    background: #222e27 !important;
+    border-color: #405147 !important;
+    color: #dce7e0 !important;
+  }
+}
