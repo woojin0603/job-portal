@@ -64,19 +64,21 @@ export async function registerPushNotifications(securePost, requestPermission = 
   )
   window.localStorage.setItem('jobhub-fcm-token', token)
   if (!foregroundListenerRegistered) {
-    onMessage(instance, (payload) => {
+    onMessage(instance, async (payload) => {
       const data = payload.data || {}
       if (Notification.permission === 'granted') {
-        const notification = new Notification(data.title || 'JOB HUB KOREA', {
-          body: data.body || '새로운 채용 알림이 있습니다.',
-          icon: '/icons/icon-192.png',
-          tag: `${data.category || 'jobhub'}-${data.link || '/'}`,
-          data: { link: data.link || '/' },
-        })
-        notification.onclick = () => {
-          notification.close()
-          window.focus()
-          window.location.assign(data.link || '/')
+        // Android 설치형 PWA는 Notification 생성자를 지원하지 않을 수 있으므로
+        // 전면 실행 중에도 서비스워커를 통해 시스템 알림을 표시한다.
+        try {
+          await registration.showNotification(data.title || 'JOB HUB KOREA', {
+            body: data.body || '새로운 채용 알림이 있습니다.',
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+            tag: `${data.category || 'jobhub'}-${data.link || '/'}`,
+            data: { link: data.link || '/' },
+          })
+        } catch (notificationError) {
+          console.warn('시스템 푸시 알림을 표시하지 못했습니다.', notificationError)
         }
       }
       window.dispatchEvent(new CustomEvent('jobhub:push-received', { detail: data }))
