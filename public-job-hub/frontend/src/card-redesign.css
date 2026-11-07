@@ -3585,23 +3585,29 @@ html[data-app-theme='dark'] .grid .date strong { color: #e8f0eb !important; }
   .landing-main .landing-card,
   .landing-main .landing-card.postings,
   .landing-main .landing-card.mypage,
-  .landing-main .landing-card.notice,
+  .landing-main .landing-card.notice {
+    border: 1px solid #d7e0da !important;
+    border-radius: 16px !important;
+    background: rgba(249, 251, 249, .9) !important;
+    box-shadow: 0 5px 16px rgba(35, 58, 46, .045) !important;
+  }
+  .landing-main .landing-card:hover {
+    border-color: #adc0b4 !important;
+    background: #f2f6f3 !important;
+    box-shadow: 0 8px 20px rgba(35, 58, 46, .07) !important;
+  }
   html[data-app-theme='dark'] .landing-main .landing-card,
   html[data-app-theme='dark'] .landing-main .landing-card.postings,
   html[data-app-theme='dark'] .landing-main .landing-card.mypage,
   html[data-app-theme='dark'] .landing-main .landing-card.notice {
-    border: 0 !important;
-    border-radius: 10px !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-  .landing-main .landing-card:hover,
-  html[data-app-theme='dark'] .landing-main .landing-card:hover {
-    border: 0 !important;
-    background: rgba(49, 95, 80, .065) !important;
-    box-shadow: none !important;
+    border: 1px solid #34443a !important;
+    border-radius: 16px !important;
+    background: rgba(24, 33, 28, .9) !important;
+    box-shadow: 0 5px 16px rgba(0, 0, 0, .12) !important;
   }
   html[data-app-theme='dark'] .landing-main .landing-card:hover {
-    background: rgba(121, 185, 151, .075) !important;
+    border-color: #53695b !important;
+    background: #202b25 !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .18) !important;
   }
 }
