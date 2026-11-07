@@ -7320,8 +7320,7 @@ export default function App() {
                 setAppSettingsOpen(true)
               }}
             >
-              <span className="desktop-settings-label">설정</span>
-              <span className="mobile-settings-label">설정</span>
+              설정
             </button>
             {user ? (
               <>

@@ -3,6 +3,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
+
 .grid > .card,
 .grid > .card.deadline-urgent,
 .grid > .card.deadline-urgent:hover {
@@ -3610,4 +3611,41 @@ html[data-app-theme='dark'] .grid .date strong { color: #e8f0eb !important; }
     background: #202b25 !important;
     box-shadow: 0 8px 20px rgba(0, 0, 0, .18) !important;
   }
+}
+
+/* 헤더와 로그인 보조 동작은 주변 면과 이어지도록 불필요한 버튼 배경을 제거한다. */
+@media (min-width: 761px) {
+  header .main-navigation,
+  header .main-navigation > button,
+  header .main-navigation > .notification-center,
+  header .main-navigation > .notification-center > button {
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+  header .main-navigation > button,
+  header .main-navigation > .notification-center > button {
+    border-top: 0 !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+  }
+}
+
+.auth-secondary-actions,
+.auth-secondary-actions .forgot-password-button,
+.auth-secondary-actions .auth-switch,
+.auth-secondary-actions .auth-switch button,
+html[data-app-theme='dark'] .auth-secondary-actions,
+html[data-app-theme='dark'] .auth-secondary-actions .forgot-password-button,
+html[data-app-theme='dark'] .auth-secondary-actions .auth-switch,
+html[data-app-theme='dark'] .auth-secondary-actions .auth-switch button {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.auth-secondary-actions .auth-switch {
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-left: 0 !important;
 }
