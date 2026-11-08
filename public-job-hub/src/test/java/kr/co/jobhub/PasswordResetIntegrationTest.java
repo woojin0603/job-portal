@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,6 +69,11 @@ class PasswordResetIntegrationTest {
                         .content("{\"token\":\"" + RAW_TOKEN + "\",\"newPassword\":\""
                                 + NEW_PASSWORD + "\"}"))
                 .andExpect(status().isOk());
+
+        AppUser changedUser = users.findByEmail(EMAIL).orElseThrow();
+        assertThat(changedUser.getId()).isNotNull();
+        assertThat(passwords.matches(NEW_PASSWORD, changedUser.passwordHash)).isTrue();
+        assertThat(passwords.matches(OLD_PASSWORD, changedUser.passwordHash)).isFalse();
 
         mvc.perform(post("/api/auth/login").with(csrf())
                         .param("username", EMAIL).param("password", OLD_PASSWORD))

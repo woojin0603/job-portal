@@ -84,14 +84,19 @@ public class PasswordResetService {
         PasswordResetToken token = tokens.findByTokenHashAndUsedAtIsNull(hash(rawToken))
                 .filter(value -> value.expiresAt.isAfter(Instant.now()))
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "재설정 링크가 만료되었거나 이미 사용되었습니다."));
-        AppUser user = token.user;
+        // PasswordResetToken.user is a lazy Hibernate proxy. Accessing its public fields directly
+        // does not initialize the proxy, so changes can be written only to an empty proxy instance.
+        // Resolve the real managed user before changing security-sensitive fields.
+        Long userId = token.user.getId();
+        AppUser user = users.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "재설정할 계정을 찾을 수 없습니다."));
         user.passwordHash = passwords.encode(newPassword);
         user.mustChangePassword = false;
         user.sessionVersion = (user.sessionVersion == null ? 0L : user.sessionVersion) + 1;
         token.usedAt = Instant.now();
         users.saveAndFlush(user);
         tokens.saveAndFlush(token);
-        log.info("Password reset completed for user id {}", user.id);
+        log.info("Password reset completed for user id {}", user.getId());
     }
 
     private void issue(AppUser user, String recipientAddress) {
