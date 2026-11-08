@@ -549,7 +549,8 @@ public class PostingController {
 
     /** 공고문 PDF를 브라우저가 작은 창 안에서 표시하도록 inline 응답으로 중계한다. */
     @GetMapping("/postings/{id}/document")
-    public ResponseEntity<?> document(@PathVariable Long id) {
+    public ResponseEntity<?> document(@PathVariable Long id,
+                                      @RequestParam(defaultValue = "false") boolean download) {
         JobPosting p = postings.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         try {
@@ -560,22 +561,27 @@ public class PostingController {
                 return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(p.sourceUrl)).build();
             }
             URI pdfUri = URI.create(pdfUrl);
-            if (!"https".equalsIgnoreCase(pdfUri.getScheme())
-                    || !("alio.go.kr".equalsIgnoreCase(pdfUri.getHost())
-                    || "www.alio.go.kr".equalsIgnoreCase(pdfUri.getHost()))) {
+            if (!"https".equalsIgnoreCase(pdfUri.getScheme()) || !isAlioHost(pdfUri.getHost())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
             }
             var response = Jsoup.connect(pdfUrl).userAgent("Mozilla/5.0 PublicJobHub/0.3")
                     .ignoreContentType(true).maxBodySize(20_000_000).timeout(20000).execute();
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=job-posting.pdf")
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            (download ? "attachment" : "inline") + "; filename=job-posting.pdf")
                     .body(response.bodyAsBytes());
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "공고문을 가져오지 못했습니다.");
         }
+    }
+
+    private boolean isAlioHost(String host) {
+        if (host == null) return false;
+        String normalized = host.toLowerCase(java.util.Locale.ROOT);
+        return normalized.equals("alio.go.kr") || normalized.endsWith(".alio.go.kr");
     }
 
     /** JOB-ALIO 상세 페이지에서 실제 채용 공고문 PDF 링크를 찾는다. */

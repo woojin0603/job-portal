@@ -3928,3 +3928,29 @@ html[data-app-theme='dark'] .application-dialog-spec > div button {
   background: #29372f;
   color: #dbe8e0;
 }
+
+html[data-app-theme='dark'] .detail-toolbar a,
+html[data-app-theme='dark'] .detail-toolbar button {
+  border-color: #506358 !important;
+  background: #243129 !important;
+  color: #edf5f0 !important;
+}
+html[data-app-theme='dark'] .detail-toolbar a:hover,
+html[data-app-theme='dark'] .detail-toolbar button:hover {
+  border-color: #79a58e !important;
+  background: #30443a !important;
+  color: #fff !important;
+}
+html[data-app-theme='dark'] .qualification-badges span {
+  border-color: #52655a !important;
+  background: #26342c !important;
+  color: #edf5f0 !important;
+}
+html[data-app-theme='dark'] .qualification-badges b {
+  background: #365344 !important;
+  color: #d9eee2 !important;
+}
+html[data-app-theme='dark'] .profile-summary-item > span,
+html[data-app-theme='dark'] .profile-summary-item > p {
+  color: #c3d0c8 !important;
+}

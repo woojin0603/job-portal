@@ -985,6 +985,11 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
           >
             원문 사이트 ↗
           </a>
+          {preview?.originalUrl?.startsWith('/api/postings/') && (
+            <a href={`${preview.originalUrl}?download=true`}>
+              첨부파일 다운로드
+            </a>
+          )}
         </div>
       </div>
       <header className="detail-heading">
@@ -6844,7 +6849,9 @@ export default function App() {
       if (navigator.share) await navigator.share(shareData)
       else {
         await navigator.clipboard.writeText(job.sourceUrl)
-        setError('공고 원문 주소를 복사했습니다.')
+        const notice = '공고 원문 주소를 복사했습니다.'
+        setError(notice)
+        window.setTimeout(() => setError((current) => (current === notice ? '' : current)), 2500)
       }
     } catch (e) {
       if (e.name !== 'AbortError') setError('공고를 공유하지 못했습니다.')
