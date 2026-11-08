@@ -3876,3 +3876,55 @@ html[data-app-theme='dark'] .admin-push-test-result small { color: #b8c6bd; }
   .admin-push-test-grid article { align-items: stretch; flex-direction: column; }
   .admin-push-test-grid button { width: 100%; min-height: 42px; }
 }
+
+/* 지원 현황의 일정 라벨과 상세 미니탭은 다크 모드에서도 충분한 대비를 유지한다. */
+html[data-app-theme='dark'] .application-status-dates small {
+  color: #c7d5cd !important;
+}
+html[data-app-theme='dark'] .application-status-dates b {
+  color: #f0f6f2 !important;
+}
+html[data-app-theme='dark'] .application-status-dialog {
+  border-color: #405147;
+  background: #17201b;
+  color: #edf4ef;
+}
+html[data-app-theme='dark'] .application-status-dialog-head p,
+html[data-app-theme='dark'] .application-status-dialog-head > button {
+  color: #b7c6bd;
+}
+html[data-app-theme='dark'] .application-status-dialog-head h2,
+html[data-app-theme='dark'] .application-dialog-spec h3 {
+  color: #f1f6f3;
+}
+html[data-app-theme='dark'] .application-status-overview label,
+html[data-app-theme='dark'] .application-dialog-memo {
+  color: #d0dcd4;
+}
+html[data-app-theme='dark'] .application-status-overview select,
+html[data-app-theme='dark'] .application-status-overview input,
+html[data-app-theme='dark'] .application-dialog-memo textarea {
+  border-color: #4a5c51;
+  background: #202b25;
+  color: #f0f5f2;
+  color-scheme: dark;
+}
+html[data-app-theme='dark'] .application-dialog-deadline,
+html[data-app-theme='dark'] .application-dialog-spec {
+  border-color: #405147;
+  background: #202b25;
+}
+html[data-app-theme='dark'] .application-dialog-deadline span,
+html[data-app-theme='dark'] .application-dialog-spec dt,
+html[data-app-theme='dark'] .application-dialog-spec > p {
+  color: #b9c8bf;
+}
+html[data-app-theme='dark'] .application-dialog-deadline strong,
+html[data-app-theme='dark'] .application-dialog-spec dd {
+  color: #eef5f0;
+}
+html[data-app-theme='dark'] .application-dialog-spec > div button {
+  border-color: #587064;
+  background: #29372f;
+  color: #dbe8e0;
+}

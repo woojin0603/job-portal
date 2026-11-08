@@ -2492,9 +2492,10 @@ function FavoriteOrganizationsPanel({ securePost, onOpen }) {
   )
 }
 
-function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess }) {
+function ApplicationDashboard({ applications, onOpen, onEditSpec, onSaveTracking, onShareSuccess }) {
   const [stageFilter, setStageFilter] = useState('')
   const [applicationExpanded, setApplicationExpanded] = useState(false)
+  const [selectedApplication, setSelectedApplication] = useState(null)
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const today = new Date()
     return new Date(today.getFullYear(), today.getMonth(), 1)
@@ -2635,17 +2636,15 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
           <div className="application-list-columns" aria-hidden="true">
             <span>공고명</span>
             <span>상태</span>
-            <span>관리</span>
           </div>
           {displayedApplications.map((item) => {
-            const hasSpec = Object.values(item.applicationSpec || {}).some((value) => value?.trim())
             const today = new Date().toISOString().slice(0, 10)
             const nextAutoSchedule = (item.schedules || []).find(
               (schedule) => schedule.date >= today,
             )
             return (
               <article key={item.id}>
-                <button type="button" className="application-open" onClick={() => onOpen(item)}>
+                <button type="button" className="application-open" onClick={() => setSelectedApplication(item)}>
                   <div className="application-posting-name">
                     <span
                       className="application-title-text"
@@ -2669,15 +2668,8 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                     {item.memo && <em>{item.memo}</em>}
                   </div>
                 </button>
-                <div className="application-item-actions">
-                  <button
-                    type="button"
-                    className="application-spec-button"
-                    onClick={() => onEditSpec(item)}
-                  >
-                    {hasSpec ? '제출 스펙 수정' : '제출 스펙 기록'}
-                  </button>
-                  {stageFilter && SUCCESS_SHARE_STAGES.has(item.stage) && (
+                {stageFilter && SUCCESS_SHARE_STAGES.has(item.stage) && (
+                  <div className="application-item-actions">
                     <button
                       type="button"
                       className="application-success-share"
@@ -2685,8 +2677,8 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                     >
                       합격자 게시판에 공유
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </article>
             )
           })}
@@ -2756,7 +2748,7 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
                 <button
                   type="button"
                   key={`${item.id}-${item.eventType}-${index}`}
-                  onClick={() => onOpen(item)}
+                  onClick={() => setSelectedApplication(item)}
                 >
                   <span>
                     {item.eventType} · {item.organization}
@@ -2769,7 +2761,135 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onShareSuccess
           </div>
         </section>
       </div>
+      {selectedApplication && (
+        <ApplicationStatusDialog
+          item={selectedApplication}
+          onClose={() => setSelectedApplication(null)}
+          onOpen={() => onOpen(selectedApplication)}
+          onEditSpec={() => {
+            onEditSpec(selectedApplication)
+            setSelectedApplication(null)
+          }}
+          onSave={async (tracking) => {
+            await onSaveTracking(selectedApplication.id, tracking)
+            setSelectedApplication(null)
+          }}
+        />
+      )}
     </section>
+  )
+}
+
+function ApplicationStatusDialog({ item, onClose, onOpen, onEditSpec, onSave }) {
+  const [tracking, setTracking] = useState({
+    stage: item.stage || 'SAVED',
+    nextStepDate: item.nextStepDate || '',
+    memo: item.memo || '',
+  })
+  const [busy, setBusy] = useState(false)
+  const spec = item.applicationSpec || {}
+  const specRows = [
+    ['자격증', spec.certifications],
+    ['경력', spec.careers],
+    ['대외활동', spec.activities],
+    ['학위', spec.degrees],
+    ['메모', spec.notes],
+  ].filter(([, value]) => value?.trim())
+  const isSaved = tracking.stage === 'SAVED'
+
+  return createPortal(
+    <div className="match-overlay application-status-overlay" onMouseDown={onClose}>
+      <section
+        className="application-status-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="application-status-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="application-status-dialog-head">
+          <div>
+            <p>{item.organization}</p>
+            <h2 id="application-status-title">{item.title || item.postingTitle}</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="닫기">×</button>
+        </div>
+        <div className="application-status-overview">
+          <label>
+            현재 상태
+            <select
+              value={tracking.stage}
+              onChange={(event) => setTracking({ ...tracking, stage: event.target.value })}
+            >
+              {Object.entries(STAGE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            다음 일정
+            <input
+              type="date"
+              value={tracking.nextStepDate}
+              onChange={(event) => setTracking({ ...tracking, nextStepDate: event.target.value })}
+            />
+          </label>
+          <div className="application-dialog-deadline">
+            <span>마감일</span>
+            <strong>{item.deadline || '미정'}</strong>
+          </div>
+        </div>
+        <label className="application-dialog-memo">
+          지원 메모
+          <textarea
+            value={tracking.memo}
+            onChange={(event) => setTracking({ ...tracking, memo: event.target.value })}
+            placeholder="준비사항이나 다음 전형 메모"
+            maxLength={2000}
+          />
+        </label>
+        <section className="application-dialog-spec">
+          <div>
+            <h3>지원 스펙</h3>
+            {!isSaved && <button type="button" onClick={onEditSpec}>수정하기</button>}
+          </div>
+          {isSaved ? (
+            <button type="button" className="application-spec-register" onClick={onEditSpec}>
+              지원 스펙 등록하기
+            </button>
+          ) : specRows.length ? (
+            <dl>
+              {specRows.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p>이 공고에 등록한 지원 스펙이 없습니다.</p>
+          )}
+        </section>
+        <div className="application-status-dialog-actions">
+          <button type="button" className="secondary" onClick={onOpen}>원문보기</button>
+          <button
+            type="button"
+            className="primary"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              try {
+                await onSave({ ...tracking, nextStepDate: tracking.nextStepDate || null })
+              } finally {
+                setBusy(false)
+              }
+            }}
+          >
+            {busy ? '저장 중…' : '상태 저장'}
+          </button>
+        </div>
+      </section>
+    </div>,
+    document.body,
   )
 }
 
@@ -7868,6 +7988,7 @@ export default function App() {
                       applications={applications}
                       onOpen={openSource}
                       onEditSpec={setApplicationSpecDialog}
+                      onSaveTracking={saveTracking}
                       onShareSuccess={setSuccessShareDialog}
                     />
                   )}

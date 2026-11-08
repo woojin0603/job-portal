@@ -6786,3 +6786,240 @@ nav a:hover,
     border-left: 0;
   }
 }
+
+/* 마이페이지는 작은 보조문구를 줄이고 제목·본문의 위계를 또렷하게 유지한다. */
+.mypage-dashboard {
+  color: #26352e;
+  font-size: 15px;
+  line-height: 1.6;
+  letter-spacing: -0.012em;
+}
+.mypage-dashboard :where(h2, h3, strong, b) {
+  letter-spacing: -0.02em;
+}
+.mypage-dashboard .profile-heading h2,
+.mypage-dashboard .application-dashboard-head h2 {
+  color: #17271f;
+  font-size: 23px;
+  font-weight: 750;
+}
+.mypage-dashboard :where(.profile-heading, .favorite-heading, .posting-changes-head) p {
+  color: #586a61;
+  font-size: 14px;
+  font-weight: 450;
+  line-height: 1.65;
+}
+.mypage-tabs button {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+.application-list-columns {
+  grid-template-columns: minmax(0, 1fr) 156px;
+}
+.application-list > article {
+  grid-template-columns: minmax(0, 1fr);
+}
+.application-list > article:has(.application-item-actions) {
+  grid-template-columns: minmax(0, 1fr) 150px;
+}
+.application-posting-name .application-title-text {
+  font-size: 16px !important;
+  font-weight: 720 !important;
+}
+.application-posting-name small {
+  margin-top: 4px;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+.application-status-info > strong {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+.application-status-dates small {
+  color: #52655b !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+.application-status-dates b {
+  color: #1d3127 !important;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.application-status-overlay {
+  z-index: 1200;
+  align-items: center;
+  background: rgba(12, 22, 17, 0.18);
+  padding: 18px;
+}
+.application-status-dialog {
+  width: min(680px, calc(100vw - 28px));
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
+  border: 1px solid #cad7d0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 22px;
+  box-shadow: 0 22px 70px rgba(22, 45, 34, 0.24);
+}
+.application-status-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+.application-status-dialog-head p {
+  margin: 0 0 5px;
+  color: #527063;
+  font-size: 13px;
+  font-weight: 650;
+}
+.application-status-dialog-head h2 {
+  margin: 0;
+  color: #17271f;
+  font-size: 20px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+.application-status-dialog-head > button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #5c6a63;
+  font-size: 26px;
+}
+.application-status-overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr minmax(112px, .65fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+.application-status-overview label,
+.application-dialog-memo {
+  display: grid;
+  gap: 7px;
+  color: #40534a;
+  font-size: 13px;
+  font-weight: 650;
+}
+.application-status-overview select,
+.application-status-overview input,
+.application-dialog-memo textarea {
+  width: 100%;
+  border: 1px solid #cbd7d0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px 11px;
+  color: #1f3028;
+  font: inherit;
+  font-weight: 500;
+}
+.application-dialog-deadline {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  border: 1px solid #d6dfda;
+  border-radius: 8px;
+  background: #f6f9f7;
+  padding: 10px 12px;
+}
+.application-dialog-deadline span {
+  color: #5b6c63;
+  font-size: 12px;
+  font-weight: 600;
+}
+.application-dialog-deadline strong {
+  color: #20342a;
+  font-size: 14px;
+  font-weight: 700;
+}
+.application-dialog-memo {
+  margin-top: 14px;
+}
+.application-dialog-memo textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+.application-dialog-spec {
+  margin-top: 16px;
+  border: 1px solid #d7e0db;
+  border-radius: 10px;
+  background: #f8faf9;
+  padding: 15px;
+}
+.application-dialog-spec > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.application-dialog-spec h3 {
+  margin: 0;
+  color: #22352c;
+  font-size: 16px;
+  font-weight: 720;
+}
+.application-dialog-spec > div button,
+.application-spec-register {
+  border: 1px solid #9fb9ad;
+  border-radius: 7px;
+  background: #fff;
+  padding: 8px 11px;
+  color: #285644;
+  font-weight: 650;
+}
+.application-dialog-spec dl {
+  display: grid;
+  gap: 8px;
+  margin: 13px 0 0;
+}
+.application-dialog-spec dl div {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 10px;
+}
+.application-dialog-spec dt {
+  color: #62736a;
+  font-size: 12px;
+  font-weight: 650;
+}
+.application-dialog-spec dd {
+  margin: 0;
+  color: #26382f;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+.application-dialog-spec > p {
+  margin: 12px 0 0;
+  color: #66766e;
+  font-size: 13px;
+}
+.application-spec-register {
+  width: 100%;
+  margin-top: 12px;
+  background: #315f50;
+  color: #fff;
+}
+.application-status-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 18px;
+}
+.application-status-dialog-actions button {
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-weight: 650;
+}
+
+@media (max-width: 620px) {
+  .application-status-overlay { padding: 10px; }
+  .application-status-dialog { width: 100%; max-height: calc(100dvh - 20px); padding: 17px; }
+  .application-status-overview { grid-template-columns: 1fr 1fr; }
+  .application-dialog-deadline { grid-column: 1 / -1; }
+  .application-dialog-spec dl div { grid-template-columns: 58px minmax(0, 1fr); }
+  .application-status-dialog-actions button { flex: 1; }
+}
