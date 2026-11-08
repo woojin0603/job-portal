@@ -10,8 +10,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * React 클라이언트가 사용하는 회원가입·세션 조회·CSRF 토큰 API다.
@@ -122,7 +124,9 @@ public class AuthController {
 
     /** 로그인한 회원이 현재 비밀번호를 확인한 뒤 새 비밀번호로 안전하게 교체한다. */
     @PostMapping("/password")
-    public Profile changePassword(@Valid @RequestBody PasswordChangeRequest request, Authentication auth) {
+    @Transactional
+    public Profile changePassword(@Valid @RequestBody PasswordChangeRequest request, Authentication auth,
+                                  HttpSession session) {
         if (auth == null || !auth.isAuthenticated()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         if (!request.newPassword().matches("^(?=.*[A-Za-z])(?=.*\\d).+$")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "새 비밀번호는 영문과 숫자를 모두 포함해야 합니다.");
@@ -137,7 +141,9 @@ public class AuthController {
         }
         user.passwordHash = passwords.encode(request.newPassword());
         user.mustChangePassword = false;
-        users.save(user);
+        user.sessionVersion = (user.sessionVersion == null ? 0L : user.sessionVersion) + 1;
+        users.saveAndFlush(user);
+        session.setAttribute("SESSION_VERSION", user.sessionVersion);
         boolean admin = auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
         return profile(user, admin);
     }

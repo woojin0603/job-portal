@@ -88,8 +88,9 @@ public class PasswordResetService {
         user.mustChangePassword = false;
         user.sessionVersion = (user.sessionVersion == null ? 0L : user.sessionVersion) + 1;
         token.usedAt = Instant.now();
-        users.save(user);
-        tokens.save(token);
+        users.saveAndFlush(user);
+        tokens.saveAndFlush(token);
+        log.info("Password reset completed for user id {}", user.id);
     }
 
     private void issue(AppUser user) {
