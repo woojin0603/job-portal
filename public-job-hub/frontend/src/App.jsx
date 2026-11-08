@@ -4853,6 +4853,7 @@ function AdminReviewPanel({ user, securePost }) {
   const [qualificationType, setQualificationType] = useState('AUTO')
   const [qualificationEncoding, setQualificationEncoding] = useState('AUTO')
   const [compensationFile, setCompensationFile] = useState(null)
+  const [pushTestResult, setPushTestResult] = useState(null)
   const normalizeAdminResponse = useCallback((index, value) => {
     if (index === 0) return Array.isArray(value) ? value : []
     if (index === 1) return value && typeof value === 'object' ? value : {}
@@ -4952,6 +4953,24 @@ function AdminReviewPanel({ user, securePost }) {
           ? `공식 공고 재처리를 마쳤지만 확인이 필요합니다: ${apiStatus.error}`
           : `공식 공고 ${apiStatus.lastCount || 0}건을 다시 반영했습니다.`,
       )
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(null)
+    }
+  }
+  async function runPushTest(scenario) {
+    setBusy(`push-${scenario}`)
+    setMessage('')
+    setPushTestResult(null)
+    try {
+      const result = await securePost(
+        '/api/admin/push-tests',
+        JSON.stringify({ scenario }),
+        'application/json',
+      )
+      setPushTestResult({ ...result, scenario })
+      setMessage(result.detail)
     } catch (e) {
       setMessage(e.message)
     } finally {
@@ -5132,6 +5151,7 @@ function AdminReviewPanel({ user, securePost }) {
           ['collection', '수집 관리'],
           ['logos', '기관 로고'],
           ['popups', '사용자 팝업'],
+          ['push-tests', '푸시 테스트'],
           ['client-errors', '화면 오류'],
           [
             'review',
@@ -5392,6 +5412,53 @@ function AdminReviewPanel({ user, securePost }) {
               </div>
             </section>
           </div>
+        </section>
+      )}
+      {section === 'push-tests' && (
+        <section className="admin-push-tests" aria-label="관리자 푸시 알림 테스트">
+          <div className="operations-heading">
+            <div>
+              <h2>푸시 알림 테스트</h2>
+              <span>현재 관리자 계정에 연결된 휴대폰으로 실제 알림을 발송합니다.</span>
+            </div>
+          </div>
+          <div className="admin-push-test-grid">
+            {[
+              ['SCRAP_CHANGE', '스크랩 공고 변경', '공고 변경 알림의 제목·내용·이동 경로를 확인합니다.'],
+              ['FAVORITE_NEW', '관심 기관 신규 공고', '관심 기관에서 새 공고가 등록된 형식으로 발송합니다.'],
+              ['IMPORTANT_NOTICE', '관리자 중요 공지', '중요 공지 알림과 공지 화면 이동을 확인합니다.'],
+              ['DUPLICATE_GUARD', '중복 발송 방지', '같은 키를 두 번 처리해 두 번째 발송 차단을 검증합니다.'],
+            ].map(([value, label, description]) => (
+              <article key={value}>
+                <div>
+                  <strong>{label}</strong>
+                  <p>{description}</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={Boolean(busy)}
+                  onClick={() => runPushTest(value)}
+                >
+                  {busy === `push-${value}` ? '발송 중…' : '시험 발송'}
+                </button>
+              </article>
+            ))}
+          </div>
+          {pushTestResult && (
+            <div className={pushTestResult.delivered ? 'admin-push-test-result success' : 'admin-push-test-result attention'}>
+              <strong>{pushTestResult.delivered ? '발송 요청 성공' : '발송 확인 필요'}</strong>
+              <span>{pushTestResult.title}</span>
+              <p>{pushTestResult.detail}</p>
+              {pushTestResult.scenario === 'DUPLICATE_GUARD' && (
+                <small>
+                  중복 차단: {pushTestResult.duplicateBlocked ? '정상' : '확인 필요'}
+                </small>
+              )}
+            </div>
+          )}
+          <p className="admin-push-test-note">
+            시험 알림은 실제 공고나 사용자 데이터를 변경하지 않으며, 관리자 본인의 등록 기기에만 전송됩니다.
+          </p>
         </section>
       )}
       {section === 'security' && securityOverview && (

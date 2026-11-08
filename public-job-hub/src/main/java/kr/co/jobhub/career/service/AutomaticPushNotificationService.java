@@ -41,6 +41,9 @@ public class AutomaticPushNotificationService {
     private final AppUserRepository users;
     private final boolean automaticEnabled;
 
+    public record ManualTestResult(boolean configured, boolean delivered, boolean duplicateBlocked,
+                                   String title, String detail) {}
+
     public AutomaticPushNotificationService(PushNotificationService notifications,
                                             PushSubscriptionRepository subscriptions,
                                             PushDeliveryReceiptRepository receipts,
@@ -164,6 +167,55 @@ public class AutomaticPushNotificationService {
     public void deleteOldReceipts() {
         long deleted = receipts.deleteByDeliveredAtBefore(Instant.now().minus(180, ChronoUnit.DAYS));
         if (deleted > 0) log.info("Deleted {} old push delivery receipt(s)", deleted);
+    }
+
+    /** 관리자 본인의 등록 기기로 운영 알림 형식과 중복 방지를 안전하게 점검한다. */
+    public ManualTestResult deliverManualTest(Long userId, String scenario) {
+        if (!notifications.enabled()) {
+            return new ManualTestResult(false, false, false, "푸시 설정 확인 필요",
+                    "Firebase 서버 설정이 활성화되지 않았습니다.");
+        }
+        String normalized = scenario == null ? "" : scenario.trim().toUpperCase(Locale.ROOT);
+        String nonce = UUID.randomUUID().toString();
+        String title;
+        String body;
+        String category;
+        String link = "/mypage";
+        switch (normalized) {
+            case "SCRAP_CHANGE" -> {
+                title = "스크랩 공고 변경 안내";
+                body = "테스트기관 · 지원 마감일 변경";
+                category = "공고 변경";
+            }
+            case "FAVORITE_NEW" -> {
+                title = "테스트기관 신규 채용공고";
+                body = "관심 기관 신규 공고 알림 테스트입니다.";
+                category = "관심 기관 신규 공고";
+            }
+            case "IMPORTANT_NOTICE" -> {
+                title = "JOB HUB 중요 공지 테스트";
+                body = "관리자 중요 공지 알림이 정상적으로 전달되었습니다.";
+                category = "중요 공지";
+                link = "/community";
+            }
+            case "DUPLICATE_GUARD" -> {
+                title = "알림 중복 방지 테스트";
+                body = "이 알림은 한 번만 도착해야 합니다.";
+                category = "중복 방지";
+            }
+            default -> throw new IllegalArgumentException("지원하지 않는 푸시 테스트 유형입니다.");
+        }
+        String key = "manual-test:" + normalized + ":" + nonce;
+        boolean first = deliver(userId, key, title, body, link, category);
+        if (!"DUPLICATE_GUARD".equals(normalized)) {
+            return new ManualTestResult(true, first, false, title,
+                    first ? "시험 알림을 발송했습니다." : "등록된 기기로 시험 알림을 보내지 못했습니다.");
+        }
+        boolean second = deliver(userId, key, title, body, link, category);
+        boolean blocked = first && !second;
+        return new ManualTestResult(true, first, blocked, title,
+                blocked ? "첫 알림만 발송되고 두 번째 중복 알림은 차단됐습니다."
+                        : "중복 방지 결과를 확인하지 못했습니다.");
     }
 
     private boolean deliver(Long userId, String key, String title, String body, String link, String category) {

@@ -3785,3 +3785,78 @@ html[data-app-theme='dark'] .posting-list-inline-tools button.posting-list-star:
   .scrap-notice-actions { grid-template-columns: .8fr 1.2fr; }
   .scrap-notice-actions button { min-height: 42px; padding: 8px 7px; font-size: 12px; }
 }
+
+/* 관리자 본인 기기로 운영 알림 시나리오를 점검하는 패널. */
+.admin-push-tests {
+  display: grid;
+  gap: 18px;
+  border: 1px solid #d7e0da;
+  border-radius: 14px;
+  background: #fff;
+  padding: 22px;
+}
+.admin-push-test-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.admin-push-test-grid article {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #dce4df;
+  border-radius: 12px;
+  background: #f8faf8;
+  padding: 16px;
+}
+.admin-push-test-grid article > div { display: grid; min-width: 0; gap: 5px; }
+.admin-push-test-grid strong { color: #263b30; font-size: 14px; }
+.admin-push-test-grid p { margin: 0; color: #68766e; font-size: 12px; line-height: 1.5; }
+.admin-push-test-grid button {
+  min-width: 92px;
+  min-height: 38px;
+  flex: 0 0 auto;
+  border: 1px solid #315f50;
+  border-radius: 8px;
+  background: #315f50;
+  color: #fff;
+  padding: 8px 12px;
+  font-weight: 750;
+}
+.admin-push-test-grid button:disabled { cursor: wait; opacity: .58; }
+.admin-push-test-result {
+  display: grid;
+  gap: 5px;
+  border-left: 4px solid #b8685f;
+  border-radius: 9px;
+  background: #fbf4f2;
+  padding: 14px 16px;
+}
+.admin-push-test-result.success { border-left-color: #3f775e; background: #f0f7f2; }
+.admin-push-test-result strong { color: #294a3a; }
+.admin-push-test-result span, .admin-push-test-result p, .admin-push-test-result small { color: #617169; }
+.admin-push-test-result p { margin: 0; }
+.admin-push-test-note { margin: 0; color: #77827c; font-size: 12px; }
+
+html[data-app-theme='dark'] .admin-push-tests {
+  border-color: #3b4c42;
+  background: #18211c;
+}
+html[data-app-theme='dark'] .admin-push-test-grid article {
+  border-color: #3a4b41;
+  background: #202b25;
+}
+html[data-app-theme='dark'] .admin-push-test-grid strong { color: #eef5f0; }
+html[data-app-theme='dark'] .admin-push-test-grid p,
+html[data-app-theme='dark'] .admin-push-test-note { color: #acbbb2; }
+html[data-app-theme='dark'] .admin-push-test-result { background: #302421; }
+html[data-app-theme='dark'] .admin-push-test-result.success { background: #203229; }
+html[data-app-theme='dark'] .admin-push-test-result strong { color: #ecf4ef; }
+html[data-app-theme='dark'] .admin-push-test-result span,
+html[data-app-theme='dark'] .admin-push-test-result p,
+html[data-app-theme='dark'] .admin-push-test-result small { color: #b8c6bd; }
+
+@media (max-width: 760px) {
+  .admin-push-tests { padding: 15px; }
+  .admin-push-test-grid { grid-template-columns: 1fr; }
+  .admin-push-test-grid article { align-items: stretch; flex-direction: column; }
+  .admin-push-test-grid button { width: 100%; min-height: 42px; }
+}
