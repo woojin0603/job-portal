@@ -3649,3 +3649,139 @@ html[data-app-theme='dark'] .auth-secondary-actions .auth-switch button {
   border-bottom: 0 !important;
   border-left: 0 !important;
 }
+
+/* 스크랩 완료 후 취소와 목록 이동을 바로 제공하는 작은 확인 패널. */
+.scrap-notice {
+  position: fixed;
+  z-index: 2400;
+  right: max(22px, env(safe-area-inset-right));
+  bottom: max(22px, env(safe-area-inset-bottom));
+  display: grid;
+  width: min(390px, calc(100vw - 32px));
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #cbd8d0;
+  border-radius: 16px;
+  background: #fbfdfb;
+  color: #24352c;
+  box-shadow: 0 18px 45px rgba(24, 45, 34, .2);
+  animation: scrap-notice-in .18s ease-out;
+}
+.scrap-notice-copy {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+  padding-right: 24px;
+}
+.scrap-notice-copy > span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff3bf;
+  color: #ad7a00;
+  font-size: 21px;
+}
+.scrap-notice-copy > div { display: grid; min-width: 0; gap: 3px; }
+.scrap-notice-copy strong { color: #20382c; font-size: 15px; }
+.scrap-notice-copy small {
+  overflow: hidden;
+  color: #67756d;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scrap-notice-close {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #6b7871;
+  padding: 0;
+  font-size: 21px;
+}
+.scrap-notice-close:hover { background: #edf2ef; }
+.scrap-notice-actions { display: grid; grid-template-columns: minmax(0, .72fr) minmax(0, 1.28fr); gap: 8px; }
+.scrap-notice-actions button {
+  min-height: 40px;
+  border: 1px solid #bdcbc3;
+  border-radius: 9px;
+  background: #fff;
+  color: #385247;
+  padding: 8px 12px;
+  font-weight: 700;
+}
+.scrap-notice-actions button.primary {
+  border-color: #315f50;
+  background: #315f50;
+  color: #fff;
+}
+.scrap-notice-actions button:disabled { cursor: wait; opacity: .65; }
+
+.posting-list-inline-tools button.posting-list-star {
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: #6c756f;
+  cursor: pointer;
+}
+.posting-list-inline-tools button.posting-list-star.saved { color: #c18a08; }
+.posting-list-inline-tools button.posting-list-star:hover,
+.posting-list-inline-tools button.posting-list-star:focus-visible {
+  border-color: #ddcf9e;
+  background: #fff9df;
+}
+
+html[data-app-theme='dark'] .scrap-notice {
+  border-color: #43574b;
+  background: #1b261f;
+  color: #eaf2ed;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .48);
+}
+html[data-app-theme='dark'] .scrap-notice-copy strong { color: #f0f6f2; }
+html[data-app-theme='dark'] .scrap-notice-copy small { color: #abbab1; }
+html[data-app-theme='dark'] .scrap-notice-copy > span { background: #453b1c; color: #f0c95a; }
+html[data-app-theme='dark'] .scrap-notice-close { color: #b8c5bd; }
+html[data-app-theme='dark'] .scrap-notice-close:hover { background: #29372f; }
+html[data-app-theme='dark'] .scrap-notice-actions button {
+  border-color: #4a5e52;
+  background: #253229;
+  color: #dce8e0;
+}
+html[data-app-theme='dark'] .scrap-notice-actions button.primary {
+  border-color: #79b997;
+  background: #315f4a;
+  color: #fff;
+}
+html[data-app-theme='dark'] .posting-list-inline-tools button.posting-list-star:hover,
+html[data-app-theme='dark'] .posting-list-inline-tools button.posting-list-star:focus-visible {
+  border-color: #665c35;
+  background: #332f1e;
+}
+
+@keyframes scrap-notice-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 760px) {
+  .scrap-notice {
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    left: 14px;
+    width: auto;
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .scrap-notice-actions { grid-template-columns: .8fr 1.2fr; }
+  .scrap-notice-actions button { min-height: 42px; padding: 8px 7px; font-size: 12px; }
+}

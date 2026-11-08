@@ -514,6 +514,7 @@ function PostingGroups({ items, mode, renderJob }) {
 function PostingListRow({
   job,
   onOpen,
+  onScrap,
   onSalary,
   onCompetition,
   onMatch,
@@ -584,12 +585,18 @@ function PostingListRow({
           >
             <ReportIcon />
           </button>
-          <span
+          <button
+            type="button"
             className={job.scrapped ? 'posting-list-star saved' : 'posting-list-star'}
             aria-label={job.scrapped ? '스크랩됨' : '스크랩하지 않음'}
+            title={job.scrapped ? '스크랩 취소' : '스크랩'}
+            onClick={(event) => {
+              event.stopPropagation()
+              onScrap(job.id)
+            }}
           >
             {job.scrapped ? '★' : '☆'}
-          </span>
+          </button>
         </div>
       </div>
       <div className="posting-list-actions" aria-label="공고 부가 정보">
@@ -898,6 +905,7 @@ function JobCard({
                     const next = !confirmedScrap
                     await onScrap(job.id)
                     setConfirmedScrap(next)
+                    if (next) setTrackingOpen(false)
                   }}
                 >
                   <span className="scrap-star" aria-hidden="true">
@@ -6339,6 +6347,8 @@ export default function App() {
   const [passwordResetError, setPasswordResetError] = useState('')
   const [passwordResetMessage, setPasswordResetMessage] = useState('')
   const [pendingScrapId, setPendingScrapId] = useState(null)
+  const [scrapNotice, setScrapNotice] = useState(null)
+  const [scrapNoticeBusy, setScrapNoticeBusy] = useState(false)
   const [legalView, setLegalView] = useState(null)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [passwordError, setPasswordError] = useState('')
@@ -6857,7 +6867,12 @@ export default function App() {
       await refreshAuth()
       setAuthMode(null)
       if (pendingScrapId) {
-        await securePost(`/api/postings/${pendingScrapId}/scrap`)
+        const scrapId = pendingScrapId
+        const result = await securePost(`/api/postings/${scrapId}/scrap`)
+        if (result.scrapped) {
+          const posting = data.items.find((item) => item.id === scrapId)
+          setScrapNotice({ id: scrapId, title: posting?.title || '선택한 채용공고' })
+        }
         setPendingScrapId(null)
       }
       if (authReturn === 'mypage') {
@@ -6942,13 +6957,45 @@ export default function App() {
     }
     setBusyId(id)
     try {
-      await securePost(`/api/postings/${id}/${action}`)
+      const result = await securePost(`/api/postings/${id}/${action}`)
+      if (action === 'scrap' && result.scrapped) {
+        const posting = data.items.find((item) => item.id === id)
+        setScrapNotice({ id, title: posting?.title || '선택한 채용공고' })
+      } else if (action === 'scrap') {
+        setScrapNotice(null)
+      }
       await load()
     } catch (e) {
       setError(e.message)
     } finally {
       setBusyId(null)
     }
+  }
+  async function undoScrapNotice() {
+    if (!scrapNotice || scrapNoticeBusy) return
+    setScrapNoticeBusy(true)
+    try {
+      const result = await securePost(`/api/postings/${scrapNotice.id}/scrap`)
+      if (result.scrapped) throw new Error('스크랩 취소 상태를 확인하지 못했습니다.')
+      setScrapNotice(null)
+      await load()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setScrapNoticeBusy(false)
+    }
+  }
+  function openScrappedPostings() {
+    setLandingView(false)
+    setMine(true)
+    setScrapsOpen(true)
+    setAdminView(false)
+    setCommunityView(false)
+    setSuccessView(false)
+    setDetailId(null)
+    setPage(0)
+    setScrapNotice(null)
+    window.history.pushState({}, '', '/mypage?page=1')
   }
   /** 서버 검증을 거쳐 현재 회원의 스펙을 저장한다. */
   async function saveProfile(nextProfile) {
@@ -7679,6 +7726,7 @@ export default function App() {
                         key={job.id}
                         job={job}
                         onOpen={() => openSource(job)}
+                        onScrap={(id) => mutate(id, 'scrap')}
                         onSalary={openSalary}
                         onCompetition={openCompetition}
                         onMatch={analyzeMatch}
@@ -7805,6 +7853,7 @@ export default function App() {
                         key={job.id}
                         job={job}
                         onOpen={() => openSource(job)}
+                        onScrap={(id) => mutate(id, 'scrap')}
                         onSalary={openSalary}
                         onCompetition={openCompetition}
                         onMatch={analyzeMatch}
@@ -7843,6 +7892,33 @@ export default function App() {
           </>
         )}
       </main>
+      {scrapNotice && (
+        <aside className="scrap-notice" role="status" aria-live="polite">
+          <button
+            type="button"
+            className="scrap-notice-close"
+            onClick={() => setScrapNotice(null)}
+            aria-label="스크랩 알림 닫기"
+          >
+            ×
+          </button>
+          <div className="scrap-notice-copy">
+            <span aria-hidden="true">★</span>
+            <div>
+              <strong>스크랩이 완료되었습니다.</strong>
+              <small>{scrapNotice.title}</small>
+            </div>
+          </div>
+          <div className="scrap-notice-actions">
+            <button type="button" disabled={scrapNoticeBusy} onClick={undoScrapNotice}>
+              {scrapNoticeBusy ? '취소 중…' : '취소하기'}
+            </button>
+            <button type="button" className="primary" onClick={openScrappedPostings}>
+              스크랩 공고로 이동
+            </button>
+          </div>
+        </aside>
+      )}
       <footer className="site-footer">
         <div>
           <strong>Public Job Hub</strong>
