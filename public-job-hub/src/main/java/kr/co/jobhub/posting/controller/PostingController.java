@@ -495,11 +495,16 @@ public class PostingController {
             Element content = original.clone();
             content.select("script, iframe, object, embed, form, meta, base").remove();
             content.select(".loading, .loader, .spinner, .spinner-border, .btn-close, .close, "
+                    + ".pop_share, .open_pop_share, "
                     + "[class*=close], [title*=닫기], [aria-label*=닫기], img[alt*=닫기], button").remove();
             for (Element decoration : List.copyOf(content.getAllElements())) {
                 String ownText = decoration.ownText().trim();
                 if (decoration.children().isEmpty()
                         && Set.of("X", "x", "×", "✕", "✖").contains(ownText)) {
+                    decoration.remove();
+                } else if (decoration.children().isEmpty()
+                        && ownText.replace(" ", "").contains("클립보드에주소가복사")) {
+                    // 원문 사이트의 JavaScript 토스트 문구만 남는 것을 방지한다.
                     decoration.remove();
                 }
             }
@@ -523,7 +528,9 @@ public class PostingController {
                     element.attr("src", element.attr("data-src"));
                 }
                 if (element.normalName().equals("a")) {
-                    element.attr("target", "_blank").attr("rel", "noopener noreferrer");
+                    element.attr("target", "_blank")
+                            .attr("rel", "noopener noreferrer")
+                            .attr("referrerpolicy", "no-referrer");
                 }
             }
             String html = "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\">"

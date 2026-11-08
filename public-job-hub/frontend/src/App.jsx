@@ -1041,7 +1041,7 @@ function PostingDetailPage({ id, user, busy, onBack, onScrap, onShare }) {
           ) : (
             <iframe
               title="채용공고 원문 내용"
-              sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-downloads"
               srcDoc={preview.html}
             />
           )}
