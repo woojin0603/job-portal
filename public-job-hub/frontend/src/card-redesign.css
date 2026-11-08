@@ -3371,6 +3371,22 @@ html[data-app-theme='dark'] .grid .date strong { color: #e8f0eb !important; }
     .application-spec-dialog, .auth-dialog, .legal-dialog, .password-dialog,
     .account-deletion-dialog, .notification-popover
   ) :where(p, span, small, label, em, dt, dd) { color: #b8c6bd; }
+
+html[data-app-theme='dark'] .application-stage-picker legend {
+  color: #d3dfd8;
+}
+
+html[data-app-theme='dark'] .tracking-dialog .application-stage-picker label {
+  border-color: #405147;
+  background: #202c25;
+  color: #d7e2db;
+}
+
+html[data-app-theme='dark'] .tracking-dialog .application-stage-picker label.selected {
+  border-color: #72ad94;
+  background: #29483b;
+  color: #f1f7f3;
+}
   html[data-app-theme='dark'] .posting-list-actions {
     background: #141c18 !important;
     border-color: #34443a !important;

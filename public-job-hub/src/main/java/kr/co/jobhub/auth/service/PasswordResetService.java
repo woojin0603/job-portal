@@ -5,9 +5,9 @@ import kr.co.jobhub.auth.domain.PasswordResetToken;
 import kr.co.jobhub.auth.repository.AppUserRepository;
 import kr.co.jobhub.auth.repository.PasswordResetTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -23,6 +23,9 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
@@ -108,16 +111,30 @@ public class PasswordResetService {
         tokens.save(token);
 
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromAddress);
-            message.setTo(recipientAddress);
-            message.setSubject("[JOB HUB KOREA] 비밀번호 재설정");
-            message.setText("아래 링크에서 30분 안에 비밀번호를 재설정해 주세요.\n\n"
-                    // URL fragments are not sent to the web server or retained in access logs.
-                    + publicUrl + "/#resetToken=" + rawToken
-                    + "\n\n본인이 요청하지 않았다면 이 메일을 무시하세요.");
+            // URL fragments are not sent to the web server or retained in access logs.
+            String resetUrl = publicUrl + "/#resetToken=" + rawToken;
+            String plainText = "아래 링크에서 30분 안에 비밀번호를 재설정해 주세요.\n\n"
+                    + resetUrl + "\n\n본인이 요청하지 않았다면 이 메일을 무시하세요.";
+            String htmlText = """
+                    <div style="font-family:Arial,'Noto Sans KR',sans-serif;color:#24342d;line-height:1.65">
+                      <h2 style="margin:0 0 16px">JOB HUB KOREA 비밀번호 재설정</h2>
+                      <p>아래 버튼을 눌러 30분 안에 비밀번호를 재설정해 주세요.</p>
+                      <p style="margin:24px 0">
+                        <a href="%s" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#17624b;color:#fff;text-decoration:none;font-weight:700">비밀번호 재설정</a>
+                      </p>
+                      <p style="font-size:13px;color:#66756e">버튼이 열리지 않으면 아래 주소를 길게 눌러 접속하세요.</p>
+                      <p style="font-size:13px;word-break:break-all"><a href="%s">%s</a></p>
+                      <p style="font-size:13px;color:#66756e">본인이 요청하지 않았다면 이 메일을 무시하세요.</p>
+                    </div>
+                    """.formatted(resetUrl, resetUrl, resetUrl);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, false, StandardCharsets.UTF_8.name());
+            helper.setFrom(fromAddress);
+            helper.setTo(recipientAddress);
+            helper.setSubject("[JOB HUB KOREA] 비밀번호 재설정");
+            helper.setText(plainText, htmlText);
             mailSender.send(message);
-        } catch (MailException | IllegalArgumentException exception) {
+        } catch (MailException | MessagingException | IllegalArgumentException exception) {
             tokens.delete(token);
             log.warn("Password reset email delivery failed. Check SMTP configuration.", exception);
         }

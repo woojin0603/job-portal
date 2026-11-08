@@ -312,6 +312,15 @@ const STAGE_LABELS = {
   PASSED: '최종 합격',
 }
 
+const APPLICATION_STAGE_OPTIONS = [
+  ['PREPARING', '지원준비'],
+  ['SUBMITTED', '지원완료'],
+  ['DOCUMENT_PASSED', '서류합격'],
+  ['WRITTEN_TEST', '필기예정'],
+  ['INTERVIEW', '면접예정'],
+  ['PASSED', '최종합격'],
+]
+
 const SUCCESS_SHARE_STAGES = new Set(['DOCUMENT_PASSED', 'INTERVIEW', 'PASSED'])
 
 /** API가 쉼표로 전달한 여러 항목을 카드 크기에 맞게 핵심 항목과 나머지 개수로 요약한다. */
@@ -865,20 +874,22 @@ function JobCard({
               </div>
               <p>{job.organization}</p>
               <h3>{job.title}</h3>
-              <div className="tracking-fields">
-                <label>
-                  지원 단계
-                  <select
-                    value={tracking.stage}
-                    onChange={(e) => setTracking({ ...tracking, stage: e.target.value })}
-                  >
-                    {Object.entries(STAGE_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <fieldset className="application-stage-picker">
+                <legend>지원 현황으로 복사할 단계</legend>
+                <div>
+                  {APPLICATION_STAGE_OPTIONS.map(([value, label]) => (
+                    <label key={value} className={tracking.stage === value ? 'selected' : ''}>
+                      <input
+                        type="checkbox"
+                        checked={tracking.stage === value}
+                        onChange={() => setTracking({ ...tracking, stage: value })}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <div className="tracking-fields tracking-schedule-field">
                 <label>
                   다음 일정
                   <input
@@ -915,13 +926,13 @@ function JobCard({
                 </button>
                 <button
                   className="save"
-                  disabled={busy || !confirmedScrap}
+                  disabled={busy || !confirmedScrap || tracking.stage === 'SAVED'}
                   onClick={async () => {
                     await onTrack(job.id, tracking)
                     setTrackingOpen(false)
                   }}
                 >
-                  지원현황 저장
+                  지원현황으로 복사
                 </button>
               </div>
             </section>

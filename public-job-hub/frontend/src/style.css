@@ -128,6 +128,61 @@ header {
 .tracking-dialog .tracking-fields {
   gap: 10px;
 }
+
+.application-stage-picker {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+}
+
+.application-stage-picker legend {
+  margin-bottom: 8px;
+  color: #46544d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.application-stage-picker > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tracking-dialog .application-stage-picker label {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #d3ddd7;
+  border-radius: 8px;
+  background: #f8faf9;
+  cursor: pointer;
+}
+
+.tracking-dialog .application-stage-picker label.selected {
+  border-color: #487866;
+  background: #edf5f1;
+  color: #214f3f;
+}
+
+.tracking-dialog .application-stage-picker input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: #315f50;
+}
+
+.tracking-schedule-field {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 560px) {
+  .application-stage-picker > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .tracking-dialog select,
 .tracking-dialog input,
 .tracking-dialog textarea {
