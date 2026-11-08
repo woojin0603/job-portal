@@ -3143,16 +3143,24 @@ const LEGAL_CONTENT = {
         '이용자는 정확한 이메일을 사용하고 계정 정보를 안전하게 관리해야 합니다. 타인의 권리를 침해하거나 서비스를 방해하는 이용은 제한될 수 있습니다.',
       ],
       [
-        '제4조 게시물과 문의',
-        '문의에는 주민등록번호, 전화번호, 자격증 번호 등 불필요한 개인정보를 작성하지 않아야 합니다. 불법·권리침해 내용은 제한될 수 있습니다.',
+        '제4조 이용자 입력 정보와 게시물',
+        '이용자는 입력 정보와 게시물에 대한 권리와 책임을 부담합니다. 주민등록번호, 전화번호, 자격증 번호 등 불필요한 개인정보와 타인의 권리를 침해하는 내용은 작성하지 않아야 하며, 불법·권리침해 내용은 사전 통지 후 제한될 수 있습니다.',
       ],
       [
-        '제5조 서비스 변경',
-        '외부 제공기관의 장애, 점검 또는 정책 변경에 따라 일부 정보가 지연되거나 서비스가 변경될 수 있습니다. 중요한 변경은 공지사항으로 안내합니다.',
+        '제5조 채용정보·로고·원문',
+        '채용공고와 기관 표시는 정보 탐색을 돕기 위한 것입니다. 권리는 각 제공기관 또는 권리자에게 있으며, 원문과 서비스 표시가 다르면 채용기관의 원문이 우선합니다. 권리자의 정당한 수정·삭제 요청은 확인 후 반영합니다.',
       ],
       [
-        '제6조 문의',
-        '서비스 이용, 계정 삭제 및 권리 행사는 사이트의 공지·Q&A 게시판을 통해 운영자에게 요청할 수 있습니다.',
+        '제6조 맞춤 분석과 알림',
+        '스펙 매칭, 추천, 경쟁률·연봉 정보와 알림은 입력 정보 및 수집 자료를 바탕으로 한 참고 기능입니다. 지원 자격 충족이나 합격 가능성을 보증하지 않으며, 중요한 결정 전 이용자가 원문을 직접 확인해야 합니다.',
+      ],
+      [
+        '제7조 서비스 변경·중단',
+        '외부 제공기관의 장애, 점검, 정책 변경 또는 불가피한 운영 사유로 정보가 지연되거나 기능이 변경·중단될 수 있습니다. 예측 가능한 중요한 변경은 공지사항으로 안내합니다.',
+      ],
+      [
+        '제8조 탈퇴와 문의',
+        '회원은 언제든지 마이페이지에서 탈퇴할 수 있습니다. 서비스 이용, 계정 삭제 및 권리 행사는 공지·Q&A 게시판과 계정 삭제 안내 화면을 통해 요청할 수 있습니다.',
       ],
     ],
   },
@@ -3164,37 +3172,54 @@ const LEGAL_CONTENT = {
         '회원 인증, 개인화된 채용공고·알림·스크랩·역량 관리, 문의 처리, 보안 및 서비스 안정화를 위해 개인정보를 처리합니다.',
       ],
       [
-        '처리 항목',
-        '필수 항목은 이메일, 표시 이름, 비밀번호 해시, 약관 동의 기록입니다. 선택 입력은 학위·성적·자격증·경력·대외활동입니다. 로그인 시 접속 IP, 브라우저 정보와 접속 시각이 보안 목적으로 기록될 수 있습니다.',
+        '수집·처리 항목',
+        '필수 항목은 이메일, 표시 이름, 비밀번호 해시, 약관·개인정보 처리방침 동의 시각과 버전입니다. 선택 항목은 학위·성적·자격증·경력·대외활동, 희망 조건, 스크랩·지원 단계·일정·메모·지원 스펙, 관심기관, 알림 설정, 문의·합격 후기입니다. 보안과 장애 대응을 위해 IP, 브라우저·기기 정보, 접속 시각, 오류 기록을 처리하며, 푸시 연결 시 기기 알림 토큰을 처리합니다.',
       ],
       [
         '입력 금지 정보',
         '주민등록번호, 전화번호, 자격증 번호, 학위번호 등 서비스에 필요하지 않은 고유·상세 개인정보는 입력하지 않습니다.',
       ],
       [
-        '보유 기간',
-        '회원 정보와 이용자가 저장한 역량·스크랩 정보는 회원 탈퇴 또는 삭제 요청 처리 시까지 보유합니다. 법령상 보존 의무가 있는 경우 해당 기간 동안 분리 보관할 수 있습니다.',
+        '보유·파기 기간',
+        '계정 및 연결 정보는 회원 탈퇴 시 운영 DB에서 즉시 삭제합니다. 비밀번호 재설정 토큰은 만료 또는 사용 후 삭제되며, 세션은 로그아웃·만료 시 종료됩니다. 운영 DB 백업은 장애 복구만을 위해 암호화해 보관하고 생성 후 최대 56일 이내 자동 삭제합니다. 백업 복구가 필요한 경우 이미 접수된 탈퇴·삭제 내역을 다시 반영합니다. 관계 법령의 별도 보존 의무가 생기면 해당 항목만 분리하여 정해진 기간 보관합니다.',
       ],
       [
-        '제3자 제공과 국외 처리',
-        '개인정보를 판매하지 않습니다. 운영 DB와 암호화 백업은 서비스 운영을 위해 클라우드 인프라에서 처리될 수 있으며, 실제 제공업체·지역 변경 시 본 방침과 공지로 안내합니다.',
+        '제3자 제공',
+        '개인정보를 판매하거나 광고 목적으로 제3자에게 제공하지 않습니다. 법령에 근거한 요청 또는 이용자의 별도 동의가 있는 경우를 제외하고 외부에 제공하지 않습니다.',
       ],
       [
-        '파기와 안전조치',
-        '보유 목적이 끝난 개인정보는 복구가 어렵도록 삭제합니다. 비밀번호 해시, HTTPS, 접근권한 통제, 로그인 제한, 감사 기록 및 암호화 백업을 적용합니다.',
+        '처리위탁·국외 처리',
+        '서비스 제공을 위해 PingCAP의 TiDB Cloud(일본 도쿄, 운영 DB), Oracle Cloud Infrastructure(일본 오사카, 서버 및 암호화 백업), Google Firebase Cloud Messaging(푸시 토큰·알림 전송), Google Gmail SMTP(이메일·비밀번호 재설정 안내)를 이용합니다. 정보는 기능 사용 또는 알림·메일 발송 시 암호화 통신으로 이전되며, 계정 삭제·토큰 무효화 또는 각 항목의 보유기간까지 처리됩니다. 공급자·처리국가·목적이 중요하게 바뀌면 사전에 본 방침과 공지로 안내합니다.',
       ],
       [
-        '이용자 권리',
-        '이용자는 마이페이지에서 정보를 조회·수정할 수 있으며, 열람·정정·삭제·처리정지·탈퇴 요청은 공지·Q&A를 통해 신청할 수 있습니다.',
+        '안전성 확보조치',
+        '비밀번호 단방향 해시, HTTPS, 최소 접근권한, 로그인 횟수 제한, 관리자 감사 기록, 암호화 백업, 비밀정보의 환경변수·시크릿 분리를 적용합니다. 개인정보가 포함될 수 있는 운영 로그와 백업은 공개하지 않습니다.',
+      ],
+      [
+        '이용자 권리와 계정 삭제',
+        '이용자는 마이페이지에서 정보를 조회·수정·삭제하고 직접 탈퇴할 수 있습니다. 웹의 /account-deletion 안내에서도 삭제 절차를 확인할 수 있습니다. 열람·정정·삭제·처리정지 요청은 공지·Q&A로 접수하며, 본인 확인 후 지체 없이 처리합니다.',
       ],
       [
         '자동 수집 장치',
         '로그인 세션 유지와 보안을 위해 필수 쿠키를 사용합니다. 맞춤 광고용 쿠키는 사용하지 않습니다. 브라우저에서 쿠키를 차단하면 로그인 기능이 제한될 수 있습니다.',
       ],
       [
-        '보호책임 및 문의',
-        '개인정보 보호책임자는 Public Job Hub 운영자이며, 개인정보 관련 문의와 권리 행사는 사이트의 공지·Q&A에서 접수합니다.',
+        '자동화된 분석',
+        '스펙 매칭과 공고 추천은 이용자가 입력한 학위·자격증·경력·활동과 공고 문구의 연관성을 규칙 기반으로 비교합니다. 결과는 참고 정보이며 이용자에게 법적 효과를 주는 자동 의사결정에는 사용하지 않습니다.',
       ],
+      [
+        '개인정보 보호 문의',
+        '개인정보 보호책임자는 Public Job Hub 운영자입니다. 개인정보 관련 문의와 권리 행사는 사이트의 공지·Q&A에서 접수합니다. 정식 출시 전 운영자 실명 또는 사업자명과 전용 이메일을 운영자 안내에 공개합니다.',
+      ],
+    ],
+  },
+  source: {
+    title: '데이터 출처·이용 안내',
+    sections: [
+      ['채용정보 출처', '공공데이터포털 등 공공 API, JOB-ALIO 및 채용기관이 공개한 웹페이지와 첨부자료를 바탕으로 정보를 제공합니다. 공고별 원문 링크에서 최종 내용을 확인할 수 있습니다.'],
+      ['갱신과 정확성', '관리자 수집 시점과 외부 제공기관의 반영 시점 차이로 내용이 지연되거나 누락될 수 있습니다. 지원 자격, 접수기간, 제출서류와 전형 일정은 반드시 채용기관 원문을 기준으로 판단해야 합니다.'],
+      ['기관명·로고', '기관명과 로고는 출처 식별을 위한 최소 범위에서 표시하며, 상표권과 저작권은 각 권리자에게 있습니다. 제휴·보증 관계를 의미하지 않습니다. 권리자의 수정·삭제 요청은 공지·Q&A를 통해 접수합니다.'],
+      ['신고와 정정', '공고의 오류 신고 기능 또는 공지·Q&A를 통해 잘못된 정보와 권리 침해 우려를 알려주시면 원문을 확인한 뒤 수정·숨김·삭제합니다.'],
     ],
   },
   contact: {
@@ -3207,7 +3232,7 @@ const LEGAL_CONTENT = {
       ],
       [
         '계정 삭제 방법',
-        '로그인 후 마이페이지의 회원 탈퇴에서 비밀번호를 확인하면 계정과 연결 개인정보를 직접 삭제할 수 있습니다. 로그인할 수 없는 경우 공지·Q&A를 통해 본인 확인 절차를 요청할 수 있습니다.',
+        '로그인 후 마이페이지의 회원 탈퇴에서 비밀번호를 확인하면 계정과 연결 개인정보를 직접 삭제할 수 있습니다. /account-deletion에서도 절차를 확인할 수 있으며, 로그인할 수 없는 경우 비밀번호 재설정 후 탈퇴하거나 공지·Q&A를 통해 본인 확인 절차를 요청할 수 있습니다.',
       ],
       [
         '출시 전 확인',
@@ -3227,7 +3252,7 @@ function LegalDialog({ type, onClose }) {
         </button>
         <p className="eyebrow">PUBLIC JOB HUB</p>
         <h2>{content.title}</h2>
-        <p className="legal-effective">시행일 2026년 10월 18일 · 버전 2026-10-18</p>
+        <p className="legal-effective">시행일 2026년 11월 8일 · 버전 2026-11-08</p>
         <div className="legal-sections">
           {content.sections.map(([title, body]) => (
             <section key={title}>
@@ -3241,6 +3266,56 @@ function LegalDialog({ type, onClose }) {
         </button>
       </section>
     </div>
+  )
+}
+
+function PublicPolicyPage({ type }) {
+  const content = LEGAL_CONTENT[type]
+  return (
+    <article className="public-policy-page">
+      <p className="eyebrow">PUBLIC JOB HUB POLICY</p>
+      <h1>{content.title}</h1>
+      <p className="legal-effective">시행일 2026년 11월 8일 · 버전 2026-11-08</p>
+      <div className="legal-sections">
+        {content.sections.map(([title, body]) => (
+          <section key={title}>
+            <h2>{title}</h2>
+            <p>{body}</p>
+          </section>
+        ))}
+      </div>
+    </article>
+  )
+}
+
+function AccountDeletionGuide({ user, onLogin, onMyPage, onOpenLegal }) {
+  return (
+    <section className="account-deletion-guide">
+      <p className="eyebrow">ACCOUNT &amp; DATA</p>
+      <h1>계정 및 개인정보 삭제 안내</h1>
+      <p className="lead">
+        Public Job Hub 회원은 앱을 다시 설치하지 않아도 웹에서 계정과 연결 데이터를 직접
+        삭제할 수 있습니다.
+      </p>
+      <ol>
+        <li><strong>로그인</strong><span>삭제할 계정으로 로그인합니다.</span></li>
+        <li><strong>마이페이지 이동</strong><span>회원 탈퇴를 선택하고 현재 비밀번호를 확인합니다.</span></li>
+        <li><strong>영구 삭제</strong><span>계정, 역량, 스크랩, 지원 일정, 알림, 문의 및 접속 기록이 삭제됩니다.</span></li>
+      </ol>
+      <div className="account-deletion-guide-actions">
+        {user ? (
+          <button className="primary" onClick={onMyPage}>마이페이지에서 탈퇴하기</button>
+        ) : (
+          <button className="primary" onClick={onLogin}>로그인하고 삭제하기</button>
+        )}
+        <button onClick={() => onOpenLegal('privacy')}>개인정보 처리방침</button>
+      </div>
+      <div className="account-deletion-guide-note">
+        <strong>로그인할 수 없나요?</strong>
+        <p>로그인 화면의 비밀번호 재설정 링크로 계정을 복구한 뒤 탈퇴할 수 있습니다. 직접 처리가 어려우면 공지·Q&amp;A로 본인 확인을 요청해 주세요.</p>
+        <p>운영 DB에서는 즉시 삭제되며, 장애 복구용 암호화 백업은 생성 후 최대 56일 이내 자동 삭제됩니다.</p>
+      </div>
+    </section>
   )
 }
 
@@ -6559,6 +6634,12 @@ export default function App() {
   const [accountDeletionOpen, setAccountDeletionOpen] = useState(false)
   const [accountDeletionError, setAccountDeletionError] = useState('')
   const [accountDeletionBusy, setAccountDeletionBusy] = useState(false)
+  const [accountDeletionGuide, setAccountDeletionGuide] = useState(
+    window.location.pathname === '/account-deletion',
+  )
+  const [publicPolicyType, setPublicPolicyType] = useState(() => ({
+    '/privacy': 'privacy', '/terms': 'terms', '/data-sources': 'source',
+  })[window.location.pathname] || null)
   // 공고 검색, 마이페이지 필터, 페이지 번호 및 API 결과를 보관한다.
   const [mine, setMine] = useState(false)
   const [scrapsOpen, setScrapsOpen] = useState(false)
@@ -6791,6 +6872,8 @@ export default function App() {
     )
     const postingMatch = path.match(/^\/postings\/(\d+)$/)
     setDetailId(postingMatch ? Number(postingMatch[1]) : null)
+    setAccountDeletionGuide(path === '/account-deletion')
+    setPublicPolicyType(({ '/privacy': 'privacy', '/terms': 'terms', '/data-sources': 'source' })[path] || null)
     setLandingView(path === '/')
     setMine(path === '/mypage')
     setCommunityView(path === '/community')
@@ -7611,7 +7694,19 @@ export default function App() {
             </button>
           </div>
         )}
-        {detailId ? (
+        {publicPolicyType ? (
+          <PublicPolicyPage type={publicPolicyType} />
+        ) : accountDeletionGuide ? (
+          <AccountDeletionGuide
+            user={user}
+            onLogin={() => {
+              setAuthReturn('/account-deletion')
+              setAuthMode('login')
+            }}
+            onMyPage={() => navigate(true)}
+            onOpenLegal={setLegalView}
+          />
+        ) : detailId ? (
           <PostingDetailPage
             id={detailId}
             user={user}
@@ -8131,8 +8226,20 @@ export default function App() {
           <span>공공기관 채용정보와 지원 준비를 한곳에서 관리합니다.</span>
         </div>
         <nav aria-label="서비스 정책">
-          <button onClick={() => setLegalView('terms')}>이용약관</button>
-          <button onClick={() => setLegalView('privacy')}>개인정보 처리방침</button>
+          <button onClick={() => {
+            window.history.pushState({}, '', '/terms'); applyRoute(); window.scrollTo(0, 0)
+          }}>이용약관</button>
+          <button onClick={() => {
+            window.history.pushState({}, '', '/privacy'); applyRoute(); window.scrollTo(0, 0)
+          }}>개인정보 처리방침</button>
+          <button onClick={() => {
+            window.history.pushState({}, '', '/data-sources'); applyRoute(); window.scrollTo(0, 0)
+          }}>데이터 출처·이용 안내</button>
+          <button onClick={() => {
+            window.history.pushState({}, '', '/account-deletion')
+            applyRoute()
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }}>계정 삭제 안내</button>
           <button onClick={() => setLegalView('contact')}>운영자 안내</button>
         </nav>
       </footer>

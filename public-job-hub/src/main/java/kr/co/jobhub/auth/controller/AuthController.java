@@ -22,7 +22,7 @@ import jakarta.servlet.http.HttpSession;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    private static final String CONSENT_VERSION = "2026-10-18";
+    private static final String CONSENT_VERSION = "2026-11-08";
     private static final java.util.Set<String> JOB_CATEGORIES = java.util.Set.of(
             "행정·사무", "전산·IT", "회계·재무", "토목", "건축",
             "전기", "기계", "연구", "의료·보건", "사회복지");

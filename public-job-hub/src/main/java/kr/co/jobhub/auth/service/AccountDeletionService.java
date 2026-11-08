@@ -38,9 +38,11 @@ public class AccountDeletionService {
             throw new ResponseStatusException(BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다.");
 
         Long id = user.id;
-        for (String table : new String[]{"password_reset_tokens", "posting_reports", "inquiries", "push_subscriptions",
-                "user_notification_states", "posting_change_cursors", "favorite_organizations",
-                "job_alert_preferences", "scraps", "user_profiles"}) {
+        // success_stories가 scraps를 참조하므로 반드시 스크랩보다 먼저 삭제한다.
+        for (String table : new String[]{"password_reset_tokens", "posting_reports", "inquiries",
+                "push_delivery_receipts", "push_subscriptions", "user_notification_states",
+                "posting_change_cursors", "favorite_organizations", "job_alert_preferences",
+                "success_stories", "scraps", "user_profiles"}) {
             jdbc.update("DELETE FROM " + table + " WHERE user_id = ?", id);
         }
         jdbc.update("DELETE FROM login_histories WHERE email = ?", user.email);
