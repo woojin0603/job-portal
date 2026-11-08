@@ -66,7 +66,8 @@ public class PasswordResetService {
     public void request(String email) {
         deleteExpiredTokens();
         if (!mailEnabled) return;
-        users.findByEmail(email.trim().toLowerCase()).ifPresent(user -> issue(user));
+        String normalizedEmail = email.trim().toLowerCase();
+        users.findByEmail(normalizedEmail).ifPresent(user -> issue(user, normalizedEmail));
     }
 
     @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
@@ -93,7 +94,7 @@ public class PasswordResetService {
         log.info("Password reset completed for user id {}", user.id);
     }
 
-    private void issue(AppUser user) {
+    private void issue(AppUser user, String recipientAddress) {
         if (tokens.countByUserIdAndCreatedAtAfter(user.id, Instant.now().minus(REQUEST_INTERVAL)) > 0) return;
         byte[] bytes = new byte[32];
         SECURE_RANDOM.nextBytes(bytes);
@@ -104,17 +105,17 @@ public class PasswordResetService {
         token.expiresAt = Instant.now().plus(TOKEN_LIFETIME);
         tokens.save(token);
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(user.email);
-        message.setSubject("[JOB HUB KOREA] 비밀번호 재설정");
-        message.setText("아래 링크에서 30분 안에 비밀번호를 재설정해 주세요.\n\n"
-                // URL fragments are not sent to the web server or retained in access logs.
-                + publicUrl + "/#resetToken=" + rawToken
-                + "\n\n본인이 요청하지 않았다면 이 메일을 무시하세요.");
         try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromAddress);
+            message.setTo(recipientAddress);
+            message.setSubject("[JOB HUB KOREA] 비밀번호 재설정");
+            message.setText("아래 링크에서 30분 안에 비밀번호를 재설정해 주세요.\n\n"
+                    // URL fragments are not sent to the web server or retained in access logs.
+                    + publicUrl + "/#resetToken=" + rawToken
+                    + "\n\n본인이 요청하지 않았다면 이 메일을 무시하세요.");
             mailSender.send(message);
-        } catch (MailException exception) {
+        } catch (MailException | IllegalArgumentException exception) {
             tokens.delete(token);
             log.warn("Password reset email delivery failed. Check SMTP configuration.", exception);
         }
