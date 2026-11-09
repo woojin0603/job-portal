@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
+import java.time.Instant;
 
 public interface PushSubscriptionRepository extends JpaRepository<PushSubscription, Long> {
     Optional<PushSubscription> findByDeviceToken(String deviceToken);
@@ -13,4 +14,5 @@ public interface PushSubscriptionRepository extends JpaRepository<PushSubscripti
     long countByUserIdAndEnabledTrue(Long userId);
     @Query("select distinct value.user.id from PushSubscription value where value.enabled = true")
     List<Long> findDistinctEnabledUserIds();
+    long deleteByEnabledFalseAndUpdatedAtBefore(Instant cutoff);
 }

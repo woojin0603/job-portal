@@ -6,4 +6,5 @@ import java.util.List;
 public interface AdminAuditLogRepository extends JpaRepository<AdminAuditLog, Long> {
     List<AdminAuditLog> findTop100ByOrderByCreatedAtDesc();
     long countByCreatedAtAfterAndStatusGreaterThanEqual(Instant createdAt, int status);
+    long deleteByCreatedAtBefore(Instant cutoff);
 }

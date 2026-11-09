@@ -13,7 +13,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,10 +56,7 @@ public class PushNotificationService {
                 FirebaseMessagingException failure = response.getResponses().get(index).getException();
                 if (failure != null && (failure.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED
                         || failure.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT)) {
-                    PushSubscription target = targets.get(index);
-                    target.enabled = false;
-                    target.updatedAt = Instant.now();
-                    subscriptions.save(target);
+                    subscriptions.delete(targets.get(index));
                 }
             }
             return response.getSuccessCount();

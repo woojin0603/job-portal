@@ -60,11 +60,7 @@ public class PushSubscriptionController {
     public SubscriptionStatus remove(@Valid @RequestBody SubscriptionRequest request, Principal principal) {
         AppUser user = user(principal);
         subscriptions.findByDeviceTokenAndUserId(request.deviceToken().trim(), user.id)
-                .ifPresent(value -> {
-                    value.enabled = false;
-                    value.updatedAt = Instant.now();
-                    subscriptions.save(value);
-                });
+                .ifPresent(subscriptions::delete);
         return status(principal);
     }
 
