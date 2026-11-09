@@ -6545,28 +6545,73 @@ function SuccessBoard({ user, onOpen, onDelete }) {
   )
 }
 
-function LandingPage({ user, onPostings, onMyPage, onCommunity }) {
+function LandingPage({ user, jobs = [], loading, onPostings, onMyPage, onCommunity, onSearch, onOpen }) {
+  const [keyword, setKeyword] = useState('')
   return (
     <section className="landing-page">
-      <div className="landing-intro">
-        <p className="eyebrow">PUBLIC JOB HUB</p>
-        <h1>기회를 찾는 가장 체계적인 방법</h1>
-        <p>공공기관 채용정보와 취업 준비를 한곳에서 관리하세요.</p>
+      <div className="landing-hero">
+        <div className="landing-intro">
+          <p className="eyebrow">PUBLIC JOB HUB</p>
+          <h1>내일을 여는 공공일자리,<br />함께합니다.</h1>
+          <p>전국 공공기관의 채용 기회를 찾고 지원 준비까지 한곳에서 관리하세요.</p>
+          <form
+            className="landing-search"
+            onSubmit={(event) => {
+              event.preventDefault()
+              onSearch(keyword.trim())
+            }}
+          >
+            <span aria-hidden="true">⌕</span>
+            <input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="직무, 지역, 기관명을 검색해 보세요."
+              aria-label="채용공고 통합 검색"
+            />
+            <button aria-label="채용공고 검색">검색</button>
+          </form>
+        </div>
       </div>
-      <div className="landing-menu">
+      <nav className="landing-menu" aria-label="주요 서비스 바로가기">
         <button className="landing-card postings" onClick={onPostings}>
-          <span aria-hidden="true">⌕</span>
-          <strong>채용공고 확인</strong>
+          <span className="landing-action-icon" aria-hidden="true">⌕</span>
+          <span><strong>채용공고</strong><small>최신 공고 확인</small></span>
         </button>
         <button className="landing-card mypage" onClick={onMyPage}>
-          <span aria-hidden="true">◎</span>
-          <strong>마이페이지</strong>
+          <span className="landing-action-icon" aria-hidden="true">◎</span>
+          <span><strong>마이페이지</strong><small>{user ? '지원 현황 관리' : '로그인 후 이용'}</small></span>
         </button>
         <button className="landing-card notice" onClick={onCommunity}>
-          <span aria-hidden="true">i</span>
-          <strong>공지사항</strong>
+          <span className="landing-action-icon" aria-hidden="true">i</span>
+          <span><strong>공지·Q&amp;A</strong><small>운영 안내 확인</small></span>
         </button>
-      </div>
+      </nav>
+      <section className="landing-recommendations" aria-labelledby="landing-recommendation-title">
+        <div className="landing-section-head">
+          <div>
+            <p className="eyebrow">LATEST OPPORTUNITIES</p>
+            <h2 id="landing-recommendation-title">마감이 가까운 채용정보</h2>
+          </div>
+          <button type="button" onClick={onPostings}>전체 공고 보기 <span aria-hidden="true">→</span></button>
+        </div>
+        <div className="landing-job-list">
+          {jobs.slice(0, 3).map((job) => (
+            <button type="button" className="landing-job" key={job.id} onClick={() => onOpen(job)}>
+              <span className="landing-job-mark" aria-hidden="true">{job.organization?.trim()?.[0] || 'J'}</span>
+              <span className="landing-job-copy">
+                <small>{job.organization}</small>
+                <strong>{job.title}</strong>
+                <span>{job.region || '지역 미정'} · {employmentTypeLabel(job.employmentType, job.title)}</span>
+              </span>
+              <span className={`landing-job-deadline ${/^D-[012]$|D-Day/.test(postingDeadlineLabel(job.deadline)) ? 'urgent' : ''}`}>
+                {postingDeadlineLabel(job.deadline)}
+              </span>
+            </button>
+          ))}
+          {!loading && jobs.length === 0 && <p className="landing-job-empty">현재 표시할 진행 중 공고가 없습니다.</p>}
+          {loading && jobs.length === 0 && <p className="landing-job-empty">최신 공고를 불러오는 중입니다.</p>}
+        </div>
+      </section>
     </section>
   )
 }
@@ -7730,8 +7775,16 @@ export default function App() {
         ) : landingView ? (
           <LandingPage
             user={user}
+            jobs={data.items}
+            loading={loading}
             onPostings={() => navigate(false)}
             onMyPage={() => navigate(true)}
+            onSearch={(keyword) => {
+              setQueryInput(keyword)
+              setQuery(keyword)
+              navigate(false)
+            }}
+            onOpen={openSource}
             onCommunity={() => {
               setLandingView(false)
               setCommunityView(true)

@@ -4,6 +4,298 @@
   gap: 16px;
 }
 
+/* 2026-11 웹 전면 개편: 자체 제작 영웅 이미지와 기존 기능을 결합한 공공서비스형 화면. */
+.landing-recommendations { width: 100%; }
+.landing-section-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+.landing-section-head h2 { margin: 3px 0 0; }
+.landing-section-head > button { border: 0; background: transparent; color: #285b46; font-weight: 750; }
+.landing-job-list { display: grid; gap: 14px; }
+.landing-job { min-width: 0; text-align: left; }
+.landing-job-copy { min-width: 0; }
+.landing-job-copy small, .landing-job-copy strong, .landing-job-copy > span { display: block; }
+.landing-job-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.landing-job-empty { grid-column: 1 / -1; margin: 0; padding: 28px; text-align: center; color: #68766f; }
+
+@media (min-width: 761px) {
+  :root {
+    --web-green-950: #0f3d2c;
+    --web-green-800: #18573f;
+    --web-green-650: #287557;
+    --web-green-100: #eaf4ef;
+    --web-canvas: #f5f8f6;
+    --web-line: #dce6e0;
+  }
+  body { background: var(--web-canvas); }
+  body > #root > header {
+    position: sticky;
+    top: 0;
+    z-index: 120;
+    border-bottom: 1px solid rgba(26, 77, 56, .1);
+    background: rgba(255, 255, 255, .94);
+    backdrop-filter: blur(16px) saturate(145%);
+  }
+  header .bar {
+    width: min(1440px, calc(100% - 64px));
+    min-height: 76px;
+    margin: 0 auto;
+    padding: 0;
+  }
+  header .bar .brand {
+    color: var(--web-green-950) !important;
+    font-size: 1.22rem;
+    font-weight: 900;
+    letter-spacing: -.045em;
+  }
+  header .bar > span { display: none; }
+  .main-navigation { gap: 5px; }
+  .main-navigation > button,
+  .main-navigation > .notification-center > button {
+    padding-inline: 13px !important;
+    color: #394941 !important;
+    font-weight: 700 !important;
+  }
+  .main-navigation > button.active,
+  .main-navigation > .notification-center > button.active {
+    color: var(--web-green-800) !important;
+    border-bottom-color: var(--web-green-650) !important;
+  }
+  .main-navigation > button:last-child:not(.active) { color: var(--web-green-800) !important; }
+
+  body:has(> #root > main.landing-main) { background: #fff; }
+  body > #root > main.landing-main { width: 100%; max-width: none; padding: 0 0 72px; }
+  .landing-main .landing-page,
+  html[data-app-theme='dark'] .landing-main .landing-page {
+    display: grid;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+  }
+  .landing-main .landing-hero {
+    position: relative;
+    min-height: 490px;
+    overflow: hidden;
+    background-image:
+      linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.94) 35%, rgba(255,255,255,.52) 58%, rgba(255,255,255,.06) 100%),
+      url('/assets/jobhub-riverside-hero.jpg');
+    background-position: center, center;
+    background-size: cover;
+  }
+  .landing-main .landing-hero::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 120px;
+    background: linear-gradient(transparent, rgba(255,255,255,.88));
+    pointer-events: none;
+  }
+  .landing-main .landing-intro {
+    position: relative;
+    z-index: 1;
+    width: min(1440px, calc(100% - 64px));
+    margin: 0 auto;
+    padding: 90px 0 100px;
+  }
+  .landing-main .landing-intro .eyebrow {
+    margin: 0 0 15px;
+    color: var(--web-green-650);
+    font-size: .78rem;
+    font-weight: 900;
+    letter-spacing: .16em;
+  }
+  .landing-main .landing-intro h1 {
+    max-width: 690px;
+    margin: 0;
+    color: #12231c;
+    font-size: clamp(2.65rem, 4.25vw, 4.65rem);
+    line-height: 1.13;
+    letter-spacing: -.06em;
+  }
+  .landing-main .landing-intro > p:last-of-type {
+    max-width: 620px;
+    margin: 24px 0 0;
+    color: #506159;
+    font-size: 1.12rem;
+    line-height: 1.7;
+  }
+  .landing-search {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    width: min(660px, 100%);
+    min-height: 64px;
+    margin-top: 34px;
+    padding: 7px 7px 7px 20px;
+    border: 1px solid rgba(24, 87, 63, .18);
+    border-radius: 14px;
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 16px 40px rgba(24, 67, 50, .13);
+    backdrop-filter: blur(10px);
+  }
+  .landing-search > span { color: #557368; font-size: 1.4rem; }
+  .landing-search input {
+    min-width: 0;
+    min-height: 48px;
+    border: 0 !important;
+    outline: 0;
+    background: transparent !important;
+    padding: 0 16px;
+    color: #17251e;
+    font-size: 1rem;
+    box-shadow: none !important;
+  }
+  .landing-search button {
+    min-width: 104px;
+    min-height: 50px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--web-green-800);
+    color: #fff;
+    font-weight: 850;
+    box-shadow: 0 8px 18px rgba(24, 87, 63, .2);
+  }
+  .landing-main .landing-menu {
+    position: relative;
+    z-index: 3;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: min(1320px, calc(100% - 96px));
+    margin: -47px auto 0;
+    padding: 16px;
+    gap: 12px;
+    border: 1px solid rgba(24, 87, 63, .1) !important;
+    border-radius: 20px;
+    background: rgba(255,255,255,.94) !important;
+    box-shadow: 0 20px 55px rgba(28, 62, 47, .11) !important;
+    backdrop-filter: blur(14px);
+  }
+  .landing-main .landing-card,
+  .landing-main .landing-card.postings,
+  .landing-main .landing-card.mypage,
+  .landing-main .landing-card.notice {
+    display: grid !important;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 94px !important;
+    padding: 16px 19px !important;
+    gap: 14px;
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-align: left;
+  }
+  .landing-main .landing-card:hover { background: #f0f7f3 !important; transform: translateY(-1px) !important; }
+  .landing-main .landing-card .landing-action-icon {
+    display: grid !important;
+    width: 52px !important;
+    height: 52px !important;
+    place-items: center;
+    border-radius: 15px !important;
+    background: #e4f2eb !important;
+    color: var(--web-green-800) !important;
+    font-size: 1.35rem;
+    font-weight: 900;
+  }
+  .landing-main .landing-card > span:nth-child(2) { display: block; min-width: 0; }
+  .landing-main .landing-card strong { display: block; color: #183226 !important; font-size: 1.02rem; }
+  .landing-main .landing-card small { display: block; margin-top: 5px; color: #748179; font-size: .82rem; font-weight: 600; }
+  .landing-main .landing-card::after { content: '→'; position: static; color: #789185; font-size: 1.15rem; }
+
+  .landing-recommendations {
+    width: min(1320px, calc(100% - 96px));
+    margin: 58px auto 0;
+  }
+  .landing-section-head { margin-bottom: 20px; }
+  .landing-section-head .eyebrow { margin: 0; color: #728078; font-size: .7rem; letter-spacing: .12em; }
+  .landing-section-head h2 { color: #192a22; font-size: 1.48rem; letter-spacing: -.035em; }
+  .landing-section-head > button { padding: 8px 0; }
+  .landing-job-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .landing-job {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    align-items: start;
+    min-height: 145px;
+    padding: 22px;
+    gap: 15px;
+    border: 1px solid var(--web-line);
+    border-radius: 17px;
+    background: #fff;
+    box-shadow: 0 6px 22px rgba(31, 62, 48, .05);
+  }
+  .landing-job:hover { border-color: #9eb9aa; box-shadow: 0 14px 32px rgba(31, 62, 48, .1); transform: translateY(-2px); }
+  .landing-job-mark { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 14px; background: #e8f4ee; color: #1e694c; font-weight: 900; }
+  .landing-job-copy small { overflow: hidden; color: #52645b; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+  .landing-job-copy strong { margin-top: 8px; color: #17231d; font-size: 1.02rem; line-height: 1.42; }
+  .landing-job-copy > span { margin-top: 13px; overflow: hidden; color: #7a867f; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
+  .landing-job-deadline { color: #26362e; font-size: .9rem; font-weight: 900; white-space: nowrap; }
+  .landing-job-deadline.urgent { color: #d33434; }
+
+  /* 채용정보 화면도 같은 언어로 정리하되 기존 검색·상세필터 기능은 그대로 둔다. */
+  main:not(.landing-main) > .heading { margin-top: 34px; }
+  main:not(.landing-main) > .heading h1 { color: #17271f; letter-spacing: -.045em; }
+  .posting-filter-panel {
+    border: 1px solid var(--web-line) !important;
+    border-radius: 18px !important;
+    background: #fff !important;
+    box-shadow: 0 8px 30px rgba(30, 66, 49, .055) !important;
+  }
+  .posting-keyword-search label { border-color: #dce5e0 !important; background: #fbfcfb !important; }
+  .posting-search-submit { background: var(--web-green-800) !important; box-shadow: 0 8px 18px rgba(24, 87, 63, .18); }
+}
+
+@media (max-width: 760px) {
+  .landing-main .landing-page { padding: 0 16px 24px; gap: 16px; }
+  .landing-main .landing-hero {
+    position: relative;
+    min-height: 330px;
+    margin: 0 -16px;
+    overflow: hidden;
+    background-image: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.84)), url('/assets/jobhub-riverside-hero.jpg');
+    background-position: center, 67% center;
+    background-size: cover;
+  }
+  .landing-main .landing-intro { padding: 48px 22px 36px; }
+  .landing-main .landing-intro h1 { max-width: 330px; font-size: clamp(2.05rem, 10vw, 3rem); line-height: 1.15; }
+  .landing-main .landing-intro > p:last-of-type { max-width: 330px; margin-top: 17px; font-size: .92rem; line-height: 1.6; }
+  .landing-search { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; min-height: 54px; margin-top: 24px; padding: 5px 5px 5px 14px; border: 1px solid #d4e1da; border-radius: 12px; background: rgba(255,255,255,.96); box-shadow: 0 10px 24px rgba(25,67,48,.12); }
+  .landing-search input { min-width: 0; border: 0 !important; background: transparent !important; padding: 0 9px; box-shadow: none !important; }
+  .landing-search button { min-width: 58px; min-height: 42px; border: 0; border-radius: 9px; background: #18573f; color: #fff; font-weight: 800; }
+  .landing-main .landing-menu { display: grid; grid-template-columns: repeat(3, 1fr); margin: -38px 0 0; padding: 9px; gap: 7px; border: 1px solid #dde7e1 !important; border-radius: 16px; background: rgba(255,255,255,.97) !important; box-shadow: 0 14px 30px rgba(30,65,48,.1) !important; }
+  .landing-main .landing-card { display: flex !important; min-width: 0; min-height: 86px !important; padding: 10px 5px !important; flex-direction: column; justify-content: center; gap: 7px; border: 0 !important; background: transparent !important; box-shadow: none !important; }
+  .landing-main .landing-card .landing-action-icon { display: grid !important; width: 34px !important; height: 34px !important; place-items: center; border-radius: 10px !important; background: #e7f2ec !important; color: #1d654a !important; }
+  .landing-main .landing-card > span:nth-child(2) { text-align: center; }
+  .landing-main .landing-card strong { display: block; font-size: .76rem; white-space: nowrap; }
+  .landing-main .landing-card small, .landing-main .landing-card::after { display: none; }
+  .landing-recommendations { margin-top: 12px; }
+  .landing-section-head { align-items: center; }
+  .landing-section-head h2 { font-size: 1.12rem; }
+  .landing-section-head .eyebrow { display: none; }
+  .landing-section-head > button { padding: 5px; font-size: .78rem; }
+  .landing-job-list { grid-template-columns: 1fr; gap: 8px; }
+  .landing-job { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; min-height: 86px; padding: 13px; gap: 11px; border: 1px solid #dce5e0; border-radius: 13px; background: #fff; }
+  .landing-job-mark { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 11px; background: #e8f4ee; color: #1e694c; font-weight: 900; }
+  .landing-job-copy strong { margin-top: 4px; font-size: .87rem; }
+  .landing-job-copy > span { margin-top: 6px; overflow: hidden; color: #748179; font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
+  .landing-job-deadline { font-size: .78rem; font-weight: 900; }
+  .landing-job-deadline.urgent { color: #d33434; }
+}
+
+html[data-app-theme='dark'] .landing-hero {
+  background-image: linear-gradient(90deg, rgba(14,22,18,.98), rgba(14,22,18,.91) 39%, rgba(14,22,18,.35)), url('/assets/jobhub-riverside-hero.jpg');
+}
+html[data-app-theme='dark'] .landing-search,
+html[data-app-theme='dark'] .landing-main .landing-menu,
+html[data-app-theme='dark'] .landing-job { background: rgba(24,33,28,.96) !important; border-color: #34443a !important; }
+html[data-app-theme='dark'] .landing-search input { color: #eef5f0 !important; }
+html[data-app-theme='dark'] .landing-job-copy small,
+html[data-app-theme='dark'] .landing-job-copy > span,
+html[data-app-theme='dark'] .landing-main .landing-card small { color: #a8b8ae !important; }
+html[data-app-theme='dark'] .landing-job-copy strong,
+html[data-app-theme='dark'] .landing-job-deadline,
+html[data-app-theme='dark'] .landing-section-head h2 { color: #edf4ef !important; }
+
 .grid > .card,
 .grid > .card.deadline-urgent,
 .grid > .card.deadline-urgent:hover {
@@ -3954,3 +4246,72 @@ html[data-app-theme='dark'] .profile-summary-item > span,
 html[data-app-theme='dark'] .profile-summary-item > p {
   color: #c3d0c8 !important;
 }
+
+/* 전면 개편 규칙을 누적된 이전 시안보다 마지막에 확정한다. */
+@media (min-width: 761px) {
+  body:has(> #root > main.landing-main) > #root > header {
+    background: rgba(255,255,255,.94) !important;
+    border-bottom: 1px solid rgba(26,77,56,.1) !important;
+  }
+  body > #root > main.landing-main { width: 100% !important; max-width: none !important; padding: 0 0 72px !important; }
+  .landing-main .landing-page { display: grid !important; width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; gap: 0 !important; }
+  .landing-main .landing-hero {
+    min-height: 490px !important;
+    margin: 0 !important;
+    background-image: linear-gradient(90deg,rgba(255,255,255,.98),rgba(255,255,255,.94) 35%,rgba(255,255,255,.52) 58%,rgba(255,255,255,.06)),url('/assets/jobhub-riverside-hero.jpg') !important;
+    background-position: center !important;
+    background-size: cover !important;
+  }
+  .landing-main .landing-intro { width: min(1440px,calc(100% - 64px)) !important; margin: 0 auto !important; padding: 90px 0 100px !important; text-align: left !important; }
+  .landing-main .landing-intro h1 { max-width: 690px !important; margin: 0 !important; color: #12231c !important; font-size: clamp(2.65rem,4.25vw,4.65rem) !important; line-height: 1.13 !important; }
+  .landing-main .landing-intro > p:last-of-type { max-width: 620px !important; margin: 24px 0 0 !important; color: #506159 !important; font-size: 1.12rem !important; }
+  .landing-main .landing-menu {
+    display: grid !important;
+    grid-template-columns: repeat(3,1fr) !important;
+    width: min(1320px,calc(100% - 96px)) !important;
+    margin: -47px auto 0 !important;
+    padding: 16px !important;
+    gap: 12px !important;
+    border: 1px solid rgba(24,87,63,.1) !important;
+    border-radius: 20px !important;
+    background: rgba(255,255,255,.94) !important;
+    box-shadow: 0 20px 55px rgba(28,62,47,.11) !important;
+  }
+  .landing-main .landing-card,
+  .landing-main .landing-card.postings,
+  .landing-main .landing-card.mypage,
+  .landing-main .landing-card.notice {
+    display: grid !important;
+    grid-template-columns: 52px minmax(0,1fr) auto !important;
+    min-height: 94px !important;
+    padding: 16px 19px !important;
+    gap: 14px !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .landing-main .landing-card:hover { background: #f0f7f3 !important; }
+  .landing-main .landing-card .landing-action-icon { display: grid !important; width: 52px !important; height: 52px !important; background: #e4f2eb !important; color: #18573f !important; }
+  .landing-main .landing-card > span:nth-child(2) { display: block !important; text-align: left !important; }
+  .landing-main .landing-card small { display: block !important; }
+  .landing-main .landing-card::after { display: block !important; content: '→' !important; position: static !important; }
+  .landing-recommendations { width: min(1320px,calc(100% - 96px)) !important; margin: 58px auto 0 !important; }
+  .landing-job-list { display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)) !important; }
+}
+
+@media (max-width: 760px) {
+  .landing-main .landing-page { padding: 0 16px 24px !important; gap: 16px !important; }
+  .landing-main .landing-hero { min-height: 330px !important; margin: 0 -16px !important; }
+  .landing-main .landing-menu { display: grid !important; grid-template-columns: repeat(3,1fr) !important; margin: -38px 0 0 !important; }
+  .landing-main .landing-card { display: flex !important; min-height: 86px !important; padding: 10px 5px !important; flex-direction: column !important; }
+  .landing-main .landing-card small, .landing-main .landing-card::after { display: none !important; }
+  .landing-job-list { display: grid !important; grid-template-columns: 1fr !important; }
+}
+
+html[data-app-theme='dark'] .landing-main .landing-hero {
+  background-image: linear-gradient(90deg,rgba(14,22,18,.98),rgba(14,22,18,.91) 39%,rgba(14,22,18,.35)),url('/assets/jobhub-riverside-hero.jpg') !important;
+}
+html[data-app-theme='dark'] .landing-main .landing-intro h1 { color: #f1f6f3 !important; }
+html[data-app-theme='dark'] .landing-main .landing-intro > p:last-of-type { color: #b7c4bc !important; }
+html[data-app-theme='dark'] .landing-main .landing-menu { background: rgba(24,33,28,.96) !important; border-color: #34443a !important; }
