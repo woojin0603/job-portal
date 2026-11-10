@@ -4315,3 +4315,121 @@ html[data-app-theme='dark'] .landing-main .landing-hero {
 html[data-app-theme='dark'] .landing-main .landing-intro h1 { color: #f1f6f3 !important; }
 html[data-app-theme='dark'] .landing-main .landing-intro > p:last-of-type { color: #b7c4bc !important; }
 html[data-app-theme='dark'] .landing-main .landing-menu { background: rgba(24,33,28,.96) !important; border-color: #34443a !important; }
+
+/* 메인 배너와 주요 서비스 바로가기 최종 정리 */
+.landing-main .landing-intro h1 > span {
+  display: block;
+}
+
+@media (min-width: 761px) {
+  .landing-main .landing-intro h1 {
+    max-width: 840px !important;
+    font-size: clamp(2.5rem, 3.65vw, 4.15rem) !important;
+    letter-spacing: -.055em !important;
+  }
+
+  .landing-main .landing-intro h1 > span:first-child {
+    white-space: nowrap;
+  }
+
+  .landing-main .landing-intro h1 > span + span {
+    margin-top: 7px;
+    color: #18573f;
+    font-size: .68em;
+    letter-spacing: -.035em;
+  }
+
+  .landing-main .landing-menu {
+    gap: 16px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .landing-main .landing-card,
+  .landing-main .landing-card.postings,
+  .landing-main .landing-card.mypage,
+  .landing-main .landing-card.notice {
+    display: flex !important;
+    min-height: 106px !important;
+    padding: 22px 26px !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 17px !important;
+    border: 1px solid rgba(36, 79, 59, .13) !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, .96) !important;
+    box-shadow: 0 12px 30px rgba(32, 65, 50, .08) !important;
+    text-align: left !important;
+  }
+
+  .landing-main .landing-card:hover {
+    border-color: rgba(24, 87, 63, .3) !important;
+    background: #fff !important;
+    box-shadow: 0 16px 36px rgba(32, 65, 50, .13) !important;
+    transform: translateY(-3px) !important;
+  }
+
+  .landing-main .landing-card .landing-action-icon {
+    display: grid !important;
+    width: 50px !important;
+    height: 50px !important;
+    flex: 0 0 50px;
+    place-items: center;
+    border-radius: 15px !important;
+    background: #e5f2eb !important;
+    color: #18573f !important;
+  }
+
+  .landing-main .landing-card strong {
+    color: #173329 !important;
+    font-size: 1.08rem !important;
+    font-weight: 800 !important;
+  }
+
+  .landing-main .landing-card::after {
+    display: block !important;
+    content: '→' !important;
+    margin-left: auto;
+    color: #789186 !important;
+    font-size: 1.18rem;
+  }
+
+  html[data-app-theme='dark'] .landing-main .landing-menu {
+    background: transparent !important;
+    border: 0 !important;
+  }
+
+  html[data-app-theme='dark'] .landing-main .landing-card,
+  html[data-app-theme='dark'] .landing-main .landing-card.postings,
+  html[data-app-theme='dark'] .landing-main .landing-card.mypage,
+  html[data-app-theme='dark'] .landing-main .landing-card.notice {
+    background: rgba(24, 33, 28, .97) !important;
+    border-color: #34443a !important;
+  }
+
+  html[data-app-theme='dark'] .landing-main .landing-intro h1 > span + span {
+    color: #83c8a1;
+  }
+}
+
+@media (max-width: 760px) {
+  .landing-main .landing-intro h1 > span + span {
+    margin-top: 5px;
+    color: #18573f;
+    font-size: .72em;
+  }
+
+  .landing-main .landing-card > strong {
+    display: block;
+    color: #173329 !important;
+    font-size: .78rem !important;
+    white-space: nowrap;
+  }
+
+  html[data-app-theme='dark'] .landing-main .landing-card > strong {
+    color: #edf4ef !important;
+  }
+}

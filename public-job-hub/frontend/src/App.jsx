@@ -6552,7 +6552,10 @@ function LandingPage({ user, jobs = [], loading, onPostings, onMyPage, onCommuni
       <div className="landing-hero">
         <div className="landing-intro">
           <p className="eyebrow">PUBLIC JOB HUB</p>
-          <h1>내일을 여는 공공일자리,<br />함께합니다.</h1>
+          <h1>
+            <span>내일을 여는 공공일자리</span>
+            <span>새로운 시작을 향한 연결고리</span>
+          </h1>
           <p>전국 공공기관의 채용 기회를 찾고 지원 준비까지 한곳에서 관리하세요.</p>
           <form
             className="landing-search"
@@ -6575,15 +6578,15 @@ function LandingPage({ user, jobs = [], loading, onPostings, onMyPage, onCommuni
       <nav className="landing-menu" aria-label="주요 서비스 바로가기">
         <button className="landing-card postings" onClick={onPostings}>
           <span className="landing-action-icon" aria-hidden="true">⌕</span>
-          <span><strong>채용공고</strong><small>최신 공고 확인</small></span>
+          <strong>채용공고</strong>
         </button>
         <button className="landing-card mypage" onClick={onMyPage}>
           <span className="landing-action-icon" aria-hidden="true">◎</span>
-          <span><strong>마이페이지</strong><small>{user ? '지원 현황 관리' : '로그인 후 이용'}</small></span>
+          <strong>마이페이지</strong>
         </button>
         <button className="landing-card notice" onClick={onCommunity}>
           <span className="landing-action-icon" aria-hidden="true">i</span>
-          <span><strong>공지·Q&amp;A</strong><small>운영 안내 확인</small></span>
+          <strong>Q&amp;A</strong>
         </button>
       </nav>
       <section className="landing-recommendations" aria-labelledby="landing-recommendation-title">
