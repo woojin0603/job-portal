@@ -6545,8 +6545,37 @@ function SuccessBoard({ user, onOpen, onDelete }) {
   )
 }
 
-function LandingPage({ user, jobs = [], loading, onPostings, onMyPage, onCommunity, onSearch, onOpen }) {
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="10.5" cy="10.5" r="6.25" />
+      <path d="m15.2 15.2 4.3 4.3" />
+    </svg>
+  )
+}
+
+function LandingPage({ onPostings, onMyPage, onCommunity, onSuccess, onSearch }) {
   const [keyword, setKeyword] = useState('')
+  const [notices, setNotices] = useState([])
+  const [stories, setStories] = useState([])
+
+  useEffect(() => {
+    let active = true
+    Promise.allSettled([getJson('/api/community/notices'), getJson('/api/success-stories')]).then(
+      ([noticeResult, storyResult]) => {
+        if (!active) return
+        if (noticeResult.status === 'fulfilled') setNotices(noticeResult.value)
+        if (storyResult.status === 'fulfilled') setStories(storyResult.value)
+      },
+    )
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const shortDate = (value) =>
+    value ? new Date(value).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-'
+
   return (
     <section className="landing-page">
       <div className="landing-hero">
@@ -6564,7 +6593,7 @@ function LandingPage({ user, jobs = [], loading, onPostings, onMyPage, onCommuni
               onSearch(keyword.trim())
             }}
           >
-            <span aria-hidden="true">⌕</span>
+            <span className="landing-search-icon"><SearchIcon /></span>
             <input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
@@ -6577,7 +6606,7 @@ function LandingPage({ user, jobs = [], loading, onPostings, onMyPage, onCommuni
       </div>
       <nav className="landing-menu" aria-label="주요 서비스 바로가기">
         <button className="landing-card postings" onClick={onPostings}>
-          <span className="landing-action-icon" aria-hidden="true">⌕</span>
+          <span className="landing-action-icon" aria-hidden="true"><SearchIcon /></span>
           <strong>채용공고</strong>
         </button>
         <button className="landing-card mypage" onClick={onMyPage}>
@@ -6589,31 +6618,37 @@ function LandingPage({ user, jobs = [], loading, onPostings, onMyPage, onCommuni
           <strong>Q&amp;A</strong>
         </button>
       </nav>
-      <section className="landing-recommendations" aria-labelledby="landing-recommendation-title">
-        <div className="landing-section-head">
-          <div>
-            <p className="eyebrow">LATEST OPPORTUNITIES</p>
-            <h2 id="landing-recommendation-title">마감이 가까운 채용정보</h2>
+      <section className="landing-board-grid" aria-label="공지사항과 합격자 게시판">
+        <article className="landing-board-panel">
+          <div className="landing-board-head">
+            <h2>공지사항</h2>
+            <button type="button" onClick={onCommunity}>전체 공지사항 <span aria-hidden="true">→</span></button>
           </div>
-          <button type="button" onClick={onPostings}>전체 공고 보기 <span aria-hidden="true">→</span></button>
-        </div>
-        <div className="landing-job-list">
-          {jobs.slice(0, 3).map((job) => (
-            <button type="button" className="landing-job" key={job.id} onClick={() => onOpen(job)}>
-              <span className="landing-job-mark" aria-hidden="true">{job.organization?.trim()?.[0] || 'J'}</span>
-              <span className="landing-job-copy">
-                <small>{job.organization}</small>
-                <strong>{job.title}</strong>
-                <span>{job.region || '지역 미정'} · {employmentTypeLabel(job.employmentType, job.title)}</span>
-              </span>
-              <span className={`landing-job-deadline ${/^D-[012]$|D-Day/.test(postingDeadlineLabel(job.deadline)) ? 'urgent' : ''}`}>
-                {postingDeadlineLabel(job.deadline)}
-              </span>
-            </button>
-          ))}
-          {!loading && jobs.length === 0 && <p className="landing-job-empty">현재 표시할 진행 중 공고가 없습니다.</p>}
-          {loading && jobs.length === 0 && <p className="landing-job-empty">최신 공고를 불러오는 중입니다.</p>}
-        </div>
+          <div className="landing-board-list">
+            {notices.slice(0, 5).map((item) => (
+              <button type="button" key={item.id} onClick={onCommunity}>
+                <span>{item.pinned && <em>필독</em>}{item.title}</span>
+                <time>{shortDate(item.createdAt)}</time>
+              </button>
+            ))}
+            {!notices.length && <p>등록된 공지사항이 없습니다.</p>}
+          </div>
+        </article>
+        <article className="landing-board-panel">
+          <div className="landing-board-head">
+            <h2>합격자 게시판</h2>
+            <button type="button" onClick={onSuccess}>전체 합격 후기 <span aria-hidden="true">→</span></button>
+          </div>
+          <div className="landing-board-list">
+            {stories.slice(0, 5).map((story) => (
+              <button type="button" key={story.id} onClick={onSuccess}>
+                <span>{story.title}</span>
+                <time>{shortDate(story.createdAt)}</time>
+              </button>
+            ))}
+            {!stories.length && <p>아직 공유된 합격 후기가 없습니다.</p>}
+          </div>
+        </article>
       </section>
     </section>
   )
@@ -7777,9 +7812,6 @@ export default function App() {
           />
         ) : landingView ? (
           <LandingPage
-            user={user}
-            jobs={data.items}
-            loading={loading}
             onPostings={() => navigate(false)}
             onMyPage={() => navigate(true)}
             onSearch={(keyword) => {
@@ -7787,7 +7819,6 @@ export default function App() {
               setQuery(keyword)
               navigate(false)
             }}
-            onOpen={openSource}
             onCommunity={() => {
               setLandingView(false)
               setCommunityView(true)
@@ -7796,6 +7827,15 @@ export default function App() {
               setAdminView(false)
               setDetailId(null)
               window.history.pushState({}, '', '/community')
+            }}
+            onSuccess={() => {
+              setLandingView(false)
+              setCommunityView(false)
+              setSuccessView(true)
+              setMine(false)
+              setAdminView(false)
+              setDetailId(null)
+              window.history.pushState({}, '', '/success-stories')
             }}
           />
         ) : adminView ? (

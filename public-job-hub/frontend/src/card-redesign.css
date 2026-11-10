@@ -282,6 +282,119 @@
   .landing-job-deadline.urgent { color: #d33434; }
 }
 
+/* 메인 바로가기 아이콘과 게시판 요약 */
+.landing-search-icon,
+.landing-main .landing-action-icon {
+  line-height: 0;
+}
+
+.landing-search-icon svg,
+.landing-main .landing-action-icon svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.landing-board-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(1320px, calc(100% - 96px));
+  margin: 54px auto 0;
+  gap: 24px;
+}
+
+.landing-board-panel {
+  min-width: 0;
+  padding: 28px 30px 22px;
+  border: 1px solid #dde6e0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(31, 65, 48, .055);
+}
+
+.landing-board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid #1f5f46;
+}
+
+.landing-board-head h2 {
+  margin: 0;
+  color: #172f25;
+  font-size: 1.3rem;
+  letter-spacing: -.035em;
+}
+
+.landing-board-head button {
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: #52675d;
+  font-size: .86rem;
+  font-weight: 700;
+}
+
+.landing-board-head button:hover { color: #18573f; }
+
+.landing-board-list {
+  display: grid;
+}
+
+.landing-board-list > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 3px;
+  gap: 20px;
+  border: 0;
+  border-bottom: 1px solid #edf1ee;
+  background: transparent;
+  color: #263a31;
+  text-align: left;
+}
+
+.landing-board-list > button:hover { color: #18573f; background: #f8fbf9; }
+.landing-board-list > button > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.landing-board-list time { color: #7a8981; font-size: .82rem; font-variant-numeric: tabular-nums; }
+.landing-board-list em { margin-right: 8px; padding: 3px 6px; border-radius: 5px; background: #e4f1ea; color: #18573f; font-size: .7rem; font-style: normal; font-weight: 800; }
+.landing-board-list > p { margin: 0; padding: 30px 3px; color: #7a8981; }
+
+html[data-app-theme='dark'] .landing-board-panel { background: #18211c; border-color: #34443a; box-shadow: 0 10px 28px rgba(0, 0, 0, .16); }
+html[data-app-theme='dark'] .landing-board-head { border-bottom-color: #65a984; }
+html[data-app-theme='dark'] .landing-board-head h2 { color: #edf4ef; }
+html[data-app-theme='dark'] .landing-board-head button { color: #aebdb4; }
+html[data-app-theme='dark'] .landing-board-list > button { color: #dce6df; border-bottom-color: #2e3b33; }
+html[data-app-theme='dark'] .landing-board-list > button:hover { color: #9ed0b3; background: #202b25; }
+html[data-app-theme='dark'] .landing-board-list time { color: #9aa9a0; }
+html[data-app-theme='dark'] .landing-board-list em { background: #263d31; color: #a9d5bc; }
+
+@media (max-width: 760px) {
+  .landing-board-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+    margin-top: 12px;
+    gap: 14px;
+  }
+
+  .landing-board-panel { padding: 20px 18px 15px; border-radius: 15px; }
+  .landing-board-head { padding-bottom: 13px; }
+  .landing-board-head h2 { font-size: 1.08rem; }
+  .landing-board-head button { font-size: .76rem; }
+  .landing-board-list > button { min-height: 47px; gap: 12px; }
+  .landing-board-list time { font-size: .73rem; }
+}
+
 html[data-app-theme='dark'] .landing-hero {
   background-image: linear-gradient(90deg, rgba(14,22,18,.98), rgba(14,22,18,.91) 39%, rgba(14,22,18,.35)), url('/assets/jobhub-riverside-hero.jpg');
 }
