@@ -4546,3 +4546,146 @@ html[data-app-theme='dark'] .landing-main .landing-menu { background: rgba(24,33
     color: #edf4ef !important;
   }
 }
+
+/* 같은 기관 공고 미니탭에서는 카드 내부 요소가 겹치지 않도록 전용 폭과 높이를 사용한다. */
+.posting-group-dialog-card {
+  width: min(1120px, 94vw);
+}
+
+.posting-group-dialog-card .posting-group-dialog-body {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 18px;
+  padding: 20px;
+}
+
+.posting-group-dialog-card .posting-group-dialog-body > .card,
+.posting-group-dialog-card .posting-group-dialog-body > .card.deadline-urgent {
+  display: flex;
+  width: 100%;
+  height: auto;
+  min-height: 500px;
+  overflow: hidden;
+}
+
+.posting-group-dialog-card .card-top,
+.posting-group-dialog-card .card.deadline-urgent .card-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  min-height: 56px;
+  gap: 10px;
+}
+
+.posting-group-dialog-card .card-brand {
+  min-width: 0;
+  align-self: start;
+}
+
+.posting-group-dialog-card .card-tools {
+  display: flex;
+  max-width: 210px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.posting-group-dialog-card .card-heading,
+.posting-group-dialog-card .details,
+.posting-group-dialog-card .date,
+.posting-group-dialog-card .actions {
+  position: static;
+  min-width: 0;
+}
+
+.posting-group-dialog-card .card-heading {
+  min-height: 86px;
+}
+
+.posting-group-dialog-card .details {
+  min-height: 82px;
+}
+
+.posting-group-dialog-card .date {
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.posting-group-dialog-card .date > div {
+  min-width: 92px;
+}
+
+.posting-group-dialog-card .date .card-dday {
+  margin-left: auto;
+}
+
+.posting-group-dialog-card .card > .actions {
+  margin-top: auto;
+}
+
+.posting-group-dialog-card .job-info-actions,
+.posting-group-dialog-card .career-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  gap: 6px;
+}
+
+.posting-group-dialog-card .career-actions {
+  grid-template-columns: 1fr;
+}
+
+.posting-group-dialog-card .job-info-actions button,
+.posting-group-dialog-card .career-actions button {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+@media (max-width: 900px) {
+  .posting-group-dialog-card .posting-group-dialog-body {
+    grid-template-columns: 1fr;
+  }
+
+  .posting-group-dialog-card .posting-group-dialog-body > .card,
+  .posting-group-dialog-card .posting-group-dialog-body > .card.deadline-urgent {
+    min-height: 480px;
+  }
+}
+
+@media (max-width: 700px) {
+  .posting-group-dialog-card {
+    width: 100%;
+  }
+
+  .posting-group-dialog-card .posting-group-dialog-body {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .posting-group-dialog-card .posting-group-dialog-body > .card,
+  .posting-group-dialog-card .posting-group-dialog-body > .card.deadline-urgent {
+    min-height: 0;
+  }
+
+  .posting-group-dialog-card .card-top,
+  .posting-group-dialog-card .card.deadline-urgent .card-top {
+    grid-template-columns: 1fr;
+  }
+
+  .posting-group-dialog-card .card-tools {
+    width: 100%;
+    max-width: none;
+    justify-content: flex-start;
+  }
+
+  .posting-group-dialog-card .card-heading,
+  .posting-group-dialog-card .details {
+    min-height: 0;
+  }
+
+  .posting-group-dialog-card .job-info-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
