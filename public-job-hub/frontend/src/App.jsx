@@ -1489,6 +1489,27 @@ function ProfileSummary({ profile, onEdit }) {
       })),
     },
   ]
+  const defaultOrder = groups.map((group) => group.area)
+  const [groupOrder, setGroupOrder] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('jobhub-profile-summary-order') || '[]')
+      return saved.length === defaultOrder.length && defaultOrder.every((area) => saved.includes(area))
+        ? saved
+        : defaultOrder
+    } catch {
+      return defaultOrder
+    }
+  })
+  const orderedGroups = groupOrder.map((area) => groups.find((group) => group.area === area)).filter(Boolean)
+  const moveGroup = (area, offset) => {
+    const currentIndex = groupOrder.indexOf(area)
+    const nextIndex = currentIndex + offset
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= groupOrder.length) return
+    const next = [...groupOrder]
+    ;[next[currentIndex], next[nextIndex]] = [next[nextIndex], next[currentIndex]]
+    setGroupOrder(next)
+    localStorage.setItem('jobhub-profile-summary-order', JSON.stringify(next))
+  }
   const hasItems = groups.some((group) => group.items.length)
   return (
     <section className="profile-summary" aria-labelledby="profile-summary-title">
@@ -1504,9 +1525,15 @@ function ProfileSummary({ profile, onEdit }) {
         <p className="capability-empty">등록된 스펙이 없습니다. 내 스펙 수정하기에서 입력해 주세요.</p>
       ) : (
         <div className="profile-summary-grid">
-          {groups.map((group) => (
+          {orderedGroups.map((group, groupIndex) => (
             <article key={group.title} className={`profile-group-${group.area}`}>
-              <h3>{group.title}<b>{group.items.length}</b></h3>
+              <div className="profile-summary-group-head">
+                <h3>{group.title}<b>{group.items.length}</b></h3>
+                <div className="profile-summary-order" aria-label={`${group.title} 배치 순서`}>
+                  <button type="button" disabled={groupIndex === 0} onClick={() => moveGroup(group.area, -1)} aria-label={`${group.title} 위로 이동`}>↑</button>
+                  <button type="button" disabled={groupIndex === orderedGroups.length - 1} onClick={() => moveGroup(group.area, 1)} aria-label={`${group.title} 아래로 이동`}>↓</button>
+                </div>
+              </div>
               {group.items.length ? group.items.map((item, index) => (
                 <div className="profile-summary-item" key={`${group.title}-${index}`}>
                   <strong>{item.title}</strong>
@@ -2905,13 +2932,14 @@ function ApplicationSpecDialog({ item, profile, busy, onSave, onClose }) {
       .map(formatter)
       .filter(Boolean)
       .join('\n')
+  const splitLines = (value) => String(value || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
   const defaults = {
-    certifications: summarize(profile.certifications, (value) =>
+    certifications: splitLines(summarize(profile.certifications, (value) =>
       [value.name, value.grade, value.acquiredDate || value.acquiredMonth]
         .filter(Boolean)
         .join(' · '),
-    ),
-    careers: summarize(profile.careers, (value) =>
+    )),
+    careers: splitLines(summarize(profile.careers, (value) =>
       [
         value.companyName,
         value.position,
@@ -2920,21 +2948,39 @@ function ApplicationSpecDialog({ item, profile, busy, onSave, onClose }) {
       ]
         .filter(Boolean)
         .join(' · '),
-    ),
-    activities: summarize(profile.activities, (value) =>
+    )),
+    activities: splitLines(summarize(profile.activities, (value) =>
       [value.name, value.description, [value.startMonth, value.endMonth].filter(Boolean).join('~')]
         .filter(Boolean)
         .join(' · '),
-    ),
-    degrees: summarize(profile.degrees, (value) =>
+    )),
+    degrees: splitLines(summarize(profile.degrees, (value) =>
       [value.schoolName, value.major, value.degreeType, value.status].filter(Boolean).join(' · '),
-    ),
+    )),
     notes: '',
   }
   const saved = item.applicationSpec || {}
-  const [form, setForm] = useState({ ...defaults, ...saved })
-  const change = (field) => (event) => setForm({ ...form, [field]: event.target.value })
+  const [form, setForm] = useState({
+    certifications: splitLines(saved.certifications).length ? splitLines(saved.certifications) : defaults.certifications,
+    careers: splitLines(saved.careers).length ? splitLines(saved.careers) : defaults.careers,
+    activities: splitLines(saved.activities).length ? splitLines(saved.activities) : defaults.activities,
+    degrees: splitLines(saved.degrees).length ? splitLines(saved.degrees) : defaults.degrees,
+    notes: saved.notes || '',
+  })
+  const changeItem = (field, index, value) => {
+    const next = [...form[field]]
+    next[index] = value
+    setForm({ ...form, [field]: next })
+  }
+  const addItem = (field) => setForm({ ...form, [field]: [...form[field], ''] })
+  const removeItem = (field, index) => setForm({ ...form, [field]: form[field].filter((_, itemIndex) => itemIndex !== index) })
   const copyProfile = () => setForm({ ...form, ...defaults, notes: form.notes })
+  const specSections = [
+    ['certifications', '제출 자격증', '예: 정보처리기사 · 기사 · 2026-03-15'],
+    ['careers', '제출 경력', '예: ○○회사 · 사원 · 시스템 운영 · 2024-01~2025-12'],
+    ['activities', '제출 대외활동', '예: 활동명 · 담당 내용 · 활동기간'],
+    ['degrees', '제출 학위', '예: ○○대학교 · 컴퓨터공학 · 학사 · 졸업'],
+  ]
   return (
     <div
       className="overlay"
@@ -2958,26 +3004,48 @@ function ApplicationSpecDialog({ item, profile, busy, onSave, onClose }) {
         <form
           onSubmit={(event) => {
             event.preventDefault()
-            onSave(item.id, form)
+            onSave(item.id, {
+              certifications: form.certifications.map((value) => value.trim()).filter(Boolean).join('\n'),
+              careers: form.careers.map((value) => value.trim()).filter(Boolean).join('\n'),
+              activities: form.activities.map((value) => value.trim()).filter(Boolean).join('\n'),
+              degrees: form.degrees.map((value) => value.trim()).filter(Boolean).join('\n'),
+              notes: form.notes,
+            })
           }}
         >
-          {[
-            ['certifications', '제출 자격증', '예: 정보처리기사 · 2026-03-15'],
-            ['careers', '제출 경력', '예: ○○회사 · 사원 · 시스템 운영 · 2024-01~2025-12'],
-            ['activities', '제출 대외활동', '예: 활동명 · 담당 내용 · 활동기간'],
-            ['degrees', '제출 학위', '예: ○○대학교 · 컴퓨터공학 · 학사 · 졸업'],
-            ['notes', '공고별 메모', '예: 해당 공고에는 어학 성적을 제외하고 제출'],
-          ].map(([field, label, placeholder]) => (
-            <label key={field}>
-              {label}
-              <textarea
-                value={form[field] || ''}
-                onChange={change(field)}
-                maxLength={field === 'notes' ? 3000 : 5000}
-                placeholder={placeholder}
-              />
-            </label>
+          {specSections.map(([field, label, placeholder]) => (
+            <section className="application-spec-section" key={field}>
+              <div className="application-spec-section-head">
+                <h3>{label}</h3>
+                <button type="button" onClick={() => addItem(field)}>＋ 추가하기</button>
+              </div>
+              <div className="application-spec-items">
+                {form[field].map((value, index) => (
+                  <div className="application-spec-item" key={`${field}-${index}`}>
+                    <span>{index + 1}</span>
+                    <input
+                      value={value}
+                      onChange={(event) => changeItem(field, index, event.target.value)}
+                      maxLength={1000}
+                      placeholder={placeholder}
+                      aria-label={`${label} ${index + 1}`}
+                    />
+                    <button type="button" onClick={() => removeItem(field, index)} aria-label={`${label} ${index + 1} 삭제`}>삭제</button>
+                  </div>
+                ))}
+                {!form[field].length && <p>추가하기 버튼으로 항목을 등록해 주세요.</p>}
+              </div>
+            </section>
           ))}
+          <label className="application-spec-notes">
+            공고별 메모
+            <textarea
+              value={form.notes}
+              onChange={(event) => setForm({ ...form, notes: event.target.value })}
+              maxLength={3000}
+              placeholder="예: 해당 공고에는 어학 성적을 제외하고 제출"
+            />
+          </label>
           <div className="application-spec-actions">
             <button className="primary" disabled={busy}>
               {busy ? '저장 중…' : '제출 스펙 저장'}

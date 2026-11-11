@@ -4689,3 +4689,193 @@ html[data-app-theme='dark'] .landing-main .landing-menu { background: rgba(24,33
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* 다크 모드 상단 메뉴와 계정 표시를 선명하고 단정하게 유지한다. */
+html[data-app-theme='dark'] header .main-navigation > button,
+html[data-app-theme='dark'] header .main-navigation > .notification-center > button,
+html[data-app-theme='dark'] header .main-navigation .app-settings-nav {
+  color: #f1f7f3 !important;
+  font-weight: 780 !important;
+  text-shadow: 0 0 1px rgba(255, 255, 255, .16);
+}
+
+html[data-app-theme='dark'] header .main-navigation > button:hover,
+html[data-app-theme='dark'] header .main-navigation > .notification-center > button:hover {
+  color: #fff !important;
+}
+
+@media (min-width: 761px) {
+  html[data-app-theme='dark'] header .main-navigation > button,
+  html[data-app-theme='dark'] header .main-navigation > .notification-center > button {
+    background: transparent !important;
+    border-color: transparent !important;
+  }
+
+  html[data-app-theme='dark'] header .main-navigation > button.active,
+  html[data-app-theme='dark'] header .main-navigation > .notification-center > button.active {
+    background: transparent !important;
+    border-bottom-color: #70c493 !important;
+    color: #fff !important;
+  }
+
+  header .main-navigation .user-name,
+  html[data-app-theme='dark'] header .main-navigation .user-name {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    padding: 0 4px !important;
+  }
+}
+
+/* 다크 모드 메인 바로가기는 배경 이미지가 비치지 않도록 불투명하게 표시한다. */
+html[data-app-theme='dark'] .landing-main .landing-card,
+html[data-app-theme='dark'] .landing-main .landing-card.postings,
+html[data-app-theme='dark'] .landing-main .landing-card.mypage,
+html[data-app-theme='dark'] .landing-main .landing-card.notice {
+  background: #1c2821 !important;
+  border-color: #43564a !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .3) !important;
+  backdrop-filter: none !important;
+}
+
+html[data-app-theme='dark'] .landing-main .landing-card:hover {
+  background: #26352c !important;
+  border-color: #6b8b79 !important;
+}
+
+html[data-app-theme='dark'] .landing-main .landing-card > strong {
+  color: #f4f8f5 !important;
+}
+
+/* 앱 첫 화면에서는 배경 그림과 바로가기 카드가 겹치지 않는다. */
+@media (max-width: 760px) {
+  .landing-main .landing-hero,
+  html[data-app-theme='dark'] .landing-main .landing-hero {
+    position: relative !important;
+    z-index: 0 !important;
+    min-height: 305px !important;
+    background-attachment: scroll !important;
+  }
+
+  .landing-main .landing-hero {
+    background-image: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.9)), url('/assets/jobhub-riverside-hero.jpg') !important;
+  }
+
+  html[data-app-theme='dark'] .landing-main .landing-hero {
+    background-image: linear-gradient(180deg, rgba(14,22,18,.98), rgba(14,22,18,.92)), url('/assets/jobhub-riverside-hero.jpg') !important;
+  }
+
+  .landing-main .landing-menu {
+    position: relative !important;
+    z-index: 1 !important;
+    margin: 0 !important;
+  }
+}
+
+/* 공고별 제출 스펙은 한 항목씩 추가·삭제할 수 있게 구성한다. */
+.application-spec-dialog form {
+  grid-template-columns: 1fr;
+}
+
+.application-spec-section {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #dbe4df;
+  border-radius: 11px;
+  background: #f8faf9;
+}
+
+.application-spec-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.application-spec-section-head h3 { margin: 0; color: #263b31; font-size: 15px; }
+.application-spec-section-head button {
+  min-height: 34px;
+  border: 1px solid #aac1b5;
+  border-radius: 7px;
+  background: #fff;
+  color: #285943;
+  padding: 0 10px;
+  font-weight: 750;
+}
+
+.application-spec-items { display: grid; gap: 8px; }
+.application-spec-items > p { margin: 4px 0; color: #78867f; font-size: 12px; }
+.application-spec-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.application-spec-item > span {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e4eee9;
+  color: #315f50;
+  font-size: 11px;
+  font-weight: 800;
+}
+.application-spec-item input { width: 100%; min-width: 0; min-height: 42px; border: 1px solid #ccd8d1; border-radius: 8px; padding: 0 11px; }
+.application-spec-item > button { min-height: 36px; border: 1px solid #dec9c6; border-radius: 7px; background: #fff; color: #9a4037; padding: 0 9px; }
+.application-spec-notes { grid-column: 1 / -1; }
+
+html[data-app-theme='dark'] .application-spec-section { background: #202b25; border-color: #3c4d42; }
+html[data-app-theme='dark'] .application-spec-section-head h3 { color: #edf4ef; }
+html[data-app-theme='dark'] .application-spec-section-head button { background: #28382f; border-color: #55705f; color: #bce0cc; }
+html[data-app-theme='dark'] .application-spec-item > span { background: #2a4538; color: #bce0cc; }
+html[data-app-theme='dark'] .application-spec-item > button { background: #382723; border-color: #67443d; color: #ffb2a8; }
+
+/* 내 스펙 요약은 동일한 간격의 2열 카드로 배치하고 순서를 직접 조절한다. */
+.profile-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: none !important;
+  align-items: stretch;
+  gap: 12px;
+}
+.profile-summary-grid > article { grid-area: auto !important; height: 100%; }
+.profile-summary-group-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 11px; }
+.profile-summary-group-head h3 { margin: 0; }
+.profile-summary-order { display: flex; gap: 4px; }
+.profile-summary-order button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid #d2ddd7;
+  border-radius: 7px;
+  background: #fff;
+  color: #486356;
+}
+.profile-summary-order button:disabled { opacity: .3; cursor: default; }
+.profile-group-grades { order: 99; }
+
+html[data-app-theme='dark'] .profile-summary-order button { background: #27362e; border-color: #465b4e; color: #c5d9cd; }
+
+@media (max-width: 700px) {
+  .profile-summary-grid { grid-template-columns: 1fr; }
+  .application-spec-section { padding: 12px; }
+  .application-spec-item { grid-template-columns: 25px minmax(0, 1fr) auto; gap: 6px; }
+}
+
+/* 알림 센터의 푸시 재연결 버튼은 다크 모드에서도 명확하게 표시한다. */
+html[data-app-theme='dark'] .enable-native-notification {
+  border: 1px solid #72a789 !important;
+  background: #315f4a !important;
+  color: #fff !important;
+  font-weight: 800 !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .24) !important;
+}
+html[data-app-theme='dark'] .enable-native-notification:hover {
+  background: #3f765c !important;
+  border-color: #91c5a6 !important;
+}
