@@ -1501,12 +1501,15 @@ function ProfileSummary({ profile, onEdit }) {
     }
   })
   const orderedGroups = groupOrder.map((area) => groups.find((group) => group.area === area)).filter(Boolean)
-  const moveGroup = (area, offset) => {
+  const [draggedGroup, setDraggedGroup] = useState('')
+  const moveGroup = (area, targetArea) => {
+    if (!area || !targetArea || area === targetArea) return
     const currentIndex = groupOrder.indexOf(area)
-    const nextIndex = currentIndex + offset
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= groupOrder.length) return
+    const nextIndex = groupOrder.indexOf(targetArea)
+    if (currentIndex < 0 || nextIndex < 0) return
     const next = [...groupOrder]
-    ;[next[currentIndex], next[nextIndex]] = [next[nextIndex], next[currentIndex]]
+    next.splice(currentIndex, 1)
+    next.splice(nextIndex, 0, area)
     setGroupOrder(next)
     localStorage.setItem('jobhub-profile-summary-order', JSON.stringify(next))
   }
@@ -1525,14 +1528,30 @@ function ProfileSummary({ profile, onEdit }) {
         <p className="capability-empty">등록된 스펙이 없습니다. 내 스펙 수정하기에서 입력해 주세요.</p>
       ) : (
         <div className="profile-summary-grid">
-          {orderedGroups.map((group, groupIndex) => (
-            <article key={group.title} className={`profile-group-${group.area}`}>
+          {orderedGroups.map((group) => (
+            <article
+              key={group.title}
+              className={`profile-group-${group.area} ${draggedGroup === group.area ? 'dragging' : ''}`}
+              draggable
+              onDragStart={(event) => {
+                setDraggedGroup(group.area)
+                event.dataTransfer.effectAllowed = 'move'
+                event.dataTransfer.setData('text/plain', group.area)
+              }}
+              onDragOver={(event) => {
+                event.preventDefault()
+                event.dataTransfer.dropEffect = 'move'
+              }}
+              onDrop={(event) => {
+                event.preventDefault()
+                moveGroup(event.dataTransfer.getData('text/plain') || draggedGroup, group.area)
+                setDraggedGroup('')
+              }}
+              onDragEnd={() => setDraggedGroup('')}
+            >
               <div className="profile-summary-group-head">
                 <h3>{group.title}<b>{group.items.length}</b></h3>
-                <div className="profile-summary-order" aria-label={`${group.title} 배치 순서`}>
-                  <button type="button" disabled={groupIndex === 0} onClick={() => moveGroup(group.area, -1)} aria-label={`${group.title} 위로 이동`}>↑</button>
-                  <button type="button" disabled={groupIndex === orderedGroups.length - 1} onClick={() => moveGroup(group.area, 1)} aria-label={`${group.title} 아래로 이동`}>↓</button>
-                </div>
+                <span className="profile-summary-drag-handle" title="드래그해서 순서 변경" aria-label={`${group.title} 드래그해서 순서 변경`}>⋮⋮</span>
               </div>
               {group.items.length ? group.items.map((item, index) => (
                 <div className="profile-summary-item" key={`${group.title}-${index}`}>
@@ -2812,6 +2831,35 @@ function ApplicationDashboard({ applications, onOpen, onEditSpec, onSaveTracking
   )
 }
 
+const APPLICATION_SPEC_BLANKS = {
+  certifications: () => ({ catalogId: null, name: '', type: '', issuer: '', grade: '', gradeType: '', allowedGrades: [], acquiredDate: '' }),
+  careers: () => ({ companyName: '', position: '', field: '', duties: '', startMonth: '', endMonth: '', current: false }),
+  activities: () => ({ name: '', field: '', description: '', startMonth: '', endMonth: '' }),
+  degrees: () => ({ schoolName: '', major: '', degreeType: '', status: '', startMonth: '', endMonth: '' }),
+}
+
+function parseApplicationSpecItems(value, field) {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed)) return parsed
+  } catch {
+    // 기존 줄글 데이터는 각 줄을 보존한 채 새 입력 구조에서 다시 편집할 수 있게 한다.
+  }
+  return String(value).split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((legacyText) => ({
+    ...APPLICATION_SPEC_BLANKS[field](),
+    legacyText,
+  }))
+}
+
+function applicationSpecItemText(field, item) {
+  if (item.legacyText) return item.legacyText
+  if (field === 'certifications') return [item.name, item.grade, item.acquiredDate].filter(Boolean).join(' · ')
+  if (field === 'careers') return [item.companyName, item.position, item.field, item.duties, [item.startMonth, item.current ? '재직중' : item.endMonth].filter(Boolean).join('~')].filter(Boolean).join(' · ')
+  if (field === 'activities') return [item.name, item.field, item.description, [item.startMonth, item.endMonth].filter(Boolean).join('~')].filter(Boolean).join(' · ')
+  return [item.schoolName, item.major, item.degreeType, item.status, [item.startMonth, item.endMonth].filter(Boolean).join('~')].filter(Boolean).join(' · ')
+}
+
 function ApplicationStatusDialog({ item, onClose, onOpen, onEditSpec, onSave }) {
   const [tracking, setTracking] = useState({
     stage: item.stage || 'SAVED',
@@ -2821,12 +2869,13 @@ function ApplicationStatusDialog({ item, onClose, onOpen, onEditSpec, onSave }) 
   const [busy, setBusy] = useState(false)
   const spec = item.applicationSpec || {}
   const specRows = [
-    ['자격증', spec.certifications],
-    ['경력', spec.careers],
-    ['대외활동', spec.activities],
-    ['학위', spec.degrees],
-    ['메모', spec.notes],
-  ].filter(([, value]) => value?.trim())
+    ['자격증', 'certifications', spec.certifications],
+    ['경력', 'careers', spec.careers],
+    ['대외활동', 'activities', spec.activities],
+    ['학위', 'degrees', spec.degrees],
+  ].map(([label, field, value]) => [label, parseApplicationSpecItems(value, field).map((entry) => applicationSpecItemText(field, entry)).filter(Boolean).join('\n')])
+    .concat([['메모', spec.notes]])
+    .filter(([, value]) => value?.trim())
   const isSaved = tracking.stage === 'SAVED'
 
   return createPortal(
@@ -2926,72 +2975,41 @@ function ApplicationStatusDialog({ item, onClose, onOpen, onEditSpec, onSave }) 
 }
 
 function ApplicationSpecDialog({ item, profile, busy, onSave, onClose }) {
-  const summarize = (values, formatter) =>
-    (values || [])
-      .filter((value) => Object.values(value || {}).some(Boolean))
-      .map(formatter)
-      .filter(Boolean)
-      .join('\n')
-  const splitLines = (value) => String(value || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
   const defaults = {
-    certifications: splitLines(summarize(profile.certifications, (value) =>
-      [value.name, value.grade, value.acquiredDate || value.acquiredMonth]
-        .filter(Boolean)
-        .join(' · '),
-    )),
-    careers: splitLines(summarize(profile.careers, (value) =>
-      [
-        value.companyName,
-        value.position,
-        value.duties,
-        [value.startMonth, value.endMonth].filter(Boolean).join('~'),
-      ]
-        .filter(Boolean)
-        .join(' · '),
-    )),
-    activities: splitLines(summarize(profile.activities, (value) =>
-      [value.name, value.description, [value.startMonth, value.endMonth].filter(Boolean).join('~')]
-        .filter(Boolean)
-        .join(' · '),
-    )),
-    degrees: splitLines(summarize(profile.degrees, (value) =>
-      [value.schoolName, value.major, value.degreeType, value.status].filter(Boolean).join(' · '),
-    )),
+    certifications: (profile.certifications || []).filter((value) => value.name).map((value) => ({ ...APPLICATION_SPEC_BLANKS.certifications(), ...value, acquiredDate: value.acquiredDate || '' })),
+    careers: (profile.careers || []).filter((value) => value.companyName || value.position || value.duties).map((value) => ({ ...APPLICATION_SPEC_BLANKS.careers(), ...value })),
+    activities: (profile.activities || []).filter((value) => value.name || value.description).map((value) => ({ ...APPLICATION_SPEC_BLANKS.activities(), ...value })),
+    degrees: (profile.degrees || []).filter((value) => value.schoolName || value.major).map((value) => ({ ...APPLICATION_SPEC_BLANKS.degrees(), ...value })),
     notes: '',
   }
   const saved = item.applicationSpec || {}
   const [form, setForm] = useState({
-    certifications: splitLines(saved.certifications).length ? splitLines(saved.certifications) : defaults.certifications,
-    careers: splitLines(saved.careers).length ? splitLines(saved.careers) : defaults.careers,
-    activities: splitLines(saved.activities).length ? splitLines(saved.activities) : defaults.activities,
-    degrees: splitLines(saved.degrees).length ? splitLines(saved.degrees) : defaults.degrees,
+    certifications: parseApplicationSpecItems(saved.certifications, 'certifications').length ? parseApplicationSpecItems(saved.certifications, 'certifications') : defaults.certifications,
+    careers: parseApplicationSpecItems(saved.careers, 'careers').length ? parseApplicationSpecItems(saved.careers, 'careers') : defaults.careers,
+    activities: parseApplicationSpecItems(saved.activities, 'activities').length ? parseApplicationSpecItems(saved.activities, 'activities') : defaults.activities,
+    degrees: parseApplicationSpecItems(saved.degrees, 'degrees').length ? parseApplicationSpecItems(saved.degrees, 'degrees') : defaults.degrees,
     notes: saved.notes || '',
   })
-  const changeItem = (field, index, value) => {
+  const changeItem = (field, index, key, value) => {
     const next = [...form[field]]
-    next[index] = value
+    next[index] = { ...next[index], legacyText: '', [key]: value }
     setForm({ ...form, [field]: next })
   }
-  const addItem = (field) => setForm({ ...form, [field]: [...form[field], ''] })
+  const addItem = (field) => setForm({ ...form, [field]: [...form[field], APPLICATION_SPEC_BLANKS[field]()] })
   const removeItem = (field, index) => setForm({ ...form, [field]: form[field].filter((_, itemIndex) => itemIndex !== index) })
   const copyProfile = () => setForm({ ...form, ...defaults, notes: form.notes })
-  const specSections = [
-    ['certifications', '제출 자격증', '예: 정보처리기사 · 기사 · 2026-03-15'],
-    ['careers', '제출 경력', '예: ○○회사 · 사원 · 시스템 운영 · 2024-01~2025-12'],
-    ['activities', '제출 대외활동', '예: 활동명 · 담당 내용 · 활동기간'],
-    ['degrees', '제출 학위', '예: ○○대학교 · 컴퓨터공학 · 학사 · 졸업'],
-  ]
+  const keepItems = (field) => form[field].filter((entry) => applicationSpecItemText(field, entry))
   return (
     <div
       className="overlay"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
-      <section className="application-spec-dialog" role="dialog" aria-modal="true">
-        <button className="close" type="button" onClick={onClose} aria-label="닫기">
+      <section className="application-spec-dialog" role="dialog" aria-modal="true" aria-labelledby="application-spec-title">
+        <button className="close application-spec-close" type="button" onClick={onClose} aria-label="제출 스펙 창 닫기">
           ×
         </button>
         <p className="eyebrow">APPLICATION PROFILE</p>
-        <h2>지원 공고별 제출 스펙</h2>
+        <h2 id="application-spec-title">지원 공고별 제출 스펙</h2>
         <strong>{item.organization}</strong>
         <p className="application-spec-title">{item.title}</p>
         <div className="application-spec-guide">
@@ -3005,38 +3023,34 @@ function ApplicationSpecDialog({ item, profile, busy, onSave, onClose }) {
           onSubmit={(event) => {
             event.preventDefault()
             onSave(item.id, {
-              certifications: form.certifications.map((value) => value.trim()).filter(Boolean).join('\n'),
-              careers: form.careers.map((value) => value.trim()).filter(Boolean).join('\n'),
-              activities: form.activities.map((value) => value.trim()).filter(Boolean).join('\n'),
-              degrees: form.degrees.map((value) => value.trim()).filter(Boolean).join('\n'),
+              certifications: JSON.stringify(keepItems('certifications')),
+              careers: JSON.stringify(keepItems('careers')),
+              activities: JSON.stringify(keepItems('activities')),
+              degrees: JSON.stringify(keepItems('degrees')),
               notes: form.notes,
             })
           }}
         >
-          {specSections.map(([field, label, placeholder]) => (
-            <section className="application-spec-section" key={field}>
-              <div className="application-spec-section-head">
-                <h3>{label}</h3>
-                <button type="button" onClick={() => addItem(field)}>＋ 추가하기</button>
-              </div>
-              <div className="application-spec-items">
-                {form[field].map((value, index) => (
-                  <div className="application-spec-item" key={`${field}-${index}`}>
-                    <span>{index + 1}</span>
-                    <input
-                      value={value}
-                      onChange={(event) => changeItem(field, index, event.target.value)}
-                      maxLength={1000}
-                      placeholder={placeholder}
-                      aria-label={`${label} ${index + 1}`}
-                    />
-                    <button type="button" onClick={() => removeItem(field, index)} aria-label={`${label} ${index + 1} 삭제`}>삭제</button>
-                  </div>
-                ))}
-                {!form[field].length && <p>추가하기 버튼으로 항목을 등록해 주세요.</p>}
-              </div>
-            </section>
-          ))}
+          <ApplicationSpecSection title="제출 자격증" field="certifications" items={form.certifications} onAdd={addItem} onRemove={removeItem}>
+            {(entry, index) => (
+              <>
+                {entry.legacyText && <p className="application-spec-legacy">기존 입력: {entry.legacyText}</p>}
+                <label className="application-spec-wide">자격증 검색<QualificationSearchInput item={entry} onChange={(next) => { const nextItems = [...form.certifications]; nextItems[index] = { ...APPLICATION_SPEC_BLANKS.certifications(), ...next, legacyText: '' }; setForm({ ...form, certifications: nextItems }) }} /></label>
+                <label>등급<select value={entry.gradeType || entry.grade || ''} onChange={(event) => { const selected = event.target.value; changeItem('certifications', index, 'gradeType', selected); const nextItems = [...form.certifications]; nextItems[index] = { ...nextItems[index], legacyText: '', gradeType: selected, grade: selected === '직접입력' ? '' : selected }; setForm({ ...form, certifications: nextItems }) }}><option value="">선택</option>{certificationGradeOptions(entry).map((grade) => <option key={grade}>{grade}</option>)}</select></label>
+                {entry.gradeType === '직접입력' && <label>등급 직접입력<input value={entry.grade || ''} onChange={(event) => changeItem('certifications', index, 'grade', event.target.value)} /></label>}
+                <label>취득일<input type="date" value={entry.acquiredDate || ''} onChange={(event) => changeItem('certifications', index, 'acquiredDate', event.target.value)} /></label>
+              </>
+            )}
+          </ApplicationSpecSection>
+          <ApplicationSpecSection title="제출 경력" field="careers" items={form.careers} onAdd={addItem} onRemove={removeItem}>
+            {(entry, index) => <><label>회사명<input value={entry.companyName || ''} onChange={(event) => changeItem('careers', index, 'companyName', event.target.value)} /></label><label>직책<input value={entry.position || ''} onChange={(event) => changeItem('careers', index, 'position', event.target.value)} /></label><label>경력 분야<select value={entry.field || ''} onChange={(event) => changeItem('careers', index, 'field', event.target.value)}><option value="">선택안함</option>{PROFILE_JOB_FIELDS.map((field) => <option key={field}>{field}</option>)}</select></label><label>시작연월<input type="month" value={entry.startMonth || ''} onChange={(event) => changeItem('careers', index, 'startMonth', event.target.value)} /></label><label>종료연월<input type="month" disabled={entry.current} value={entry.endMonth || ''} onChange={(event) => changeItem('careers', index, 'endMonth', event.target.value)} /></label><label className="application-spec-current"><input type="checkbox" checked={Boolean(entry.current)} onChange={(event) => { const nextItems = [...form.careers]; nextItems[index] = { ...entry, legacyText: '', current: event.target.checked, endMonth: event.target.checked ? '' : entry.endMonth }; setForm({ ...form, careers: nextItems }) }} />재직중</label><label className="application-spec-wide">담당업무<textarea value={entry.duties || entry.legacyText || ''} onChange={(event) => changeItem('careers', index, 'duties', event.target.value)} /></label></>}
+          </ApplicationSpecSection>
+          <ApplicationSpecSection title="제출 대외활동" field="activities" items={form.activities} onAdd={addItem} onRemove={removeItem}>
+            {(entry, index) => <><label>활동명<input value={entry.name || ''} onChange={(event) => changeItem('activities', index, 'name', event.target.value)} /></label><label>활동 분야<select value={entry.field || ''} onChange={(event) => changeItem('activities', index, 'field', event.target.value)}><option value="">선택안함</option>{PROFILE_JOB_FIELDS.map((field) => <option key={field}>{field}</option>)}</select></label><label>시작연월<input type="month" value={entry.startMonth || ''} onChange={(event) => changeItem('activities', index, 'startMonth', event.target.value)} /></label><label>종료연월<input type="month" value={entry.endMonth || ''} onChange={(event) => changeItem('activities', index, 'endMonth', event.target.value)} /></label><label className="application-spec-wide">활동내용<textarea value={entry.description || entry.legacyText || ''} onChange={(event) => changeItem('activities', index, 'description', event.target.value)} /></label></>}
+          </ApplicationSpecSection>
+          <ApplicationSpecSection title="제출 학위" field="degrees" items={form.degrees} onAdd={addItem} onRemove={removeItem}>
+            {(entry, index) => <><label>학교명<input value={entry.schoolName || ''} onChange={(event) => changeItem('degrees', index, 'schoolName', event.target.value)} /></label><label>전공<input value={entry.major || entry.legacyText || ''} onChange={(event) => changeItem('degrees', index, 'major', event.target.value)} /></label><label>학위 종류<select value={entry.degreeType || ''} onChange={(event) => changeItem('degrees', index, 'degreeType', event.target.value)}><option value="">선택</option><option>전문학사</option><option>학사</option><option>석사</option><option>박사</option><option>기타</option></select></label><label>상태<select value={entry.status || ''} onChange={(event) => changeItem('degrees', index, 'status', event.target.value)}><option value="">선택</option><option>재학</option><option>졸업예정</option><option>졸업</option><option>수료</option><option>중퇴</option></select></label><label>입학연월<input type="month" value={entry.startMonth || ''} onChange={(event) => changeItem('degrees', index, 'startMonth', event.target.value)} /></label><label>졸업연월<input type="month" value={entry.endMonth || ''} onChange={(event) => changeItem('degrees', index, 'endMonth', event.target.value)} /></label></>}
+          </ApplicationSpecSection>
           <label className="application-spec-notes">
             공고별 메모
             <textarea
@@ -3057,6 +3071,23 @@ function ApplicationSpecDialog({ item, profile, busy, onSave, onClose }) {
         </form>
       </section>
     </div>
+  )
+}
+
+function ApplicationSpecSection({ title, field, items, onAdd, onRemove, children }) {
+  return (
+    <section className="application-spec-section">
+      <div className="application-spec-section-head"><h3>{title}</h3><button type="button" onClick={() => onAdd(field)}>＋ 추가하기</button></div>
+      <div className="application-spec-items">
+        {items.map((entry, index) => (
+          <article className="application-spec-structured-item" key={`${field}-${index}`}>
+            <div className="application-spec-item-head"><strong>{index + 1}번째 항목</strong><button type="button" onClick={() => onRemove(field, index)}>삭제</button></div>
+            <div className="application-spec-fields">{children(entry, index)}</div>
+          </article>
+        ))}
+        {!items.length && <p>추가하기 버튼으로 항목을 등록해 주세요.</p>}
+      </div>
+    </section>
   )
 }
 

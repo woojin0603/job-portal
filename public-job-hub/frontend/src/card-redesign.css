@@ -4879,3 +4879,110 @@ html[data-app-theme='dark'] .enable-native-notification:hover {
   background: #3f765c !important;
   border-color: #91c5a6 !important;
 }
+
+/* 다크 테마 상단 메뉴의 내부 글자까지 최종 색상을 강제한다. */
+html[data-app-theme='dark'] body > #root > header .bar .main-navigation :where(button, button *, .user-name) {
+  color: #f5faf7 !important;
+  -webkit-text-fill-color: #f5faf7 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme='dark'] body > #root > header .bar .main-navigation button.active,
+html[data-app-theme='dark'] body > #root > header .bar .main-navigation button.active * {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+/* 제출 스펙 세부 입력 카드 */
+.application-spec-dialog {
+  padding-top: 30px;
+}
+.application-spec-dialog .application-spec-close {
+  position: sticky;
+  z-index: 5;
+  top: 0;
+  float: right;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  margin: -14px -12px 4px 12px;
+  border: 1px solid #ccd8d1;
+  border-radius: 50%;
+  background: #fff;
+  color: #32483d;
+  font-size: 25px;
+  line-height: 1;
+  box-shadow: 0 5px 14px rgba(31, 54, 43, .09);
+}
+.application-spec-dialog .application-spec-close:hover { background: #eef4f0; border-color: #91aa9d; }
+.application-spec-structured-item {
+  padding: 13px;
+  border: 1px solid #dce5e0;
+  border-radius: 10px;
+  background: #fff;
+}
+.application-spec-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 11px;
+}
+.application-spec-item-head strong { color: #375247; font-size: 12px; }
+.application-spec-item-head button { min-height: 31px; border: 1px solid #dec9c6; border-radius: 7px; background: #fff; color: #9a4037; padding: 0 9px; }
+.application-spec-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.application-spec-fields label { min-width: 0; }
+.application-spec-fields input,
+.application-spec-fields select,
+.application-spec-fields textarea { width: 100%; min-width: 0; }
+.application-spec-fields textarea { min-height: 76px; }
+.application-spec-wide { grid-column: 1 / -1; }
+.application-spec-current { display: flex !important; align-items: center; align-self: end; min-height: 42px; flex-direction: row !important; }
+.application-spec-current input { width: auto; }
+.application-spec-legacy { grid-column: 1 / -1; margin: 0; border-radius: 7px; background: #fff7df; color: #715c24; padding: 8px 10px; font-size: 11px; }
+
+html[data-app-theme='dark'] .application-spec-dialog .application-spec-close { background: #27352e; border-color: #52675a; color: #fff; }
+html[data-app-theme='dark'] .application-spec-structured-item { background: #18211c; border-color: #3b4c41; }
+html[data-app-theme='dark'] .application-spec-item-head strong { color: #dce9e1; }
+html[data-app-theme='dark'] .application-spec-item-head button { background: #382723; border-color: #67443d; color: #ffb2a8; }
+html[data-app-theme='dark'] .application-spec-legacy { background: #3b341d; color: #f0d98d; }
+
+/* 내 스펙 카드는 손잡이를 잡고 드래그해서 순서를 변경한다. */
+.profile-summary-grid > article[draggable='true'] { cursor: grab; transition: opacity .15s, transform .15s, border-color .15s; }
+.profile-summary-grid > article[draggable='true']:active { cursor: grabbing; }
+.profile-summary-grid > article.dragging { opacity: .46; transform: scale(.985); border-color: #6f9c84 !important; }
+.profile-summary-drag-handle {
+  display: grid;
+  min-width: 34px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid #d2ddd7;
+  border-radius: 7px;
+  background: #fff;
+  color: #5a7467;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -5px;
+  padding-right: 5px;
+  cursor: grab;
+  user-select: none;
+}
+.profile-group-activities .profile-summary-item p {
+  display: -webkit-box;
+  overflow: hidden;
+  max-height: 3.1em;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+html[data-app-theme='dark'] .profile-summary-drag-handle { background: #27362e; border-color: #465b4e; color: #d1dfd6; }
+
+@media (max-width: 700px) {
+  .application-spec-fields { grid-template-columns: 1fr; }
+  .application-spec-wide { grid-column: auto; }
+  .application-spec-dialog .application-spec-close { margin-right: -4px; }
+}
