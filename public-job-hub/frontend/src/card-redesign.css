@@ -5253,3 +5253,147 @@ html[data-app-theme='dark'] .application-spec-dialog .qualification-search > inp
     right: 12px !important;
   }
 }
+
+/* 다크 모드에서도 상단 헤더는 흰색을 유지하고 글자만 선명하게 표시한다. */
+html[data-app-theme='dark'] body > #root > header,
+html[data-app-theme='dark'] body > #root > header .bar {
+  background: #fff !important;
+  border-color: #e3e8e5 !important;
+  color: #17352a !important;
+  box-shadow: 0 1px 0 rgba(23, 53, 42, .05) !important;
+}
+html[data-app-theme='dark'] body > #root > header .brand,
+html[data-app-theme='dark'] body > #root > header .main-navigation,
+html[data-app-theme='dark'] body > #root > header .main-navigation > button,
+html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button,
+html[data-app-theme='dark'] body > #root > header .main-navigation .app-settings-nav {
+  color: #17352a !important;
+  -webkit-text-fill-color: #17352a !important;
+}
+html[data-app-theme='dark'] body > #root > header .main-navigation > button.active,
+html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button.active {
+  color: #0f4935 !important;
+  -webkit-text-fill-color: #0f4935 !important;
+  border-bottom-color: #267457 !important;
+}
+
+/* 자격증 검색 미니탭과 결과 목록을 다크 모드 표면색으로 통일한다. */
+html[data-app-theme='dark'] .qualification-overlay {
+  background: rgba(4, 8, 6, .66) !important;
+}
+html[data-app-theme='dark'] .qualification-dialog {
+  background: #1b1f1c !important;
+  border: 1px solid #414843 !important;
+  color: #f1f4f2 !important;
+}
+html[data-app-theme='dark'] .qualification-dialog .match-dialog-head h2,
+html[data-app-theme='dark'] .qualification-dialog-results strong {
+  color: #f4f6f5 !important;
+  -webkit-text-fill-color: #f4f6f5 !important;
+}
+html[data-app-theme='dark'] .qualification-dialog-input {
+  border-color: #515a54 !important;
+  background: #242825 !important;
+  color: #f2f5f3 !important;
+  caret-color: #b7c8be;
+}
+html[data-app-theme='dark'] .qualification-dialog-input::placeholder {
+  color: #9da8a1 !important;
+}
+html[data-app-theme='dark'] .qualification-dialog-input:focus {
+  border-color: #8ca498 !important;
+  outline-color: rgba(140, 164, 152, .2) !important;
+}
+html[data-app-theme='dark'] .qualification-dialog-results {
+  border-color: #414843 !important;
+  background: #202421 !important;
+}
+html[data-app-theme='dark'] .qualification-dialog-results > p {
+  color: #b8c1bb !important;
+}
+html[data-app-theme='dark'] .qualification-dialog-results button {
+  border-bottom-color: #393f3b !important;
+  background: #202421 !important;
+  color: #f2f5f3 !important;
+}
+html[data-app-theme='dark'] .qualification-dialog-results button:hover,
+html[data-app-theme='dark'] .qualification-dialog-results button:focus-visible {
+  background: #2b312d !important;
+}
+html[data-app-theme='dark'] .qualification-dialog-results span {
+  color: #b2bcb6 !important;
+}
+html[data-app-theme='dark'] .qualification-dialog-results em {
+  background: #315f4d !important;
+  color: #fff !important;
+}
+html[data-app-theme='dark'] .qualification-manual {
+  border-color: #4d5851 !important;
+  background: #282d29 !important;
+  color: #e4ebe7 !important;
+}
+
+/* 지원현황 미니탭 하단 버튼은 공용 버튼 스타일과 분리해 역할을 명확히 한다. */
+.application-status-dialog-actions {
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e7e3;
+}
+.application-status-dialog-actions button {
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: none;
+  transition: border-color .16s ease, background-color .16s ease, transform .16s ease;
+}
+.application-status-dialog-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.application-status-dialog-actions .secondary {
+  border: 1px solid #bdcbc4;
+  background: #fff;
+  color: #315748;
+}
+.application-status-dialog-actions .secondary:hover {
+  border-color: #819b8e;
+  background: #f3f7f5;
+}
+.application-status-dialog-actions .primary {
+  border: 1px solid #315f50;
+  background: #315f50;
+  color: #fff;
+}
+.application-status-dialog-actions .primary:hover {
+  border-color: #254b3f;
+  background: #254b3f;
+}
+.application-status-dialog-actions .primary:disabled {
+  cursor: wait;
+  opacity: .58;
+}
+
+/* 앱의 펼친 메뉴에서는 사용자 이름을 별도 중립 표면에 표시한다. */
+@media (max-width: 760px) {
+  html[data-app-theme='dark'] body > #root > header .main-navigation.open {
+    background: #1c201d !important;
+    border-color: #3b423d !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .main-navigation.open .user-name {
+    border: 1px solid #444c47 !important;
+    border-radius: 9px !important;
+    background: #292e2a !important;
+    color: #f5f7f6 !important;
+    -webkit-text-fill-color: #f5f7f6 !important;
+    padding: 10px 12px !important;
+    font-weight: 750 !important;
+    opacity: 1 !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .main-navigation.open > button,
+  html[data-app-theme='dark'] body > #root > header .main-navigation.open > .notification-center > button {
+    color: #eff3f1 !important;
+    -webkit-text-fill-color: #eff3f1 !important;
+  }
+}
