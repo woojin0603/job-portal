@@ -5102,6 +5102,39 @@ html[data-app-theme='dark'] body > #root > header .main-navigation > .notificati
   }
 }
 
+/* PC 웹 다크 모드 헤더는 흰색 바탕과 진한 글자로 유지한다. */
+@media (min-width: 761px) {
+  html[data-app-theme='dark'] body > #root > header,
+  html[data-app-theme='dark'] body > #root > header .bar {
+    background: #fff !important;
+    border-color: #e1e7e3 !important;
+    color: #17352a !important;
+    box-shadow: 0 1px 0 rgba(23, 53, 42, .06) !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .brand,
+  html[data-app-theme='dark'] body > #root > header .main-navigation,
+  html[data-app-theme='dark'] body > #root > header .main-navigation > button,
+  html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button,
+  html[data-app-theme='dark'] body > #root > header .main-navigation .app-settings-nav,
+  html[data-app-theme='dark'] body > #root > header .main-navigation .user-name {
+    background-color: transparent !important;
+    color: #17352a !important;
+    -webkit-text-fill-color: #17352a !important;
+    opacity: 1 !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .main-navigation > button:hover,
+  html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button:hover,
+  html[data-app-theme='dark'] body > #root > header .main-navigation > button.active,
+  html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button.active {
+    color: #0f4935 !important;
+    -webkit-text-fill-color: #0f4935 !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .main-navigation > button.active,
+  html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button.active {
+    border-bottom-color: #77bd98 !important;
+  }
+}
+
 /* 제출 스펙 닫기 버튼은 제목 영역을 침범하지 않도록 대화상자 모서리에 고정한다. */
 .application-spec-dialog {
   position: relative;
