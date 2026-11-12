@@ -5030,6 +5030,78 @@ html[data-app-theme='dark'] body > #root > header .main-navigation > .notificati
   }
 }
 
+/* 최종 다크 헤더 팔레트: 차콜 표면과 밝은 글자로 모든 화면의 대비를 통일한다. */
+html[data-app-theme='dark'] body > #root > header,
+html[data-app-theme='dark'] body > #root > header .bar {
+  background: #141816 !important;
+  border-color: #303632 !important;
+  color: #f2f5f3 !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .04) !important;
+}
+html[data-app-theme='dark'] body > #root > header .brand,
+html[data-app-theme='dark'] body > #root > header .main-navigation,
+html[data-app-theme='dark'] body > #root > header .main-navigation > button,
+html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button,
+html[data-app-theme='dark'] body > #root > header .main-navigation .app-settings-nav {
+  background-color: transparent !important;
+  color: #e8eeea !important;
+  -webkit-text-fill-color: #e8eeea !important;
+  opacity: 1 !important;
+}
+html[data-app-theme='dark'] body > #root > header .brand {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+html[data-app-theme='dark'] body > #root > header .main-navigation > button:hover,
+html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button:hover {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+html[data-app-theme='dark'] body > #root > header .main-navigation > button.active,
+html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button.active {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  border-bottom-color: #77bd98 !important;
+}
+
+@media (max-width: 760px) {
+  html[data-app-theme='dark'] body > #root > header .mobile-menu-toggle {
+    border-color: #3a423d !important;
+    background: #202522 !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .mobile-menu-toggle i {
+    background: #eef3f0 !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open {
+    border-color: #3b433e !important;
+    background: #1b201d !important;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, .56) !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open > button,
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open > .notification-center > button {
+    border-color: #3b433e !important;
+    background: #242a26 !important;
+    color: #f0f4f1 !important;
+    -webkit-text-fill-color: #f0f4f1 !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open > span.user-name {
+    display: block !important;
+    grid-column: 1 / -1 !important;
+    border: 1px solid #d8e1dc !important;
+    border-radius: 9px !important;
+    background: #f4f7f5 !important;
+    color: #173d2e !important;
+    -webkit-text-fill-color: #173d2e !important;
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    line-height: 1.4 !important;
+    text-align: center !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}
+
 /* 제출 스펙 닫기 버튼은 제목 영역을 침범하지 않도록 대화상자 모서리에 고정한다. */
 .application-spec-dialog {
   position: relative;
