@@ -5030,6 +5030,51 @@ html[data-app-theme='dark'] body > #root > header .main-navigation > .notificati
   }
 }
 
+/* 최종 웹 다크 헤더: 흰색 배경, 진한 초록 글자, 선택 메뉴 초록 하단선. */
+html[data-app-theme='dark'] body > #root > header,
+html[data-app-theme='dark'] body > #root > header .bar {
+  background-color: #fff !important;
+  background-image: none !important;
+  border-color: #e2e8e4 !important;
+  color: #17352a !important;
+  box-shadow: 0 1px 0 rgba(23, 53, 42, .06) !important;
+}
+html[data-app-theme='dark'] body > #root > header .brand,
+html[data-app-theme='dark'] body > #root > header .main-navigation,
+html[data-app-theme='dark'] body > #root > header .main-navigation > button,
+html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button,
+html[data-app-theme='dark'] body > #root > header .main-navigation .app-settings-nav,
+html[data-app-theme='dark'] body > #root > header .main-navigation .user-name {
+  color: #17352a !important;
+  -webkit-text-fill-color: #17352a !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+html[data-app-theme='dark'] body > #root > header .main-navigation > button.active,
+html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button.active {
+  color: #0f4935 !important;
+  -webkit-text-fill-color: #0f4935 !important;
+  border-bottom-color: #77bd98 !important;
+}
+
+/* 설치형 앱의 펼친 메뉴는 기존 다크 표면을 유지한다. */
+@media (max-width: 760px) {
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open {
+    background: #1b201d !important;
+    border-color: #3b433e !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open > button,
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open > .notification-center > button {
+    color: #f0f4f1 !important;
+    -webkit-text-fill-color: #f0f4f1 !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open > span.user-name {
+    background: #f4f7f5 !important;
+    color: #173d2e !important;
+    -webkit-text-fill-color: #173d2e !important;
+  }
+}
+
 /* 최종 다크 헤더 팔레트: 차콜 표면과 밝은 글자로 모든 화면의 대비를 통일한다. */
 html[data-app-theme='dark'] body > #root > header,
 html[data-app-theme='dark'] body > #root > header .bar {
@@ -5500,5 +5545,48 @@ html[data-app-theme='dark'] .qualification-manual {
   html[data-app-theme='dark'] body > #root > header .main-navigation.open > .notification-center > button {
     color: #eff3f1 !important;
     -webkit-text-fill-color: #eff3f1 !important;
+  }
+}
+
+/* 헤더 최종 우선순위: 웹은 흰색, 글자는 진한 초록색으로 고정한다. */
+html[data-app-theme='dark'] body > #root > header,
+html[data-app-theme='dark'] body > #root > header .bar {
+  background: #fff !important;
+  border-color: #e2e8e4 !important;
+  color: #17352a !important;
+  box-shadow: 0 1px 0 rgba(23, 53, 42, .06) !important;
+}
+html[data-app-theme='dark'] body > #root > header .brand,
+html[data-app-theme='dark'] body > #root > header .main-navigation,
+html[data-app-theme='dark'] body > #root > header .main-navigation > button,
+html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button,
+html[data-app-theme='dark'] body > #root > header .main-navigation .app-settings-nav,
+html[data-app-theme='dark'] body > #root > header .main-navigation .user-name {
+  color: #17352a !important;
+  -webkit-text-fill-color: #17352a !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+html[data-app-theme='dark'] body > #root > header .main-navigation > button.active,
+html[data-app-theme='dark'] body > #root > header .main-navigation > .notification-center > button.active {
+  color: #0f4935 !important;
+  -webkit-text-fill-color: #0f4935 !important;
+  border-bottom-color: #77bd98 !important;
+}
+
+@media (max-width: 760px) {
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open {
+    background: #1b201d !important;
+    border-color: #3b433e !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open > button,
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open > .notification-center > button {
+    color: #f0f4f1 !important;
+    -webkit-text-fill-color: #f0f4f1 !important;
+  }
+  html[data-app-theme='dark'] body > #root > header .bar .main-navigation.open > span.user-name {
+    background: #f4f7f5 !important;
+    color: #173d2e !important;
+    -webkit-text-fill-color: #173d2e !important;
   }
 }
