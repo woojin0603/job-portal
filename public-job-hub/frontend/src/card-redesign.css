@@ -5817,3 +5817,194 @@ html[data-app-theme='dark'] body > #root > header .main-navigation > .notificati
     border-bottom-color: #77bd98 !important;
   }
 }
+
+/* 내 스펙 매칭·과거 채용분석 미니탭의 다크 모드 대비를 통일한다. */
+html[data-app-theme='dark'] .match-overlay:has(.match-dialog),
+html[data-app-theme='dark'] .match-overlay:has(.insight-dialog) {
+  background: rgba(5, 9, 7, .72) !important;
+  z-index: 1000 !important;
+}
+html[data-app-theme='dark'] .match-dialog,
+html[data-app-theme='dark'] .insight-dialog {
+  border: 1px solid #414b45 !important;
+  background: #181d1a !important;
+  color: #edf3ef !important;
+  box-shadow: 0 26px 80px rgba(0, 0, 0, .58) !important;
+}
+html[data-app-theme='dark'] :where(.match-dialog, .insight-dialog) :where(h2, h3, strong) {
+  color: #f3f7f4 !important;
+  -webkit-text-fill-color: #f3f7f4 !important;
+}
+html[data-app-theme='dark'] :where(.match-dialog, .insight-dialog) > .eyebrow,
+html[data-app-theme='dark'] :where(.match-dialog, .insight-dialog) .eyebrow {
+  color: #8fc5a6 !important;
+  -webkit-text-fill-color: #8fc5a6 !important;
+}
+html[data-app-theme='dark'] :where(.match-dialog, .insight-dialog) .close {
+  border: 1px solid #4b5750 !important;
+  background: #29312c !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html[data-app-theme='dark'] .match-dialog > h3,
+html[data-app-theme='dark'] .match-organization {
+  color: #eef3f0 !important;
+  -webkit-text-fill-color: #eef3f0 !important;
+}
+html[data-app-theme='dark'] .match-organization {
+  color: #aebbb3 !important;
+  -webkit-text-fill-color: #aebbb3 !important;
+}
+html[data-app-theme='dark'] .match-score {
+  border-bottom: 1px solid #38413c;
+  padding-bottom: 13px;
+}
+html[data-app-theme='dark'] .match-score strong {
+  color: #8fd2aa !important;
+  -webkit-text-fill-color: #8fd2aa !important;
+}
+html[data-app-theme='dark'] .match-score span {
+  color: #b9c4bd !important;
+  -webkit-text-fill-color: #b9c4bd !important;
+}
+html[data-app-theme='dark'] .match-eligibility {
+  border-color: #665a39 !important;
+  background: #302b1e !important;
+}
+html[data-app-theme='dark'] .match-eligibility.possible {
+  border-color: #3f6752 !important;
+  background: #20342a !important;
+}
+html[data-app-theme='dark'] .match-eligibility span,
+html[data-app-theme='dark'] .match-eligibility p {
+  color: #c8d1cb !important;
+  -webkit-text-fill-color: #c8d1cb !important;
+}
+html[data-app-theme='dark'] .match-eligibility strong {
+  color: #efd48a !important;
+  -webkit-text-fill-color: #efd48a !important;
+}
+html[data-app-theme='dark'] .match-eligibility.possible strong {
+  color: #a6dbbc !important;
+  -webkit-text-fill-color: #a6dbbc !important;
+}
+html[data-app-theme='dark'] .match-components article {
+  border-color: #3e4842 !important;
+  background: #222824 !important;
+}
+html[data-app-theme='dark'] .match-components article > div strong {
+  color: #eef3f0 !important;
+  -webkit-text-fill-color: #eef3f0 !important;
+}
+html[data-app-theme='dark'] .match-components article > div span,
+html[data-app-theme='dark'] .match-components article > p {
+  color: #aebbb3 !important;
+  -webkit-text-fill-color: #aebbb3 !important;
+}
+html[data-app-theme='dark'] .match-components article > b {
+  color: #94ceb0 !important;
+  -webkit-text-fill-color: #94ceb0 !important;
+}
+html[data-app-theme='dark'] .match-summary {
+  border: 1px solid #3e4d45 !important;
+  background: #222d27 !important;
+  color: #dce8e1 !important;
+}
+html[data-app-theme='dark'] .match-points.strengths {
+  border: 1px solid #3b624d !important;
+  background: #20352a !important;
+  color: #b8e2c9 !important;
+}
+html[data-app-theme='dark'] .match-points.gaps {
+  border: 1px solid #65543a !important;
+  background: #332b20 !important;
+  color: #efd3a3 !important;
+}
+html[data-app-theme='dark'] .matched-certificates > strong,
+html[data-app-theme='dark'] .match-evidence > strong,
+html[data-app-theme='dark'] .match-recommendations-head > strong {
+  color: #eef3f0 !important;
+  -webkit-text-fill-color: #eef3f0 !important;
+}
+html[data-app-theme='dark'] .matched-certificates span {
+  border: 1px solid #3d664f !important;
+  background: #22382c !important;
+  color: #b3dfc5 !important;
+  -webkit-text-fill-color: #b3dfc5 !important;
+}
+html[data-app-theme='dark'] .match-evidence p {
+  border-left-color: #69917c !important;
+  background: #202622 !important;
+  color: #bdc8c1 !important;
+  -webkit-text-fill-color: #bdc8c1 !important;
+}
+html[data-app-theme='dark'] .match-recommendations {
+  border-top-color: #3b4540 !important;
+}
+html[data-app-theme='dark'] .match-recommendations-head span {
+  color: #aebbb3 !important;
+  -webkit-text-fill-color: #aebbb3 !important;
+}
+html[data-app-theme='dark'] .match-recommendation-list button {
+  border-color: #3e4842 !important;
+  background: #222824 !important;
+  color: #eef3f0 !important;
+}
+html[data-app-theme='dark'] .match-recommendation-list button:hover {
+  border-color: #658672 !important;
+  background: #29332d !important;
+}
+html[data-app-theme='dark'] .match-recommendation-list button strong {
+  color: #f1f5f2 !important;
+  -webkit-text-fill-color: #f1f5f2 !important;
+}
+html[data-app-theme='dark'] .match-recommendation-list :where(span, small) {
+  color: #afbbb4 !important;
+  -webkit-text-fill-color: #afbbb4 !important;
+}
+
+html[data-app-theme='dark'] .insight-dialog > p {
+  color: #bdc8c1 !important;
+  -webkit-text-fill-color: #bdc8c1 !important;
+}
+html[data-app-theme='dark'] .insight-stats div {
+  border: 1px solid #3e4842 !important;
+  background: #222824 !important;
+}
+html[data-app-theme='dark'] .insight-stats span {
+  color: #aebbb3 !important;
+  -webkit-text-fill-color: #aebbb3 !important;
+}
+html[data-app-theme='dark'] .insight-stats strong {
+  color: #9dd5b6 !important;
+  -webkit-text-fill-color: #9dd5b6 !important;
+}
+html[data-app-theme='dark'] .similar-list button {
+  border-color: #3e4842 !important;
+  background: #222824 !important;
+  color: #eef3f0 !important;
+}
+html[data-app-theme='dark'] .similar-list button:hover {
+  border-color: #658672 !important;
+  background: #29332d !important;
+}
+html[data-app-theme='dark'] .similar-list button b {
+  color: #93cfae !important;
+  -webkit-text-fill-color: #93cfae !important;
+}
+html[data-app-theme='dark'] .similar-list button strong {
+  color: #f1f5f2 !important;
+  -webkit-text-fill-color: #f1f5f2 !important;
+}
+html[data-app-theme='dark'] .similar-list button span,
+html[data-app-theme='dark'] .similar-list .empty {
+  color: #afbbb4 !important;
+  -webkit-text-fill-color: #afbbb4 !important;
+}
+
+@media (max-width: 650px) {
+  html[data-app-theme='dark'] .insight-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
