@@ -474,7 +474,10 @@ function PostingGroup({ jobs, mode, renderJob }) {
           />
         </span>
         <span className="posting-group-copy">
-          <small>{institutionClassification(representative)} · 공고 {jobs.length}건</small>
+          <small>
+            {institutionClassification(representative)}
+            <em className="posting-group-count">공고 {jobs.length}건</em>
+          </small>
           <strong>{representative.organization || '기관 미확인'}</strong>
           <span>{titles.join(' · ')}{jobs.length > titles.length ? ` 외 ${jobs.length - titles.length}건` : ''}</span>
         </span>
@@ -482,7 +485,7 @@ function PostingGroup({ jobs, mode, renderJob }) {
           <strong>{deadlineLabel}</strong>
           <small>{representative.deadline || '마감일 미정'}</small>
         </span>
-        <span className="posting-group-toggle">공고 {jobs.length}건 보기 <i aria-hidden="true">›</i></span>
+        <span className="posting-group-toggle">모아보기 <i aria-hidden="true">›</i></span>
       </button>
       {open && createPortal(
         <div className="posting-group-overlay" onMouseDown={() => setOpen(false)}>
