@@ -5075,6 +5075,192 @@ html[data-app-theme='dark'] body > #root > header .main-navigation > .notificati
   }
 }
 
+/* 메인화면 전용 고우선순위 규칙까지 덮어 웹 다크 모드 헤더 전체를 흰색으로 고정한다. */
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header,
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header .bar,
+html[data-app-theme='dark'] body > #root > header,
+html[data-app-theme='dark'] body > #root > header .bar {
+  background: #fff !important;
+  background-color: #fff !important;
+  background-image: none !important;
+  border-color: #e2e8e4 !important;
+  color: #17352a !important;
+}
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header::before,
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header::after {
+  background: #fff !important;
+}
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header .brand,
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header .main-navigation,
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header .main-navigation > button,
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header .main-navigation > .notification-center > button,
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header .app-settings-nav,
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header .user-name {
+  color: #17352a !important;
+  -webkit-text-fill-color: #17352a !important;
+  opacity: 1 !important;
+}
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header .main-navigation > button.active,
+html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > header .main-navigation > .notification-center > button.active {
+  color: #0f4935 !important;
+  -webkit-text-fill-color: #0f4935 !important;
+  border-bottom-color: #77bd98 !important;
+}
+
+/* 긴 경쟁률 자료도 화면 위쪽이 잘리지 않도록 헤더보다 위에서 독립적으로 스크롤한다. */
+.match-overlay:has(.competition-dialog) {
+  z-index: 1000 !important;
+  align-items: flex-start !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+}
+.competition-dialog {
+  position: relative;
+  width: min(720px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px) !important;
+  margin: auto;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.competition-dialog .match-dialog-head {
+  position: relative;
+  z-index: 2;
+  gap: 18px;
+  padding-right: 2px;
+}
+.competition-dialog .match-dialog-head > div {
+  min-width: 0;
+  padding-right: 48px;
+}
+.competition-dialog .match-dialog-head .close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 3;
+}
+
+/* 경쟁률 화면의 다크 팔레트와 텍스트 대비를 한 번에 정규화한다. */
+html[data-app-theme='dark'] .competition-dialog {
+  border: 1px solid #414b45 !important;
+  background: #181d1a !important;
+  color: #eef3f0 !important;
+  box-shadow: 0 26px 80px rgba(0, 0, 0, .58) !important;
+}
+html[data-app-theme='dark'] .competition-dialog .match-dialog-head {
+  border-bottom-color: #39423d !important;
+}
+html[data-app-theme='dark'] .competition-dialog :where(h2, h3, strong) {
+  color: #f4f7f5 !important;
+  -webkit-text-fill-color: #f4f7f5 !important;
+}
+html[data-app-theme='dark'] .competition-dialog :where(.eyebrow, p, span, small, em) {
+  color: #bdc8c1 !important;
+  -webkit-text-fill-color: #bdc8c1 !important;
+}
+html[data-app-theme='dark'] .competition-dialog .salary-organization {
+  color: #e0e7e3 !important;
+  -webkit-text-fill-color: #e0e7e3 !important;
+}
+html[data-app-theme='dark'] .competition-dialog .competition-list article {
+  border-color: #3d4741 !important;
+  background: #222824 !important;
+  color: #edf3ef !important;
+  box-shadow: none !important;
+}
+html[data-app-theme='dark'] .competition-dialog .competition-title {
+  border-bottom-color: #39423d !important;
+}
+html[data-app-theme='dark'] .competition-dialog .competition-title > span {
+  color: #aebbb3 !important;
+  -webkit-text-fill-color: #aebbb3 !important;
+}
+html[data-app-theme='dark'] .competition-dialog .competition-stage {
+  border-top-color: #39423d !important;
+  color: #e5ece8 !important;
+}
+html[data-app-theme='dark'] .competition-dialog .competition-stage-main > span {
+  color: #eef3f0 !important;
+  -webkit-text-fill-color: #eef3f0 !important;
+}
+html[data-app-theme='dark'] .competition-dialog .competition-stage > strong {
+  color: #9ed4b5 !important;
+  -webkit-text-fill-color: #9ed4b5 !important;
+}
+html[data-app-theme='dark'] .competition-dialog .competition-list a {
+  color: #9bc9ae !important;
+  -webkit-text-fill-color: #9bc9ae !important;
+}
+html[data-app-theme='dark'] .competition-dialog .salary-empty {
+  border-color: #3d4741 !important;
+  background: #222824 !important;
+}
+html[data-app-theme='dark'] .competition-dialog .close {
+  border-color: #4b5750 !important;
+  background: #29312c !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+/* 공통 다크 모드 대화상자의 고정 라이트 색상 누락을 최종 보정한다. */
+html[data-app-theme='dark'] :where(
+  .salary-dialog,
+  .match-dialog,
+  .application-status-dialog,
+  .application-spec-dialog,
+  .qualification-dialog,
+  .auth-dialog,
+  .legal-dialog,
+  .password-dialog,
+  .account-deletion-dialog,
+  .notification-popover
+) {
+  border-color: #414b45 !important;
+  background-color: #181d1a !important;
+  color: #eef3f0 !important;
+}
+html[data-app-theme='dark'] :where(
+  .salary-dialog,
+  .match-dialog,
+  .application-status-dialog,
+  .application-spec-dialog,
+  .qualification-dialog,
+  .auth-dialog,
+  .legal-dialog,
+  .password-dialog,
+  .account-deletion-dialog,
+  .notification-popover
+) :where(h1, h2, h3, h4, strong, b, label, dt) {
+  color: #f1f5f2 !important;
+}
+html[data-app-theme='dark'] :where(
+  .salary-dialog,
+  .match-dialog,
+  .application-status-dialog,
+  .application-spec-dialog,
+  .qualification-dialog,
+  .auth-dialog,
+  .legal-dialog,
+  .password-dialog,
+  .account-deletion-dialog,
+  .notification-popover
+) :where(p, span, small, em, dd) {
+  color: #bac6be;
+}
+
+@media (max-width: 650px) {
+  .match-overlay:has(.competition-dialog) {
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  }
+  .competition-dialog {
+    width: 100%;
+    max-height: calc(100dvh - 20px) !important;
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+}
+
 /* 최종 다크 헤더 팔레트: 차콜 표면과 밝은 글자로 모든 화면의 대비를 통일한다. */
 html[data-app-theme='dark'] body > #root > header,
 html[data-app-theme='dark'] body > #root > header .bar {
