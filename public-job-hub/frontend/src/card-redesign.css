@@ -5776,3 +5776,44 @@ html[data-app-theme='dark'] body > #root > header .main-navigation > .notificati
     -webkit-text-fill-color: #173d2e !important;
   }
 }
+
+/* 메인 외 모든 웹 페이지도 메인화면과 동일한 헤더 디자인을 사용한다. */
+@media (min-width: 761px) {
+  body:not(:has(> #root > main.landing-main)) > #root > header,
+  body:not(:has(> #root > main.landing-main)) > #root > header .bar,
+  html[data-app-theme='dark'] body:not(:has(> #root > main.landing-main)) > #root > header,
+  html[data-app-theme='dark'] body:not(:has(> #root > main.landing-main)) > #root > header .bar {
+    background: #fff !important;
+    background-color: #fff !important;
+    background-image: none !important;
+    border-color: #e2e8e4 !important;
+    color: #17352a !important;
+    box-shadow: 0 1px 0 rgba(23, 53, 42, .06) !important;
+  }
+  body:not(:has(> #root > main.landing-main)) > #root > header .brand,
+  body:not(:has(> #root > main.landing-main)) > #root > header .main-navigation,
+  body:not(:has(> #root > main.landing-main)) > #root > header .main-navigation > button,
+  body:not(:has(> #root > main.landing-main)) > #root > header .main-navigation > .notification-center > button,
+  body:not(:has(> #root > main.landing-main)) > #root > header .app-settings-nav,
+  body:not(:has(> #root > main.landing-main)) > #root > header .user-name,
+  html[data-app-theme='dark'] body:not(:has(> #root > main.landing-main)) > #root > header .brand,
+  html[data-app-theme='dark'] body:not(:has(> #root > main.landing-main)) > #root > header .main-navigation,
+  html[data-app-theme='dark'] body:not(:has(> #root > main.landing-main)) > #root > header .main-navigation > button,
+  html[data-app-theme='dark'] body:not(:has(> #root > main.landing-main)) > #root > header .main-navigation > .notification-center > button,
+  html[data-app-theme='dark'] body:not(:has(> #root > main.landing-main)) > #root > header .app-settings-nav,
+  html[data-app-theme='dark'] body:not(:has(> #root > main.landing-main)) > #root > header .user-name {
+    background-color: transparent !important;
+    color: #17352a !important;
+    -webkit-text-fill-color: #17352a !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+  body:not(:has(> #root > main.landing-main)) > #root > header .main-navigation > button.active,
+  body:not(:has(> #root > main.landing-main)) > #root > header .main-navigation > .notification-center > button.active,
+  html[data-app-theme='dark'] body:not(:has(> #root > main.landing-main)) > #root > header .main-navigation > button.active,
+  html[data-app-theme='dark'] body:not(:has(> #root > main.landing-main)) > #root > header .main-navigation > .notification-center > button.active {
+    color: #0f4935 !important;
+    -webkit-text-fill-color: #0f4935 !important;
+    border-bottom-color: #77bd98 !important;
+  }
+}
