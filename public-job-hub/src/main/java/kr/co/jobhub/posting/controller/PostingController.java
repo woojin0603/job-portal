@@ -409,6 +409,15 @@ public class PostingController {
     private String categoryKeyword(String category) {
         if (category == null || category.isBlank()) return "";
         String value = category.trim();
+        Map<String, String> representative = Map.ofEntries(
+                Map.entry("행정·사무", "사무"), Map.entry("기획·전략", "기획"),
+                Map.entry("인사·노무", "인사"), Map.entry("회계·재무", "회계"),
+                Map.entry("홍보·마케팅", "홍보"), Map.entry("전산·IT", "전산"),
+                Map.entry("데이터·통계", "데이터"), Map.entry("정보보안", "정보보안"),
+                Map.entry("안전·보건", "안전"), Map.entry("운전·운송", "운전"),
+                Map.entry("생산·정비", "정비"), Map.entry("농림·축산", "농림"),
+                Map.entry("의료·보건", "의료"), Map.entry("영업·사업관리", "사업관리"));
+        if (representative.containsKey(value)) return representative.get(value);
         String[] tokens = value.split("[·./,，\\s]+", 2);
         return tokens.length == 0 || tokens[0].isBlank() ? value : tokens[0];
     }

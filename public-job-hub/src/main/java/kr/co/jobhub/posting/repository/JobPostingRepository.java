@@ -76,6 +76,14 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
            "or lower(p.title) like lower(concat('%', :employmentTypeKeyword, '%'))) " +
            "and (:employmentTypeExclude = '' or (lower(coalesce(p.employmentType, '')) not like lower(concat('%', :employmentTypeExclude, '%')) " +
            "and lower(p.title) not like lower(concat('%', :employmentTypeExclude, '%')))) " +
+           "and (:employmentType <> '계약직' or (lower(coalesce(p.employmentType, '')) not like '%공무직%' " +
+           "and lower(p.title) not like '%공무직%')) " +
+           "and (:employmentType <> '기간제' or (lower(coalesce(p.employmentType, '')) not like '%육아휴직%' " +
+           "and lower(coalesce(p.employmentType, '')) not like '%대체인력%' " +
+           "and lower(p.title) not like '%육아휴직%' and lower(p.title) not like '%대체인력%')) " +
+           "and (:employmentType <> '인턴' or (lower(coalesce(p.employmentType, '')) not like '%체험형%' " +
+           "and lower(coalesce(p.employmentType, '')) not like '%채용형%' " +
+           "and lower(p.title) not like '%체험형%' and lower(p.title) not like '%채용형%')) " +
            "and (:employmentType <> '정규직' or (" +
            "lower(p.title) not like '%육아휴직%' and lower(p.title) not like '%대체%' " +
            "and lower(p.title) not like '%인턴%' and lower(p.title) not like '%기간제%' " +

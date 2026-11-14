@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:careertoolstest;DB_CLOSE_DELAY=-1",
         "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.mail.host=localhost",
         "jobhub.crawl.enabled=false"
 })
 @ActiveProfiles("h2")
@@ -128,5 +129,72 @@ class CareerToolsIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(postingId))
                 .andExpect(jsonPath("$[0].fresh").value(true));
+    }
+
+    @Test
+    void matchesEachPositionSeparatelyAndDoesNotConfuseCertificateGrades() throws Exception {
+        JobPosting posting = new JobPosting();
+        posting.source = "TEST";
+        posting.sourceId = "position-match-grade";
+        posting.title = "사회복지·전산 분야 공개채용";
+        posting.organization = "정확도 테스트 기관";
+        posting.region = "서울";
+        posting.employmentType = "정규직";
+        posting.organizationType = "PUBLIC";
+        posting.sourceUrl = "https://127.0.0.1/unreachable";
+        posting.deadline = LocalDate.now().plusDays(10);
+        posting = postings.save(posting);
+
+        RecruitmentPosition welfare = new RecruitmentPosition();
+        welfare.posting = posting;
+        welfare.standardCategory = "사회복지";
+        welfare.originalName = "사회복지직";
+        welfare.requirements = "지원자격: 사회복지사 1급 자격증 소지자 필수";
+        positions.save(welfare);
+        RecruitmentPosition it = new RecruitmentPosition();
+        it.posting = posting;
+        it.standardCategory = "전산·IT";
+        it.originalName = "전산직";
+        it.requirements = "지원자격: 정보처리기사 자격증 소지자 필수";
+        positions.save(it);
+
+        mvc.perform(post("/api/profile").with(user("tools@example.com")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"certifications":[
+                                  {"name":"사회복지사","grade":"2급","acquiredDate":"2025-01-01"},
+                                  {"name":"정보처리","grade":"산업기사","acquiredDate":"2025-01-01"}
+                                ],"activities":[],"careers":[],"degrees":[]}
+                                """))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/tools/postings/{id}/match", posting.id)
+                        .with(user("tools@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.positionMatches.length()").value(2))
+                .andExpect(jsonPath("$.positionMatches[0].eligibility.status").value("필수요건 불일치 가능"))
+                .andExpect(jsonPath("$.positionMatches[1].eligibility.status").value("필수요건 불일치 가능"));
+    }
+
+    @Test
+    void employmentFilterKeepsParentalReplacementOutOfFixedTermResults() throws Exception {
+        JobPosting replacement = new JobPosting();
+        replacement.source = "TEST";
+        replacement.sourceId = "parental-replacement-filter";
+        replacement.title = "육아휴직 대체인력 채용";
+        replacement.organization = "고용형태 테스트 기관";
+        replacement.region = "서울";
+        replacement.employmentType = "기간제, 육아휴직 대체인력";
+        replacement.organizationType = "PUBLIC";
+        replacement.sourceUrl = "https://example.com/replacement";
+        replacement.deadline = LocalDate.now().plusDays(10);
+        postings.save(replacement);
+
+        mvc.perform(get("/api/postings").param("q", "육아휴직 대체인력")
+                        .param("employmentType", "기간제"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
+        mvc.perform(get("/api/postings").param("q", "육아휴직 대체인력")
+                        .param("employmentType", "육아휴직"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(1));
     }
 }
