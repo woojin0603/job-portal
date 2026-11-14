@@ -444,9 +444,9 @@ function groupPostingsByOrganizationAndDeadline(items = []) {
   return [...groups.values()]
 }
 
-function PostingGroup({ jobs, mode, renderJob }) {
+function PostingGroup({ jobs, mode, renderJob, numberFor }) {
   const [open, setOpen] = useState(false)
-  if (jobs.length === 1) return renderJob(jobs[0])
+  if (jobs.length === 1) return renderJob(jobs[0], numberFor(jobs[0]))
 
   const representative = jobs[0]
   const deadlineLabel = postingDeadlineLabel(representative.deadline)
@@ -464,6 +464,7 @@ function PostingGroup({ jobs, mode, renderJob }) {
         aria-controls={groupId}
         onClick={() => setOpen(true)}
       >
+        {mode === 'list' && <span className="posting-list-number">{numberFor(representative)}</span>}
         <span className="posting-group-symbol" aria-hidden="true">
           <b>{representative.organization?.trim()?.charAt(0) || 'J'}</b>
           <img
@@ -505,7 +506,7 @@ function PostingGroup({ jobs, mode, renderJob }) {
               <button type="button" onClick={() => setOpen(false)} aria-label="묶음 공고 닫기">×</button>
             </header>
             <div className={`posting-group-dialog-body ${mode === 'card' ? 'grid' : 'posting-list'}`}>
-              {jobs.map((job) => renderJob(job))}
+              {jobs.map((job) => renderJob(job, numberFor(job)))}
             </div>
           </section>
         </div>,
@@ -515,16 +516,27 @@ function PostingGroup({ jobs, mode, renderJob }) {
   )
 }
 
-function PostingGroups({ items, mode, renderJob }) {
+function PostingGroups({ items, mode, renderJob, firstNumber = items.length }) {
   const groups = useMemo(() => groupPostingsByOrganizationAndDeadline(items), [items])
+  const numberById = useMemo(
+    () => new Map(items.map((job, index) => [job.id, Math.max(1, firstNumber - index)])),
+    [items, firstNumber],
+  )
   return groups.map((group) => (
-    <PostingGroup key={group.key} jobs={group.jobs} mode={mode} renderJob={renderJob} />
+    <PostingGroup
+      key={group.key}
+      jobs={group.jobs}
+      mode={mode}
+      renderJob={renderJob}
+      numberFor={(job) => numberById.get(job.id)}
+    />
   ))
 }
 
 /** 게시판형 목록도 로고·기관 분류·직렬·지역·마감일을 한 행에서 비교할 수 있게 표시한다. */
 function PostingListRow({
   job,
+  displayNumber,
   onOpen,
   onScrap,
   onSalary,
@@ -560,6 +572,7 @@ function PostingListRow({
         }}
         aria-label={`${job.organization} ${job.title}, ${deadlineLabel}, 마감일 ${job.deadline || '미정'}`}
       >
+        <span className="posting-list-number">{displayNumber}</span>
         <span className="posting-list-organization">
           <span className={`posting-list-logo ${iconFailed || !iconUrl ? 'fallback' : ''}`}>
             {!iconFailed && iconUrl ? (
@@ -627,6 +640,7 @@ function PostingListRow({
 function PostingListHeader() {
   return (
     <div className="posting-list-header" aria-hidden="true">
+      <span>번호</span>
       <span>채용기관</span>
       <span>공고명</span>
       <span>직렬·지역</span>
@@ -6880,6 +6894,7 @@ export default function App() {
     hasNext: false,
     crawlStatus: null,
   })
+  const [regionCounts, setRegionCounts] = useState({ provinces: {}, districts: {}, total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
@@ -7222,6 +7237,15 @@ export default function App() {
     load(controller.signal)
     return () => controller.abort()
   }, [load])
+  useEffect(() => {
+    const controller = new AbortController()
+    getJson(`/api/postings/region-counts?includeClosed=${showClosed}`, { signal: controller.signal })
+      .then(setRegionCounts)
+      .catch((error) => {
+        if (error.name !== 'AbortError') setRegionCounts({ provinces: {}, districts: {}, total: 0 })
+      })
+    return () => controller.abort()
+  }, [showClosed])
 
   /** 마이페이지에 들어오면 현재 회원의 비공개 스펙을 읽는다. */
   useEffect(() => {
@@ -8022,10 +8046,10 @@ export default function App() {
                           setPage(0)
                         }}
                       >
-                        <option value="">전국</option>
+                        <option value="">전국 ({regionCounts.total || 0})</option>
                         {REGION_LEVELS.map((item) => (
                           <option key={item.code} value={item.code}>
-                            {item.label}
+                            {item.label} ({regionCounts.provinces?.[item.code] || 0})
                           </option>
                         ))}
                       </select>
@@ -8068,10 +8092,14 @@ export default function App() {
                           }}
                         >
                           <option value="">
-                            {regionProvince ? '전체 시·군·구' : '상위 지역을 먼저 선택'}
+                            {regionProvince
+                              ? `전체 시·군·구 (${regionCounts.provinces?.[regionProvince] || 0})`
+                              : '상위 지역을 먼저 선택'}
                           </option>
                           {districtOptions.map((value) => (
-                            <option key={value}>{value}</option>
+                            <option key={value} value={value}>
+                              {value} ({regionCounts.districts?.[regionProvince]?.[value] || 0})
+                            </option>
                           ))}
                         </select>
                       </label>
@@ -8230,11 +8258,16 @@ export default function App() {
                   aria-label="스크랩한 채용공고 목록"
                 >
                   {postingViewMode === 'list' && <PostingListHeader />}
-                  <PostingGroups items={data.items} mode={postingViewMode} renderJob={(job) =>
+                  <PostingGroups
+                    items={data.items}
+                    mode={postingViewMode}
+                    firstNumber={Math.max(1, data.total - page * 12)}
+                    renderJob={(job, displayNumber) =>
                     postingViewMode === 'list' ? (
                       <PostingListRow
                         key={job.id}
                         job={job}
+                        displayNumber={displayNumber}
                         onOpen={() => openSource(job)}
                         onScrap={(id) => mutate(id, 'scrap')}
                         onSalary={openSalary}
@@ -8261,7 +8294,8 @@ export default function App() {
                         matchBusy={matchBusyId === job.id}
                       />
                     )
-                  } />
+                    }
+                  />
                 </section>
               ))}
             {mine && scrapsOpen && !loading && data.items.length === 0 && (
@@ -8358,11 +8392,16 @@ export default function App() {
                   aria-label="채용공고 목록"
                 >
                   {postingViewMode === 'list' && <PostingListHeader />}
-                  <PostingGroups items={data.items} mode={postingViewMode} renderJob={(job) =>
+                  <PostingGroups
+                    items={data.items}
+                    mode={postingViewMode}
+                    firstNumber={Math.max(1, data.total - page * 12)}
+                    renderJob={(job, displayNumber) =>
                     postingViewMode === 'list' ? (
                       <PostingListRow
                         key={job.id}
                         job={job}
+                        displayNumber={displayNumber}
                         onOpen={() => openSource(job)}
                         onScrap={(id) => mutate(id, 'scrap')}
                         onSalary={openSalary}
@@ -8389,7 +8428,8 @@ export default function App() {
                         matchBusy={matchBusyId === job.id}
                       />
                     )
-                  } />
+                    }
+                  />
                 </section>
               ))}
             {!mine && !loading && data.items.length === 0 && (

@@ -33,6 +33,17 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
 
     boolean existsByOrganizationIgnoreCase(String organization);
 
+    /** 공개 공고의 원문 지역값을 묶어서 반환해 지역 필터 건수를 한 번의 쿼리로 계산한다. */
+    @Query("select p.region, count(p.id) from JobPosting p " +
+           "where (:includeClosed = true or p.deadline is null or p.deadline >= :today) " +
+           "and p.region is not null and p.region <> '' group by p.region")
+    List<Object[]> visibleRegionCounts(@Param("includeClosed") boolean includeClosed,
+                                       @Param("today") LocalDate today);
+
+    @Query("select count(p.id) from JobPosting p " +
+           "where (:includeClosed = true or p.deadline is null or p.deadline >= :today)")
+    long countVisible(@Param("includeClosed") boolean includeClosed, @Param("today") LocalDate today);
+
     /**
      * 공개 중인 공고를 제목·기관명으로 검색하고 20건씩 페이지로 나눈다.
      * mine이 참이면 지정 회원이 스크랩한 공고만 DB 쿼리 단계에서 필터링한다.
