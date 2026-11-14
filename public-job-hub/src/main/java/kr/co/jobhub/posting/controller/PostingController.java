@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -148,28 +149,52 @@ public class PostingController {
     /** 현재 공개 범위와 동일한 기준으로 지역별 공고 수를 집계한다. */
     @GetMapping("/postings/region-counts")
     public RegionCountView regionCounts(@RequestParam(defaultValue = "false") boolean includeClosed) {
-        Map<String, Long> provinceCounts = new LinkedHashMap<>();
-        Map<String, Map<String, Long>> districtCounts = new LinkedHashMap<>();
+        Map<String, Set<Long>> provincePostingIds = new LinkedHashMap<>();
+        Map<String, Map<String, Set<Long>>> districtPostingIds = new LinkedHashMap<>();
         REGION_DISTRICTS.forEach((province, districts) -> {
-            provinceCounts.put(province, 0L);
-            Map<String, Long> values = new LinkedHashMap<>();
-            districts.forEach(district -> values.put(district, 0L));
-            districtCounts.put(province, values);
+            provincePostingIds.put(province, new LinkedHashSet<>());
+            Map<String, Set<Long>> values = new LinkedHashMap<>();
+            districts.forEach(district -> values.put(district, new LinkedHashSet<>()));
+            districtPostingIds.put(province, values);
         });
 
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        for (Object[] row : postings.visibleRegionCounts(includeClosed, today)) {
-            String region = String.valueOf(row[0]);
-            long count = ((Number) row[1]).longValue();
-            REGION_DISTRICTS.forEach((province, districts) -> {
-                if (!matchesProvince(region, province)) return;
-                provinceCounts.compute(province, (key, value) -> value + count);
-                Map<String, Long> values = districtCounts.get(province);
-                districts.stream().filter(region::contains)
-                        .forEach(district -> values.compute(district, (key, value) -> value + count));
+        for (Object[] row : postings.visibleRegionSources(includeClosed, today)) {
+            Long postingId = ((Number) row[0]).longValue();
+            String region = String.join(" ", nullableText(row[1]), nullableText(row[2])).trim();
+            if (region.isBlank()) continue;
+            Set<String> matchedProvinces = REGION_DISTRICTS.keySet().stream()
+                    .filter(province -> matchesProvince(region, province))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            if (matchedProvinces.isEmpty()) {
+                Set<String> inferred = REGION_DISTRICTS.entrySet().stream()
+                        .filter(entry -> entry.getValue().stream().anyMatch(region::contains))
+                        .map(Map.Entry::getKey)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+                if (inferred.size() == 1) matchedProvinces.addAll(inferred);
+            }
+            matchedProvinces.forEach(province -> {
+                provincePostingIds.get(province).add(postingId);
+                Map<String, Set<Long>> values = districtPostingIds.get(province);
+                REGION_DISTRICTS.get(province).stream().filter(region::contains)
+                        .forEach(district -> values.get(district).add(postingId));
             });
         }
+
+        Map<String, Long> provinceCounts = new LinkedHashMap<>();
+        Map<String, Map<String, Long>> districtCounts = new LinkedHashMap<>();
+        REGION_DISTRICTS.forEach((province, districts) -> {
+            provinceCounts.put(province, (long) provincePostingIds.get(province).size());
+            Map<String, Long> values = new LinkedHashMap<>();
+            districts.forEach(district -> values.put(district,
+                    (long) districtPostingIds.get(province).get(district).size()));
+            districtCounts.put(province, values);
+        });
         return new RegionCountView(provinceCounts, districtCounts, postings.countVisible(includeClosed, today));
+    }
+
+    private static String nullableText(Object value) {
+        return value == null ? "" : String.valueOf(value);
     }
 
     /** API마다 다른 시·도 약칭과 정식 명칭을 같은 지역으로 처리한다. */

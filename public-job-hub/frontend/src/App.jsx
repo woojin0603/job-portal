@@ -464,24 +464,50 @@ function PostingGroup({ jobs, mode, renderJob, numberFor }) {
         aria-controls={groupId}
         onClick={() => setOpen(true)}
       >
-        {mode === 'list' && <span className="posting-list-number">{numberFor(representative)}</span>}
-        <span className="posting-group-symbol" aria-hidden="true">
-          <b>{representative.organization?.trim()?.charAt(0) || 'J'}</b>
-          <img
-            src={sourceIconUrl(representative)}
-            alt=""
-            loading="lazy"
-            onError={(event) => { event.currentTarget.style.display = 'none' }}
-          />
-        </span>
-        <span className="posting-group-copy">
-          <small>
-            {institutionClassification(representative)}
-            <em className="posting-group-count">공고 {jobs.length}건</em>
-          </small>
-          <strong>{representative.organization || '기관 미확인'}</strong>
-          <span>{titles.join(' · ')}{jobs.length > titles.length ? ` 외 ${jobs.length - titles.length}건` : ''}</span>
-        </span>
+        {mode === 'list' ? (
+          <>
+            <span className="posting-list-number">{numberFor(representative)}</span>
+            <span className="posting-list-organization posting-group-list-organization">
+              <span className="posting-group-symbol" aria-hidden="true">
+                <b>{representative.organization?.trim()?.charAt(0) || 'J'}</b>
+                <img
+                  src={sourceIconUrl(representative)}
+                  alt=""
+                  loading="lazy"
+                  onError={(event) => { event.currentTarget.style.display = 'none' }}
+                />
+              </span>
+              <span>
+                <strong>{representative.organization || '기관 미확인'}</strong>
+                <small>{institutionClassification(representative)}</small>
+              </span>
+            </span>
+            <span className="posting-list-title posting-group-list-title">
+              {titles.join(' · ')}{jobs.length > titles.length ? ` 외 ${jobs.length - titles.length}건` : ''}
+            </span>
+            <span className="posting-list-position"><i>묶음 공고 {jobs.length}건</i></span>
+          </>
+        ) : (
+          <>
+            <span className="posting-group-symbol" aria-hidden="true">
+              <b>{representative.organization?.trim()?.charAt(0) || 'J'}</b>
+              <img
+                src={sourceIconUrl(representative)}
+                alt=""
+                loading="lazy"
+                onError={(event) => { event.currentTarget.style.display = 'none' }}
+              />
+            </span>
+            <span className="posting-group-copy">
+              <small>
+                {institutionClassification(representative)}
+                <em className="posting-group-count">공고 {jobs.length}건</em>
+              </small>
+              <strong>{representative.organization || '기관 미확인'}</strong>
+              <span>{titles.join(' · ')}{jobs.length > titles.length ? ` 외 ${jobs.length - titles.length}건` : ''}</span>
+            </span>
+          </>
+        )}
         <span className="posting-group-deadline">
           <strong>{deadlineLabel}</strong>
           <small>{representative.deadline || '마감일 미정'}</small>

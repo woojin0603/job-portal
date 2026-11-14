@@ -33,12 +33,12 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
 
     boolean existsByOrganizationIgnoreCase(String organization);
 
-    /** 공개 공고의 원문 지역값을 묶어서 반환해 지역 필터 건수를 한 번의 쿼리로 계산한다. */
-    @Query("select p.region, count(p.id) from JobPosting p " +
-           "where (:includeClosed = true or p.deadline is null or p.deadline >= :today) " +
-           "and p.region is not null and p.region <> '' group by p.region")
-    List<Object[]> visibleRegionCounts(@Param("includeClosed") boolean includeClosed,
-                                       @Param("today") LocalDate today);
+    /** 공고 대표 지역과 직렬별 근무지역을 함께 반환한다. 컨트롤러에서 공고 ID 기준으로 중복 제거한다. */
+    @Query("select p.id, p.region, rp.workRegion from JobPosting p " +
+           "left join RecruitmentPosition rp on rp.posting = p " +
+           "where (:includeClosed = true or p.deadline is null or p.deadline >= :today)")
+    List<Object[]> visibleRegionSources(@Param("includeClosed") boolean includeClosed,
+                                        @Param("today") LocalDate today);
 
     @Query("select count(p.id) from JobPosting p " +
            "where (:includeClosed = true or p.deadline is null or p.deadline >= :today)")
@@ -51,8 +51,13 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
     @Query("select p from JobPosting p where (:includeClosed = true or :mine = true or p.deadline is null or p.deadline >= :today) and " +
            "(lower(p.title) like lower(concat('%', :q, '%')) or lower(p.organization) like lower(concat('%', :q, '%'))) " +
            "and (:region = '' or lower(p.region) like lower(concat('%', :region, '%')) " +
-           "or lower(p.region) like lower(concat('%', :regionFull, '%'))) " +
-           "and (:district = '' or lower(p.region) like lower(concat('%', :district, '%'))) " +
+           "or lower(p.region) like lower(concat('%', :regionFull, '%')) " +
+           "or exists (select regionPosition.id from RecruitmentPosition regionPosition where regionPosition.posting = p " +
+           "and (lower(regionPosition.workRegion) like lower(concat('%', :region, '%')) " +
+           "or lower(regionPosition.workRegion) like lower(concat('%', :regionFull, '%'))))) " +
+           "and (:district = '' or lower(p.region) like lower(concat('%', :district, '%')) " +
+           "or exists (select districtPosition.id from RecruitmentPosition districtPosition where districtPosition.posting = p " +
+           "and lower(districtPosition.workRegion) like lower(concat('%', :district, '%')))) " +
            "and (:mobility = '' or p.mobilityType = :mobility) " +
            "and (:institutionScope = '' or (p.organizationType = 'PUBLIC' and (" +
            "(:institutionScope = 'CENTRAL_PUBLIC' and (p.publicInstitutionType = 'CENTRAL_PUBLIC' " +
