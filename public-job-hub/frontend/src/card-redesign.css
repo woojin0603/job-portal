@@ -6282,3 +6282,84 @@ html[data-app-theme='dark'] .posting-group-list .posting-group-toggle {
     padding: 0 11px;
   }
 }
+
+/* 정책·데이터 출처·계정 삭제 안내는 어절 단위로 읽히고 불필요하게 좁아지지 않게 한다. */
+.public-policy-page,
+.legal-dialog,
+.account-deletion-guide {
+  text-align: left;
+}
+
+.legal-dialog {
+  width: min(920px, calc(100vw - 48px));
+}
+
+.public-policy-page :where(h1, h2, h3, p),
+.legal-dialog :where(h2, h3, p),
+.account-deletion-guide :where(h1, strong, span, p) {
+  max-width: 100%;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+.public-policy-page .legal-sections,
+.legal-dialog .legal-sections,
+.public-policy-page .legal-sections > section,
+.legal-dialog .legal-sections > section {
+  width: 100%;
+  min-width: 0;
+}
+
+.public-policy-page .legal-sections p,
+.legal-dialog .legal-sections p,
+.account-deletion-guide :where(.lead, li span, .account-deletion-guide-note p) {
+  line-height: 1.75;
+}
+
+html[data-app-theme='dark'] :where(.public-policy-page, .legal-dialog, .account-deletion-guide) {
+  border-color: #3b4941 !important;
+  background: #181f1b !important;
+  color: #eef4f0 !important;
+}
+
+html[data-app-theme='dark'] :where(.public-policy-page, .legal-dialog, .account-deletion-guide)
+  :where(h1, h2, h3, strong) {
+  color: #f3f7f4 !important;
+  -webkit-text-fill-color: #f3f7f4 !important;
+}
+
+html[data-app-theme='dark'] :where(.public-policy-page, .legal-dialog, .account-deletion-guide)
+  :where(p, span, li, .legal-effective) {
+  color: #c5d1c9 !important;
+  -webkit-text-fill-color: #c5d1c9 !important;
+}
+
+html[data-app-theme='dark'] :where(.public-policy-page, .legal-dialog) .legal-sections > section,
+html[data-app-theme='dark'] .account-deletion-guide :where(li, .account-deletion-guide-note) {
+  border-color: #3b4a41 !important;
+  background: #202923 !important;
+}
+
+html[data-app-theme='dark'] :where(.public-policy-page, .legal-dialog, .account-deletion-guide) .eyebrow {
+  color: #8fd0ad !important;
+  -webkit-text-fill-color: #8fd0ad !important;
+}
+
+html[data-app-theme='dark'] .legal-dialog .close {
+  color: #e5ede8 !important;
+  -webkit-text-fill-color: #e5ede8 !important;
+}
+
+@media (max-width: 640px) {
+  .legal-dialog {
+    width: calc(100vw - 24px);
+    padding: 24px 18px;
+  }
+  .public-policy-page,
+  .account-deletion-guide {
+    width: calc(100% - 20px);
+    padding: 24px 18px;
+  }
+}
