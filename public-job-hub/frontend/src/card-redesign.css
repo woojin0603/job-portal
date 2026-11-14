@@ -927,6 +927,19 @@ html[data-app-theme='dark'] .landing-section-head h2 { color: #edf4ef !important
   }
 }
 
+/* 필터 초기화 문구와 게시판 번호는 화면 폭·테마와 관계없이 명확하게 유지한다. */
+.filter-row .filter-reset-button {
+  min-width: 92px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+html[data-app-theme='dark'] .posting-list-number,
+html[data-app-theme='dark'] .posting-list-header > span:first-child {
+  color: #f2f7f4 !important;
+  -webkit-text-fill-color: #f2f7f4 !important;
+}
+
 /* 웹 첫 화면은 넓은 영웅 문구와 간결한 바로가기 행으로 정리한다. */
 @media (min-width: 701px) {
   body > #root > main.landing-main {

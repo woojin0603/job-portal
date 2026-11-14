@@ -6468,6 +6468,7 @@ function ArchivedPostings({ handlers, jobCategories }) {
         {(region || jobCategory || year || employmentType) && (
           <button
             type="button"
+            className="filter-reset-button"
             onClick={() => {
               setRegion('')
               setJobCategory('')
@@ -8209,6 +8210,7 @@ export default function App() {
                         showClosed) && (
                         <button
                           type="button"
+                          className="filter-reset-button"
                           onClick={() => {
                             setRegionProvince('')
                             setRegionDistrict('')
