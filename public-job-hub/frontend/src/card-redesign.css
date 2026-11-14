@@ -4,6 +4,26 @@
   gap: 16px;
 }
 
+/* 웹 다크 모드 알림센터의 제목·설명·빈 상태를 배경과 명확히 분리한다. */
+@media (min-width: 761px) {
+  html[data-app-theme='dark'] .notification-popover .notification-popover-head strong {
+    color: #f4f8f5 !important;
+    -webkit-text-fill-color: #f4f8f5 !important;
+  }
+  html[data-app-theme='dark'] .notification-popover .notification-popover-head span {
+    color: #c4d1c9 !important;
+    -webkit-text-fill-color: #c4d1c9 !important;
+  }
+  html[data-app-theme='dark'] .notification-popover .notification-list > .empty {
+    color: #d7e1db !important;
+    -webkit-text-fill-color: #d7e1db !important;
+  }
+  .notification-popover .enable-native-notification,
+  html[data-app-theme='dark'] .notification-popover .enable-native-notification {
+    font-weight: 500 !important;
+  }
+}
+
 /* 2026-11 웹 전면 개편: 자체 제작 영웅 이미지와 기존 기능을 결합한 공공서비스형 화면. */
 .landing-recommendations { width: 100%; }
 .landing-section-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
