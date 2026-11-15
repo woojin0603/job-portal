@@ -8,6 +8,9 @@ spring:
       static-locations: file:./frontend/dist/,classpath:/META-INF/resources/,classpath:/resources/,classpath:/static/,classpath:/public/
   jpa:
     open-in-view: false
+# 운영 앱 포트는 Caddy 내부망에만 노출되므로 전달된 실제 사용자 IP/HTTPS 정보를 신뢰한다.
+server:
+  forward-headers-strategy: native
 # 외부 공고 수집과 AI 보완 추출에 사용하는 서비스 전용 설정.
 # OpenAI 키는 파일에 넣지 않고 환경 변수 OPENAI_API_KEY에서 읽는다.
 jobhub:
@@ -23,14 +26,14 @@ jobhub:
       history-pages: ${JOBHUB_PUBLIC_DATA_HISTORY_PAGES:2}
       rows: ${JOBHUB_PUBLIC_DATA_ROWS:100}
       request-delay-millis: ${JOBHUB_PUBLIC_DATA_DELAY_MILLIS:250}
-  # 쉼표로 구분한 이메일만 관리자 검수 API에 접근할 수 있다.
+  # 초기 관리자 계정은 생성 후 DB의 is_admin 권한으로만 판정한다.
   admin:
-    emails: ${JOBHUB_ADMIN_EMAILS:}
     username: ${JOBHUB_ADMIN_USERNAME:}
     password: ${JOBHUB_ADMIN_PASSWORD:}
   security:
     login-max-failures: ${JOBHUB_LOGIN_MAX_FAILURES:5}
     login-window-minutes: ${JOBHUB_LOGIN_WINDOW_MINUTES:15}
+    totp-encryption-key: ${JOBHUB_TOTP_ENCRYPTION_KEY:}
   password-reset:
     mail-enabled: ${JOBHUB_PASSWORD_RESET_MAIL_ENABLED:false}
     public-url: ${JOBHUB_PUBLIC_URL:http://localhost:8080}

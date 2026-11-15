@@ -8,6 +8,8 @@ import kr.co.jobhub.auth.domain.AppUser;
 import kr.co.jobhub.auth.repository.AppUserRepository;
 import kr.co.jobhub.auth.repository.LoginHistoryRepository;
 import kr.co.jobhub.auth.service.TotpService;
+import kr.co.jobhub.auth.service.TotpSecretCipher;
+import kr.co.jobhub.common.service.SecurityAttemptLimiter;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +24,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.List;
 
 /** 로그인 기록, 다른 세션 종료 및 관리자 2단계 인증 API를 제공한다. */
@@ -40,15 +43,20 @@ public class AccountSecurityController {
     private final LoginHistoryRepository histories;
     private final TotpService totp;
     private final PasswordEncoder passwords;
+    private final SecurityAttemptLimiter attempts;
+    private final TotpSecretCipher secretCipher;
 
     public AccountSecurityController(AppUserRepository users,
                                      LoginHistoryRepository histories,
                                      TotpService totp,
-                                     PasswordEncoder passwords) {
+                                     PasswordEncoder passwords,
+                                     SecurityAttemptLimiter attempts, TotpSecretCipher secretCipher) {
         this.users = users;
         this.histories = histories;
         this.totp = totp;
         this.passwords = passwords;
+        this.attempts = attempts;
+        this.secretCipher = secretCipher;
     }
 
     @GetMapping
@@ -72,11 +80,12 @@ public class AccountSecurityController {
     @PostMapping("/2fa/setup")
     public Setup setup(Principal principal) {
         AppUser user = admin(principal);
-        user.twoFactorSecret = totp.secret();
+        String rawSecret = totp.secret();
+        user.twoFactorSecret = secretCipher.encrypt(rawSecret);
         users.save(user);
         String label = URLEncoder.encode("JOB HUB KOREA:" + user.email, StandardCharsets.UTF_8);
-        return new Setup(user.twoFactorSecret,
-                "otpauth://totp/" + label + "?secret=" + user.twoFactorSecret + "&issuer=JOB%20HUB%20KOREA");
+        return new Setup(rawSecret,
+                "otpauth://totp/" + label + "?secret=" + rawSecret + "&issuer=JOB%20HUB%20KOREA");
     }
 
     @PostMapping("/2fa/enable")
@@ -103,10 +112,12 @@ public class AccountSecurityController {
                         Principal principal,
                         HttpSession session) {
         AppUser user = admin(principal);
+        attempts.require("admin-2fa-disable", String.valueOf(user.id), 5, Duration.ofMinutes(30));
         if (!passwords.matches(request.password(), user.passwordHash)
-                || !totp.verify(user.twoFactorSecret, request.code())) {
+                || !totp.verify(secretCipher.decrypt(user.twoFactorSecret), request.code())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호 또는 인증 코드를 확인해 주세요.");
         }
+        attempts.clear("admin-2fa-disable", String.valueOf(user.id));
         user.twoFactorEnabled = false;
         user.twoFactorSecret = null;
         users.save(user);
@@ -114,8 +125,15 @@ public class AccountSecurityController {
     }
 
     private void requireValidCode(AppUser user, String code) {
-        if (!totp.verify(user.twoFactorSecret, code)) {
+        attempts.require("admin-2fa", String.valueOf(user.id), 8, Duration.ofMinutes(15));
+        String rawSecret = secretCipher.decrypt(user.twoFactorSecret);
+        if (!totp.verify(rawSecret, code)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "인증 코드가 올바르지 않습니다.");
+        }
+        attempts.clear("admin-2fa", String.valueOf(user.id));
+        if (!secretCipher.encrypted(user.twoFactorSecret) && secretCipher.available()) {
+            user.twoFactorSecret = secretCipher.encrypt(rawSecret);
+            users.save(user);
         }
     }
 

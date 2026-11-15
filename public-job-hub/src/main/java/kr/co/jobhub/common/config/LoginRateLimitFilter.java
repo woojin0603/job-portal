@@ -36,10 +36,12 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         String username = request.getParameter("username");
         String safeUsername = username == null ? "" : username.trim().toLowerCase(Locale.ROOT);
         if (safeUsername.length() > 255) safeUsername = safeUsername.substring(0, 255);
-        String key = request.getRemoteAddr() + "|" + safeUsername;
+        String ipKey = "ip|" + request.getRemoteAddr();
+        String accountKey = "account|" + safeUsername;
+        String pairKey = "pair|" + request.getRemoteAddr() + "|" + safeUsername;
         Instant now = Instant.now();
-        Attempt current = attempts.get(key);
-        if (current != null && current.windowStarted().plus(window).isAfter(now) && current.failures() >= maxFailures) {
+        if (blocked(pairKey, maxFailures, now) || blocked(accountKey, maxFailures * 2, now)
+                || blocked(ipKey, maxFailures * 4, now)) {
             response.setStatus(429);
             response.setCharacterEncoding("UTF-8");
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -48,10 +50,23 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
             return;
         }
         chain.doFilter(request, response);
-        if (response.getStatus() >= 200 && response.getStatus() < 300) attempts.remove(key);
-        else if (response.getStatus() == 401) attempts.compute(key, (ignored, previous) -> previous == null
+        if (response.getStatus() >= 200 && response.getStatus() < 300) {
+            attempts.remove(pairKey);
+            attempts.remove(accountKey);
+        } else if (response.getStatus() == 401) {
+            failed(pairKey, now); failed(accountKey, now); failed(ipKey, now);
+        }
+        if (attempts.size() > 10_000) attempts.entrySet().removeIf(entry -> entry.getValue().windowStarted().plus(window).isBefore(now));
+    }
+
+    private boolean blocked(String key, int limit, Instant now) {
+        Attempt value = attempts.get(key);
+        return value != null && value.windowStarted().plus(window).isAfter(now) && value.failures() >= limit;
+    }
+
+    private void failed(String key, Instant now) {
+        attempts.compute(key, (ignored, previous) -> previous == null
                 || previous.windowStarted().plus(window).isBefore(now)
                 ? new Attempt(1, now) : new Attempt(previous.failures() + 1, previous.windowStarted()));
-        if (attempts.size() > 10_000) attempts.entrySet().removeIf(entry -> entry.getValue().windowStarted().plus(window).isBefore(now));
     }
 }

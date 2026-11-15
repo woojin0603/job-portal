@@ -44,6 +44,15 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
            "where (:includeClosed = true or p.deadline is null or p.deadline >= :today)")
     long countVisible(@Param("includeClosed") boolean includeClosed, @Param("today") LocalDate today);
 
+    /** 추천 계산은 전체 공고 대신 최근 진행 공고의 제한된 후보군만 읽는다. */
+    @Query("select p from JobPosting p where p.open = true and (p.deadline is null or p.deadline >= :today) " +
+           "order by p.updatedAt desc")
+    List<JobPosting> recommendationCandidates(@Param("today") LocalDate today, Pageable pageable);
+
+    /** 필터 선택지는 엔티티 전체 대신 필요한 문자열 열만 조회한다. */
+    @Query("select distinct p.region from JobPosting p where p.region is not null and p.region <> '' order by p.region")
+    List<String> distinctRegions();
+
     /**
      * 공개 중인 공고를 제목·기관명으로 검색하고 20건씩 페이지로 나눈다.
      * mine이 참이면 지정 회원이 스크랩한 공고만 DB 쿼리 단계에서 필터링한다.

@@ -10,6 +10,8 @@ import kr.co.jobhub.career.domain.*;
 import kr.co.jobhub.career.repository.*;
 import kr.co.jobhub.posting.domain.*;
 import kr.co.jobhub.posting.repository.*;
+import kr.co.jobhub.common.service.SafeExternalUrl;
+import kr.co.jobhub.common.service.SensitiveDataGuard;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -127,12 +129,15 @@ public class CareerToolsController {
     private final RecruitmentPositionRepository positions;
     private final RecruitmentScheduleRepository schedules;
     private final ObjectMapper json;
+    private final SafeExternalUrl safeExternalUrl;
+    private final SensitiveDataGuard sensitiveDataGuard;
 
     public CareerToolsController(AppUserRepository users, JobPostingRepository postings,
                                  ScrapRepository scraps, UserProfileRepository profiles,
                                  JobAlertPreferenceRepository preferences,
                                  RecruitmentPositionRepository positions,
-                                 RecruitmentScheduleRepository schedules, ObjectMapper json) {
+                                 RecruitmentScheduleRepository schedules, ObjectMapper json,
+                                 SafeExternalUrl safeExternalUrl, SensitiveDataGuard sensitiveDataGuard) {
         this.users = users;
         this.postings = postings;
         this.scraps = scraps;
@@ -141,6 +146,8 @@ public class CareerToolsController {
         this.positions = positions;
         this.schedules = schedules;
         this.json = json;
+        this.safeExternalUrl = safeExternalUrl;
+        this.sensitiveDataGuard = sensitiveDataGuard;
     }
 
     @PostMapping("/postings/{id}/application")
@@ -207,6 +214,8 @@ public class CareerToolsController {
             created.posting = posting;
             return created;
         });
+        sensitiveDataGuard.reject(List.of(clean(request.certifications()), clean(request.careers()),
+                clean(request.activities()), clean(request.degrees()), clean(request.notes())));
         ApplicationSpec cleaned = new ApplicationSpec(clean(request.certifications()), clean(request.careers()),
                 clean(request.activities()), clean(request.degrees()), clean(request.notes()));
         try {
@@ -263,8 +272,9 @@ public class CareerToolsController {
                 .map(scrap -> scrap.posting.id)
                 .collect(java.util.stream.Collectors.toSet());
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        List<AlertItem> result = new ArrayList<>(postings.findAll().stream()
-                .filter(p -> scrappedPostingIds.contains(p.id))
+        Map<Long, JobPosting> postingById = postings.findAllById(scrappedPostingIds).stream()
+                .collect(java.util.stream.Collectors.toMap(p -> p.id, p -> p));
+        List<AlertItem> result = new ArrayList<>(postingById.values().stream()
                 .filter(p -> p.deadline == null || !p.deadline.isBefore(today))
                 .filter(p -> {
                     long remaining = p.deadline == null ? Long.MIN_VALUE
@@ -283,8 +293,6 @@ public class CareerToolsController {
                 })
                 .toList());
         if (!scrappedPostingIds.isEmpty()) {
-            Map<Long, JobPosting> postingById = postings.findAllById(scrappedPostingIds).stream()
-                    .collect(java.util.stream.Collectors.toMap(p -> p.id, p -> p));
             List<Long> ids = new ArrayList<>(scrappedPostingIds);
             schedules.findByPostingIdInAndEventDateGreaterThanEqualOrderByEventDateAsc(ids, today).stream()
                     .filter(value -> deadlineDays.contains((int) java.time.temporal.ChronoUnit.DAYS.between(today, value.eventDate)))
@@ -320,11 +328,9 @@ public class CareerToolsController {
 
     @GetMapping("/filters")
     public FilterOptions filters() {
-        List<String> regions = postings.findAll().stream().map(p -> p.region)
-                .filter(Objects::nonNull).filter(value -> !value.isBlank()).distinct().sorted().toList();
+        List<String> regions = postings.distinctRegions();
         List<String> categories = java.util.stream.Stream.concat(STANDARD_JOB_CATEGORIES.stream(),
-                        positions.findAll().stream().map(p -> p.standardCategory)
-                                .filter(Objects::nonNull)
+                        positions.distinctStandardCategories().stream()
                                 .flatMap(value -> Arrays.stream(value.split("[,，]")))
                                 .map(String::trim).filter(value -> !value.isBlank()))
                 .distinct().toList();
@@ -356,8 +362,9 @@ public class CareerToolsController {
             }
         });
         try {
+            safeExternalUrl.requirePublicHttps(posting.sourceUrl);
             Document doc = Jsoup.connect(posting.sourceUrl).userAgent("PublicJobHub/0.4")
-                    .maxBodySize(3_000_000).timeout(12000).get();
+                    .followRedirects(false).maxBodySize(3_000_000).timeout(12000).get();
             sourceText.append(' ').append(doc.text());
             for (Element heading : doc.select("#contentRV h4, main h2, main h3, article h2, article h3")) {
                 String label = heading.text();
@@ -534,11 +541,13 @@ public class CareerToolsController {
 
     private List<Recommendation> recommendations(Long excludedPostingId, ProfileSignals signals) {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        Map<Long, List<RecruitmentPosition>> positionsByPosting = positions.findAll().stream()
+        List<JobPosting> candidates = postings.recommendationCandidates(today,
+                org.springframework.data.domain.PageRequest.of(0, 200));
+        List<Long> candidateIds = candidates.stream().map(value -> value.id).toList();
+        Map<Long, List<RecruitmentPosition>> positionsByPosting = positions.findByPostingIdIn(candidateIds).stream()
                 .collect(java.util.stream.Collectors.groupingBy(value -> value.posting.getId()));
-        return postings.findAll().stream()
+        return candidates.stream()
                 .filter(value -> !Objects.equals(value.id, excludedPostingId))
-                .filter(value -> value.open && (value.deadline == null || !value.deadline.isBefore(today)))
                 .map(value -> recommendation(value, positionsByPosting.getOrDefault(value.id, List.of()), signals))
                 .filter(value -> value.score() > 0)
                 .sorted(Comparator.comparingInt(Recommendation::score).reversed()

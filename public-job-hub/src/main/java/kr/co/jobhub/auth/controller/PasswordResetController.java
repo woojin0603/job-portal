@@ -5,6 +5,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import kr.co.jobhub.auth.service.PasswordResetService;
+import kr.co.jobhub.common.service.SecurityAttemptLimiter;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,13 +23,17 @@ public class PasswordResetController {
     public record Result(boolean accepted, boolean mailEnabled) {}
 
     private final PasswordResetService service;
+    private final SecurityAttemptLimiter attempts;
 
-    public PasswordResetController(PasswordResetService service) {
+    public PasswordResetController(PasswordResetService service, SecurityAttemptLimiter attempts) {
         this.service = service;
+        this.attempts = attempts;
     }
 
     @PostMapping("/request")
-    public Result request(@Valid @RequestBody Request request) {
+    public Result request(@Valid @RequestBody Request request, HttpServletRequest servletRequest) {
+        attempts.require("password-reset-ip", servletRequest.getRemoteAddr(), 8, Duration.ofMinutes(15));
+        attempts.require("password-reset-account", request.email(), 3, Duration.ofMinutes(30));
         service.request(request.email());
         return new Result(true, service.mailEnabled());
     }

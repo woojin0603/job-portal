@@ -13,13 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /** 비밀번호·IP 원문을 노출하지 않고 관리자 보안 지표만 제공한다. */
 @RestController
@@ -36,22 +32,16 @@ public class AdminSecurityOverviewController {
     private final AppUserRepository users;
     private final LoginHistoryRepository logins;
     private final AdminAuditLogRepository audits;
-    private final Set<String> administratorEmails;
     private final int loginMaxFailures;
     private final long sessionTimeoutMinutes;
 
     public AdminSecurityOverviewController(
             AppUserRepository users, LoginHistoryRepository logins, AdminAuditLogRepository audits,
-            @Value("${jobhub.admin.emails:}") String adminEmails,
-            @Value("${jobhub.admin.username:admin}") String adminUsername,
             @Value("${jobhub.security.login-max-failures:5}") int loginMaxFailures,
             @Value("${server.servlet.session.timeout:30m}") java.time.Duration sessionTimeout) {
         this.users = users;
         this.logins = logins;
         this.audits = audits;
-        this.administratorEmails = Arrays.stream((adminEmails + "," + adminUsername).split(","))
-                .map(String::trim).map(value -> value.toLowerCase(Locale.ROOT))
-                .filter(value -> !value.isBlank()).collect(Collectors.toSet());
         this.loginMaxFailures = loginMaxFailures;
         this.sessionTimeoutMinutes = Math.max(1, sessionTimeout.toMinutes());
     }
@@ -60,8 +50,7 @@ public class AdminSecurityOverviewController {
     public SecurityOverview overview() {
         Instant now = Instant.now();
         Instant since24h = now.minusSeconds(24 * 60 * 60);
-        List<AppUser> administrators = users.findAll().stream()
-                .filter(value -> administratorEmails.contains(value.email.toLowerCase(Locale.ROOT))).toList();
+        List<AppUser> administrators = users.findByAdminTrue();
         Instant weekStart = todayStart(now).minusSeconds(6 * 24 * 60 * 60);
         List<LoginHistory> histories = logins.findByCreatedAtAfter(weekStart);
         List<LoginHistory> recent = histories.stream()

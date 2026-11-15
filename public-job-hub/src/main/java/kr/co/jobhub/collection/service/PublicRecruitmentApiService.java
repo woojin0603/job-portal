@@ -10,6 +10,7 @@ import kr.co.jobhub.posting.repository.RecruitmentCompetitionRepository;
 import kr.co.jobhub.posting.repository.RecruitmentPositionRepository;
 import kr.co.jobhub.posting.service.PublicInstitutionClassifier;
 import kr.co.jobhub.posting.service.PostingChangeService;
+import kr.co.jobhub.common.service.SafeExternalUrl;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -65,6 +66,7 @@ public class PublicRecruitmentApiService {
     private final RecruitmentCompetitionRepository competitions;
     private final PostingChangeService postingChanges;
     private final CrawlService crawler;
+    private final SafeExternalUrl safeExternalUrl;
     private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     private final String baseUrl;
@@ -80,6 +82,7 @@ public class PublicRecruitmentApiService {
                                        RecruitmentCompetitionRepository competitions,
                                        PostingChangeService postingChanges,
                                        CrawlService crawler,
+                                       SafeExternalUrl safeExternalUrl,
                                        ObjectMapper json,
                                        @Value("${jobhub.public-data.recruitment.base-url}") String baseUrl,
                                        @Value("${jobhub.public-data.recruitment.service-key:}") String serviceKey,
@@ -93,6 +96,7 @@ public class PublicRecruitmentApiService {
         this.competitions = competitions;
         this.postingChanges = postingChanges;
         this.crawler = crawler;
+        this.safeExternalUrl = safeExternalUrl;
         this.json = json;
         this.baseUrl = baseUrl.replaceAll("/+$", "");
         this.serviceKey = normalizeServiceKey(serviceKey);
@@ -377,8 +381,9 @@ public class PublicRecruitmentApiService {
     /** API에 수치가 없을 때만 잡알리오 공식 HTML과 결과 관련 PDF에서 명시된 값만 보완한다. */
     private void collectOfficialCompetition(JobPosting posting) {
         try {
+            safeExternalUrl.requirePublicHttps(posting.sourceUrl);
             Document detail = Jsoup.connect(posting.sourceUrl).userAgent("PublicJobHub/0.5")
-                    .timeout(15000).maxBodySize(4_000_000).get();
+                    .followRedirects(false).timeout(15000).maxBodySize(4_000_000).get();
             if (saveExtractedCompetitions(posting, detail.text(), "OFFICIAL_HTML", posting.sourceUrl) > 0) return;
             int checked = 0;
             for (Element link : detail.select("a[href]")) {
@@ -460,8 +465,7 @@ public class PublicRecruitmentApiService {
     private boolean safeAttachment(String pageUrl, String attachmentUrl) {
         try {
             URI page = URI.create(pageUrl);
-            URI attachment = URI.create(attachmentUrl);
-            if (!Set.of("http", "https").contains(attachment.getScheme()) || attachment.getHost() == null) return false;
+            URI attachment = safeExternalUrl.requirePublicHttps(attachmentUrl);
             String host = attachment.getHost().toLowerCase(Locale.ROOT);
             String pageHost = page.getHost().toLowerCase(Locale.ROOT);
             return host.equals(pageHost) || host.endsWith(".alio.go.kr") || host.equals("alio.go.kr");
@@ -472,7 +476,8 @@ public class PublicRecruitmentApiService {
 
     private String pdfText(String url) {
         try {
-            byte[] bytes = Jsoup.connect(url).userAgent("PublicJobHub/0.5").ignoreContentType(true)
+            safeExternalUrl.requirePublicHttps(url);
+            byte[] bytes = Jsoup.connect(url).userAgent("PublicJobHub/0.5").followRedirects(false).ignoreContentType(true)
                     .timeout(20000).maxBodySize(20_000_000).execute().bodyAsBytes();
             if (bytes.length < 5 || bytes.length > 20_000_000) return "";
             return crawler.extractPdfDocument(bytes);

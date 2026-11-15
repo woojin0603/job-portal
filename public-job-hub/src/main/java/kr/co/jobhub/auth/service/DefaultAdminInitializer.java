@@ -30,16 +30,24 @@ public class DefaultAdminInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         if (username.isBlank() || password.isBlank()) return;
-        if (password.length() < 10) {
-            throw new IllegalStateException("관리자 초기 비밀번호는 10자 이상이어야 합니다.");
+        if (password.length() < 16) {
+            throw new IllegalStateException("관리자 초기 비밀번호는 16자 이상이어야 합니다.");
         }
         var existing = users.findByEmail(username);
-        if (existing.isPresent()) return;
+        if (existing.isPresent()) {
+            AppUser admin = existing.get();
+            if (!admin.admin) {
+                admin.admin = true;
+                users.save(admin);
+            }
+            return;
+        }
         AppUser admin = new AppUser();
         admin.email = username;
         admin.passwordHash = passwords.encode(password);
         admin.displayName = "관리자";
         admin.mustChangePassword = true;
+        admin.admin = true;
         users.save(admin);
     }
 }

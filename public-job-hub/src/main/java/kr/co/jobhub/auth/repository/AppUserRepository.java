@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.Optional;
+import java.util.List;
 
 /** 회원의 이메일 조회와 중복 검사에 사용하는 JPA 저장소. */
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
@@ -14,6 +15,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     /** 회원가입 시 동일한 이메일이 이미 등록되어 있는지 확인한다. */
     boolean existsByEmail(String email);
+    List<AppUser> findByAdminTrue();
 
     /** 지연 로딩 프록시를 거치지 않고 비밀번호와 세션 버전을 DB에서 직접 갱신한다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

@@ -4,6 +4,7 @@ import kr.co.jobhub.career.domain.RecruitmentSchedule;
 import kr.co.jobhub.career.repository.RecruitmentScheduleRepository;
 import kr.co.jobhub.career.repository.ScrapRepository;
 import kr.co.jobhub.common.service.RobotsPolicy;
+import kr.co.jobhub.common.service.SafeExternalUrl;
 import kr.co.jobhub.posting.domain.JobPosting;
 import kr.co.jobhub.posting.repository.JobPostingRepository;
 import org.jsoup.Jsoup;
@@ -40,12 +41,13 @@ public class RecruitmentScheduleScanner {
     private final RecruitmentScheduleRepository schedules;
     private final RobotsPolicy robots;
     private final CrawlService crawler;
+    private final SafeExternalUrl safeExternalUrl;
 
     public RecruitmentScheduleScanner(ScrapRepository scraps, JobPostingRepository postings,
                                       RecruitmentScheduleRepository schedules, RobotsPolicy robots,
-                                      CrawlService crawler) {
+                                      CrawlService crawler, SafeExternalUrl safeExternalUrl) {
         this.scraps = scraps; this.postings = postings; this.schedules = schedules;
-        this.robots = robots; this.crawler = crawler;
+        this.robots = robots; this.crawler = crawler; this.safeExternalUrl = safeExternalUrl;
     }
 
     /** 매시간 스크랩된 진행 공고를 확인한다. 한 번에 제한해 외부 기관에 부담을 주지 않는다. */
@@ -59,15 +61,16 @@ public class RecruitmentScheduleScanner {
     public void scan(JobPosting posting) {
         if (posting.sourceUrl == null || posting.sourceUrl.isBlank()) return;
         try {
-            URI pageUri = URI.create(posting.sourceUrl);
-            if (!"https".equalsIgnoreCase(pageUri.getScheme()) || pageUri.getHost() == null || !robots.allows(pageUri)) return;
+            URI pageUri = safeExternalUrl.requirePublicHttps(posting.sourceUrl);
+            if (!robots.allows(pageUri)) return;
             Document page = Jsoup.connect(posting.sourceUrl).userAgent("PublicJobHub/0.7")
-                    .timeout(15_000).maxBodySize(4_000_000).get();
+                    .followRedirects(false).timeout(15_000).maxBodySize(4_000_000).get();
             List<Found> found = new ArrayList<>(extract(page.text(), posting.sourceUrl));
             String pdfUrl = pdfUrl(page, pageUri);
             if (pdfUrl != null) {
                 try {
-                    byte[] bytes = Jsoup.connect(pdfUrl).userAgent("PublicJobHub/0.7").ignoreContentType(true)
+                    safeExternalUrl.requirePublicHttps(pdfUrl);
+                    byte[] bytes = Jsoup.connect(pdfUrl).userAgent("PublicJobHub/0.7").followRedirects(false).ignoreContentType(true)
                             .timeout(20_000).maxBodySize(20_000_000).execute().bodyAsBytes();
                     if (bytes.length > 4 && bytes.length <= 20_000_000)
                         found.addAll(extract(crawler.extractPdfDocument(bytes), pdfUrl));

@@ -1,4 +1,5 @@
 .gradle/
+.gradle-codex-audit/
 .gradle-*-home/
 build/
 frontend/node_modules/

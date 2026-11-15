@@ -6997,7 +6997,10 @@ export default function App() {
       return getJson(`/api/service-popups?refresh=${now}`).then((items) => {
         const today = new Date().toLocaleDateString('sv-SE')
         const first = items.find((item) => window.localStorage.getItem(`jobhub-popup-hide-date-${item.id}`) !== today)
-        if (first) setPopupOpen((current) => current || first)
+        if (first) return getJson(`/api/service-popups/${first.id}`).then((detail) =>
+          setPopupOpen((current) => current || detail),
+        )
+        return undefined
         const standalone = window.matchMedia('(display-mode: standalone)').matches
         if (standalone && first && 'Notification' in window && Notification.permission === 'granted') {
           new Notification(first.title, { body: first.content.slice(0, 140), icon: '/pwa-192x192.png' })

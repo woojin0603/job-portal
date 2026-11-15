@@ -1,12 +1,13 @@
 package kr.co.jobhub.collection.service;
 
 import org.junit.jupiter.api.Test;
+import kr.co.jobhub.common.service.SafeExternalUrl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RecruitmentScheduleScannerTest {
     private final RecruitmentScheduleScanner scanner =
-            new RecruitmentScheduleScanner(null, null, null, null, null);
+            new RecruitmentScheduleScanner(null, null, null, null, null, new SafeExternalUrl());
 
     @Test
     void extractsStagesWhetherDateComesBeforeOrAfterLabel() {

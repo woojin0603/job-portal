@@ -2,6 +2,7 @@ package kr.co.jobhub.posting.repository;
 
 import kr.co.jobhub.posting.domain.RecruitmentPosition;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
@@ -9,6 +10,9 @@ import java.util.List;
 public interface RecruitmentPositionRepository extends JpaRepository<RecruitmentPosition, Long> {
     List<RecruitmentPosition> findByPostingIdOrderById(Long postingId);
     List<RecruitmentPosition> findByPostingIdIn(List<Long> postingIds);
+    @Query("select distinct p.standardCategory from RecruitmentPosition p " +
+           "where p.standardCategory is not null and p.standardCategory <> ''")
+    List<String> distinctStandardCategories();
     @Transactional
     void deleteByPostingId(Long postingId);
 }

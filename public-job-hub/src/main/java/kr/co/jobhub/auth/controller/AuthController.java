@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import kr.co.jobhub.auth.domain.AppUser;
 import kr.co.jobhub.auth.repository.AppUserRepository;
+import kr.co.jobhub.common.service.SecurityAttemptLimiter;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -54,11 +57,13 @@ public class AuthController {
 
     private final AppUserRepository users;
     private final PasswordEncoder passwords;
+    private final SecurityAttemptLimiter attempts;
 
     /** 회원 저장소와 비밀번호 해시 인코더를 주입받는다. */
-    public AuthController(AppUserRepository users, PasswordEncoder passwords) {
+    public AuthController(AppUserRepository users, PasswordEncoder passwords, SecurityAttemptLimiter attempts) {
         this.users = users;
         this.passwords = passwords;
+        this.attempts = attempts;
     }
 
     /** 브라우저가 로그인·회원가입·스크랩 요청 전에 사용할 CSRF 토큰을 전달한다. */
@@ -80,7 +85,8 @@ public class AuthController {
     /** 신규 계정을 만들고 비밀번호는 BCrypt 해시로 변환해 저장한다. */
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public Profile register(@Valid @RequestBody RegisterRequest request) {
+    public Profile register(@Valid @RequestBody RegisterRequest request, HttpServletRequest servletRequest) {
+        attempts.require("register-ip", servletRequest.getRemoteAddr(), 5, Duration.ofHours(1));
         requireConsent(request.acceptedTerms(), request.acceptedPrivacy());
         if (!request.password().matches("^(?=.*[A-Za-z])(?=.*\\d).+$")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호는 영문과 숫자를 모두 포함해야 합니다.");
@@ -136,9 +142,11 @@ public class AuthController {
         }
         AppUser user = users.findByEmail(auth.getName())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        attempts.require("password-change", String.valueOf(user.id), 6, Duration.ofMinutes(30));
         if (!passwords.matches(request.currentPassword(), user.passwordHash)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다.");
         }
+        attempts.clear("password-change", String.valueOf(user.id));
         user.passwordHash = passwords.encode(request.newPassword());
         user.mustChangePassword = false;
         user.sessionVersion = (user.sessionVersion == null ? 0L : user.sessionVersion) + 1;

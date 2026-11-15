@@ -35,9 +35,12 @@ public class AppUser {
     public boolean mustChangePassword;
     @Column(name = "session_version")
     public Long sessionVersion = 0L;
+    /** 관리자 권한은 이메일 문자열이 아니라 서버가 관리하는 DB 권한으로만 부여한다. */
+    @Column(name = "is_admin", nullable = false, columnDefinition = "boolean default false")
+    public boolean admin;
     @Column(name = "two_factor_enabled")
     public Boolean twoFactorEnabled = false;
-    @Column(name = "two_factor_secret", length = 100)
+    @Column(name = "two_factor_secret", length = 255)
     public String twoFactorSecret;
 
     /** 출시 약관에 동의한 시각과 당시 문서 버전. */

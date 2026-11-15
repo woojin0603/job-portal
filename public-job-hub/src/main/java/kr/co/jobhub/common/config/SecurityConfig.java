@@ -34,16 +34,11 @@ public class SecurityConfig {
 
     /** 이메일로 회원을 읽어 Spring Security가 이해하는 인증 사용자로 변환한다. */
     @Bean
-    UserDetailsService userDetailsService(AppUserRepository users,
-                                          @org.springframework.beans.factory.annotation.Value("${jobhub.admin.emails:}") String adminEmails,
-                                          @org.springframework.beans.factory.annotation.Value("${jobhub.admin.username:admin}") String adminUsername) {
-        var admins = java.util.Arrays.stream(adminEmails.split(","))
-                .map(String::trim).map(String::toLowerCase).filter(value -> !value.isBlank()).collect(java.util.stream.Collectors.toSet());
-        admins.add(adminUsername.trim().toLowerCase());
+    UserDetailsService userDetailsService(AppUserRepository users) {
         return email -> users.findByEmail(email)
                 .filter(u -> u.passwordHash != null)
                 .map(u -> User.withUsername(u.email).password(u.passwordHash)
-                        .roles(admins.contains(u.email.toLowerCase()) ? new String[]{"USER", "ADMIN"} : new String[]{"USER"}).build())
+                        .roles(u.admin ? new String[]{"USER", "ADMIN"} : new String[]{"USER"}).build())
                 .orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException(email));
     }
 
@@ -86,6 +81,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/client-errors").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register",
+                                "/api/auth/password-reset/request", "/api/auth/password-reset/confirm").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/community/notices").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/success-stories").permitAll()
@@ -96,6 +93,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/tools/filters").permitAll()
                         .requestMatchers("/api/tools/**").authenticated()
                         .requestMatchers("/h2-console/**").denyAll()
+                        // 새 API가 추가되더라도 상태 변경 요청이 실수로 공개되지 않도록 기본 차단한다.
+                        .requestMatchers(HttpMethod.POST, "/api/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/**").authenticated()
                         .anyRequest().permitAll())
                 .formLogin(form -> form.loginProcessingUrl("/api/auth/login")
                         .successHandler((request, response, authentication) -> {
