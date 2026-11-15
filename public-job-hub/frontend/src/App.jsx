@@ -7719,6 +7719,12 @@ export default function App() {
   async function openAdmin() {
     try {
       const security = await getJson('/api/auth/security')
+      if (!security.twoFactorEnabled) {
+        setMobileMenuOpen(false)
+        setSecurityOpen(true)
+        setError('관리자 운영 화면을 사용하려면 계정 보안에서 2단계 인증을 먼저 설정해 주세요.')
+        return
+      }
       if (security.twoFactorEnabled && !security.twoFactorVerified) {
         const code = window.prompt('인증 앱의 6자리 코드를 입력하세요.')
         if (!code) return
@@ -7911,6 +7917,15 @@ export default function App() {
             {user ? (
               <>
                 <span className="user-name">{user.displayName}님</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    setSecurityOpen(true)
+                  }}
+                >
+                  계정 보안
+                </button>
                 <button onClick={logout}>로그아웃</button>
               </>
             ) : (
