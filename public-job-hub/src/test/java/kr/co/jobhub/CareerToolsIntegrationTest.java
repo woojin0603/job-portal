@@ -172,8 +172,8 @@ class CareerToolsIntegrationTest {
                         .with(user("tools@example.com")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.positionMatches.length()").value(2))
-                .andExpect(jsonPath("$.positionMatches[0].eligibility.status").value("필수요건 불일치 가능"))
-                .andExpect(jsonPath("$.positionMatches[1].eligibility.status").value("필수요건 불일치 가능"));
+                .andExpect(jsonPath("$.positionMatches[0].eligibility.status").value("지원 어려움 가능"))
+                .andExpect(jsonPath("$.positionMatches[1].eligibility.status").value("지원 어려움 가능"));
     }
 
     @Test
@@ -196,5 +196,16 @@ class CareerToolsIntegrationTest {
         mvc.perform(get("/api/postings").param("q", "육아휴직 대체인력")
                         .param("employmentType", "육아휴직"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(1));
+    }
+
+    @Test
+    void countsDistrictWhenSourceOmitsAdministrativeSuffix() throws Exception {
+        RecruitmentPosition position = positions.findByPostingIdOrderById(postingId).get(0);
+        position.workRegion = "경기 수원";
+        positions.save(position);
+
+        mvc.perform(get("/api/postings/region-counts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.districts.경기.수원시").value(1));
     }
 }

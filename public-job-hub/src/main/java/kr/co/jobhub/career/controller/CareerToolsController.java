@@ -380,17 +380,23 @@ public class CareerToolsController {
                                 ? evidence : List.of("자격요건: " + position.requirements), signals))
                 .toList();
         PositionEvaluation best = evaluations.stream()
-                .max(Comparator.comparingInt(PositionEvaluation::score))
+                .max(Comparator.comparingInt((PositionEvaluation value) -> eligibilityRank(value.eligibility().status()))
+                        .thenComparingInt(PositionEvaluation::score))
                 .orElseThrow();
         List<PositionMatch> positionMatches = evaluations.stream().map(PositionEvaluation::view).toList();
         String summary = positionMatches.size() > 1
-                ? "모집 직렬 " + positionMatches.size() + "개를 각각 분석했으며, 가장 높은 직렬 적합도를 대표 점수로 표시합니다."
-                : best.strengths().isEmpty()
-                ? "등록 정보와 공고문에서 직접 확인되는 일치 근거가 없습니다. 반드시 원문 자격요건을 확인해 주세요."
-                : "필수 자격증·전공·경력·대외활동을 분리해 " + best.strengths().size() + "개의 관련 근거를 확인했습니다.";
+                ? "모집 직렬 " + positionMatches.size() + "개 중 " + best.originalName() + " 직렬을 기준으로 "
+                        + best.eligibility().status() + "으로 판단했습니다."
+                : best.eligibility().status() + " · " + best.eligibility().detail();
         return new MatchResult(best.matchedCertificates(), evidence, best.strengths(), best.gaps(),
                 best.score(), summary, best.eligibility(), best.components(),
                 recommendations(posting.id, signals), positionMatches);
+    }
+
+    private int eligibilityRank(String status) {
+        if ("지원 가능성 있음".equals(status)) return 3;
+        if ("지원 가능 여부 확인 필요".equals(status)) return 2;
+        return 1;
     }
 
     private record PositionEvaluation(Long positionId, String category, String originalName,
@@ -433,6 +439,12 @@ public class CareerToolsController {
 
         List<String> careerFieldMatches = signals.careerFields().stream()
                 .filter(field -> fieldRelated(text, field)).distinct().toList();
+        int requiredCareerMonths = requiredCareerMonths(text);
+        int relatedCareerMonths = signals.careerMonthsByField().entrySet().stream()
+                .filter(entry -> fieldRelated(text, entry.getKey()))
+                .mapToInt(Map.Entry::getValue).sum();
+        boolean careerRequirementFound = requiredCareerMonths > 0;
+        boolean careerRequirementMatched = !careerRequirementFound || relatedCareerMonths >= requiredCareerMonths;
         List<String> activityFieldMatches = signals.activityFields().stream()
                 .filter(field -> fieldRelated(text, field)).distinct().toList();
         List<String> strengths = new ArrayList<>();
@@ -442,16 +454,25 @@ public class CareerToolsController {
         majorMatches.forEach(value -> strengths.add("관련 전공: " + value));
         degreeMatches.forEach(value -> strengths.add("학위 수준 충족 가능: " + value));
         careerFieldMatches.forEach(field -> strengths.add("직무 관련 경력 분야: " + field));
+        if (careerRequirementFound && careerRequirementMatched)
+            strengths.add("관련 경력기간 충족 가능: " + formatMonths(relatedCareerMonths));
         activityFieldMatches.forEach(field -> strengths.add("직무 관련 대외활동 분야: " + field));
 
         boolean requiredCertificateMatched = !requiredCertificates.isEmpty();
         boolean hardRequirementMismatch = (requiredCertificateFound && !requiredCertificateMatched)
-                || ((majorRequirementFound || degreeRequirementFound) && !educationMatched);
+                || ((majorRequirementFound || degreeRequirementFound) && !educationMatched)
+                || (careerRequirementFound && !careerRequirementMatched);
+        boolean hardRequirementFound = requiredCertificateFound || majorRequirementFound
+                || degreeRequirementFound || careerRequirementFound;
+        boolean hasRequirementEvidence = (position != null && position.requirements != null
+                && !position.requirements.isBlank()) || (evidence != null && !evidence.isEmpty());
         Eligibility eligibility = hardRequirementMismatch
-                ? new Eligibility("필수요건 불일치 가능", "직렬별 필수 자격증·전공·학위 조건 중 등록 정보와 직접 일치하지 않는 항목이 있습니다.")
-                : requiredCertificateFound || majorRequirementFound || degreeRequirementFound
-                ? new Eligibility("필수요건 일치 가능", "등록 정보가 확인된 필수요건과 일치합니다. 경력기간과 세부 조건은 원문을 확인하세요.")
-                : new Eligibility("필수요건 제한 미확인", "구조화된 필수 자격증·전공·학위 제한을 확인하지 못했습니다. 원문을 함께 확인하세요.");
+                ? new Eligibility("지원 어려움 가능", "확인된 필수 자격증·전공·학위·경력기간 중 등록 정보로 충족 여부를 확인하지 못한 조건이 있습니다.")
+                : hardRequirementFound
+                ? new Eligibility("지원 가능성 있음", "등록 정보가 현재 분석된 필수조건과 일치합니다. 연령·어학·세부 경력 등 원문의 나머지 조건도 최종 확인하세요.")
+                : hasRequirementEvidence
+                ? new Eligibility("지원 가능성 있음", "공고문에서 등록 스펙과 충돌하는 명시적 필수 자격증·전공·학위·경력조건을 찾지 못했습니다. 원문 최종 확인이 필요합니다.")
+                : new Eligibility("지원 가능 여부 확인 필요", "저장된 공고 정보에 판정 가능한 필수요건이 부족합니다. 원문 자격요건을 확인해 주세요.");
 
         int qualificationScore = requiredCertificateFound
                 ? (requiredCertificateMatched ? 40 : 0)
@@ -459,7 +480,9 @@ public class CareerToolsController {
         int educationScore = majorRequirementFound || degreeRequirementFound
                 ? (educationMatched ? 20 : 0)
                 : Math.min(15, majorMatches.size() * 10 + degreeMatches.size() * 5);
-        int careerScore = fieldRelevanceScore(text, signals.careerFields(), 25);
+        int careerScore = careerRequirementFound
+                ? (careerRequirementMatched ? 25 : 0)
+                : fieldRelevanceScore(text, signals.careerFields(), 25);
         int activityScore = fieldRelevanceScore(text, signals.activityFields(), 15);
         int score = Math.min(100, qualificationScore + educationScore + careerScore + activityScore);
         List<MatchComponent> components = List.of(
@@ -480,9 +503,16 @@ public class CareerToolsController {
                                 majorMatches.stream().map(v -> "전공: " + v),
                                 degreeMatches.stream().map(v -> "학위: " + v)).toList()),
                 new MatchComponent("CAREER", "경력 분야 연관성", careerScore, 25,
-                        signals.careerFields().isEmpty() ? "분야 선택안함" :
+                        careerRequirementFound
+                                ? (careerRequirementMatched ? "필수 경력 충족 가능" : "필수 경력 확인 필요")
+                                : signals.careerFields().isEmpty() ? "분야 선택안함" :
                                 careerFieldMatches.isEmpty() ? "직무 연관성 미확인" : "직무 관련",
-                        fieldMatchDetails(text, careerFieldMatches)),
+                        java.util.stream.Stream.concat(
+                                fieldMatchDetails(text, careerFieldMatches).stream(),
+                                careerRequirementFound
+                                        ? java.util.stream.Stream.of("요구 경력: " + formatMonths(requiredCareerMonths)
+                                                + " · 관련 등록 경력: " + formatMonths(relatedCareerMonths))
+                                        : java.util.stream.Stream.empty()).toList()),
                 new MatchComponent("ACTIVITY", "대외활동 분야 연관성", activityScore, 15,
                         signals.activityFields().isEmpty() ? "분야 선택안함" :
                                 activityFieldMatches.isEmpty() ? "직무 연관성 미확인" : "직무 관련",
@@ -492,6 +522,9 @@ public class CareerToolsController {
             gaps.add("이 직렬의 필수 자격증 조건과 등록한 자격증의 종목·등급이 일치하지 않습니다.");
         if ((majorRequirementFound || degreeRequirementFound) && !educationMatched)
             gaps.add("이 직렬의 필수 전공·학위 조건을 등록 정보에서 확인하지 못했습니다.");
+        if (careerRequirementFound && !careerRequirementMatched)
+            gaps.add("이 직렬은 관련 경력 " + formatMonths(requiredCareerMonths)
+                    + " 이상을 요구하지만 등록 경력에서 충족 여부를 확인하지 못했습니다.");
         if (signals.certificates().isEmpty()) gaps.add("등록된 자격증이 없어 자격요건 비교가 제한됩니다.");
         return new PositionEvaluation(position == null ? null : position.id,
                 position == null ? "직렬 미확인" : clean(position.standardCategory),
@@ -566,12 +599,13 @@ public class CareerToolsController {
 
     private record ProfileSignals(List<String> certificates, List<String> majors,
                                   List<String> degreeTypes, List<String> experiences, List<String> careerFields,
+                                  Map<String, Integer> careerMonthsByField,
                                   List<String> activityFields) {}
 
     private ProfileSignals profileSignals(AppUser user) {
         try {
             UserProfile profile = profiles.findByUserId(user.id).orElse(null);
-            if (profile == null) return new ProfileSignals(List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+            if (profile == null) return new ProfileSignals(List.of(), List.of(), List.of(), List.of(), List.of(), Map.of(), List.of());
             List<String> certificates = new ArrayList<>();
             for (JsonNode item : json.readTree(profile.certifications == null ? "[]" : profile.certifications)) {
                 String name = item.path("name").asText().trim();
@@ -594,11 +628,17 @@ public class CareerToolsController {
             }
             List<String> experiences = new ArrayList<>();
             List<String> careerFields = new ArrayList<>();
+            Map<String, Integer> careerMonthsByField = new LinkedHashMap<>();
             for (String raw : List.of(profile.careerHistory == null ? "" : profile.careerHistory)) {
                 if (raw == null || raw.isBlank()) continue;
                 for (JsonNode item : json.readTree(raw)) {
                     String selectedField = item.path("field").asText().trim();
-                    if (!selectedField.isBlank()) careerFields.add(selectedField);
+                    if (!selectedField.isBlank() && !"선택안함".equals(selectedField)) {
+                        careerFields.add(selectedField);
+                        int months = careerMonths(item.path("startMonth").asText(),
+                                item.path("endMonth").asText(), item.path("current").asBoolean(false));
+                        if (months > 0) careerMonthsByField.merge(selectedField, months, Integer::sum);
+                    }
                     for (String field : List.of("companyName", "position", "duties")) {
                         String value = item.path(field).asText().trim();
                         if (value.length() >= 2) experiences.add(value);
@@ -615,9 +655,23 @@ public class CareerToolsController {
             return new ProfileSignals(certificates.stream().distinct().toList(),
                     majors.stream().distinct().toList(), degreeTypes.stream().distinct().toList(),
                     experiences.stream().distinct().toList(),
-                    careerFields.stream().distinct().toList(), activityFields.stream().distinct().toList());
+                    careerFields.stream().distinct().toList(), Map.copyOf(careerMonthsByField),
+                    activityFields.stream().distinct().toList());
         } catch (Exception e) {
-            return new ProfileSignals(List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+            return new ProfileSignals(List.of(), List.of(), List.of(), List.of(), List.of(), Map.of(), List.of());
+        }
+    }
+
+    private int careerMonths(String start, String end, boolean current) {
+        try {
+            if (start == null || start.isBlank()) return 0;
+            YearMonth from = YearMonth.parse(start);
+            YearMonth to = current || end == null || end.isBlank()
+                    ? YearMonth.now(ZoneId.of("Asia/Seoul")) : YearMonth.parse(end);
+            if (to.isBefore(from)) return 0;
+            return (int) Math.min(600, java.time.temporal.ChronoUnit.MONTHS.between(from, to) + 1);
+        } catch (Exception ignored) {
+            return 0;
         }
     }
 
@@ -664,7 +718,11 @@ public class CareerToolsController {
                 boolean preference = cleaned.contains("우대") || cleaned.contains("가점")
                         || cleaned.contains("가산") || cleaned.contains("선택");
                 boolean explicitRequired = cleaned.contains("필수") || cleaned.contains("지원자격")
-                        || cleaned.contains("응시자격") || cleaned.contains("자격요건");
+                        || cleaned.contains("응시자격") || cleaned.contains("자격요건")
+                        || cleaned.contains("자격기준") || cleaned.contains("응시요건")
+                        || cleaned.contains("지원요건") || cleaned.contains("공통요건")
+                        || cleaned.contains("소지자에 한") || cleaned.contains("보유자에 한")
+                        || cleaned.matches(".*(?:자격증|면허).*(?:소지|보유|취득).*");
                 if (preferred ? preference : (!preference && explicitRequired)) result.add(cleaned);
             }
         }
@@ -722,7 +780,7 @@ public class CareerToolsController {
                 && Integer.parseInt(ownedNumber.group(1)) <= Integer.parseInt(requiredNumber.group(1));
     }
     private boolean containsMajorRequirement(String value) {
-        return java.util.regex.Pattern.compile("관련\\s*(?:학과|전공)|전공자|전공\\s*(?:필수|제한)|학과\\s*(?:필수|제한)")
+        return java.util.regex.Pattern.compile("관련\\s*(?:학과|전공)|전공자|전공\\s*(?:필수|제한|졸업)|학과\\s*(?:필수|제한|졸업)|(?:학과|전공).{0,15}(?:이상|해당자)")
                 .matcher(value == null ? "" : value).find();
     }
     private boolean containsDegreeRequirement(String value) {
@@ -744,6 +802,28 @@ public class CareerToolsController {
         else if (text.contains("전문학사")) required = 1;
         else if (text.contains("학사") || text.contains("대졸") || text.contains("대학 졸업")) required = 2;
         return required == 0 || owned >= required;
+    }
+    private int requiredCareerMonths(String text) {
+        if (text == null || text.isBlank()) return 0;
+        var yearMonth = java.util.regex.Pattern.compile(
+                "(?:관련\\s*)?(?:분야\\s*)?경력.{0,20}?(\\d{1,2})\\s*년(?:\\s*(\\d{1,2})\\s*개월)?\\s*이상")
+                .matcher(text);
+        if (yearMonth.find()) {
+            int years = Integer.parseInt(yearMonth.group(1));
+            int months = yearMonth.group(2) == null ? 0 : Integer.parseInt(yearMonth.group(2));
+            return Math.min(600, years * 12 + months);
+        }
+        var monthsOnly = java.util.regex.Pattern.compile(
+                "(?:관련\\s*)?(?:분야\\s*)?경력.{0,20}?(\\d{1,3})\\s*개월\\s*이상")
+                .matcher(text);
+        return monthsOnly.find() ? Math.min(600, Integer.parseInt(monthsOnly.group(1))) : 0;
+    }
+    private String formatMonths(int months) {
+        if (months <= 0) return "등록 없음";
+        int years = months / 12;
+        int remainder = months % 12;
+        if (years == 0) return months + "개월";
+        return years + "년" + (remainder == 0 ? "" : " " + remainder + "개월");
     }
     private boolean fieldRelated(String roleText, String field) {
         if (field == null || field.isBlank() || "선택안함".equals(field)) return false;

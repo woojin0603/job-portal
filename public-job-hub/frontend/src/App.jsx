@@ -1272,11 +1272,11 @@ function MatchDialog({ value, onClose, onOpenSource }) {
         <p className="match-organization">{job.organization}</p>
         <div className="match-score">
           <strong>{result.score ?? 0}점</strong>
-          <span>필수요건·자격증·경력·대외활동을 구분한 참고 점수</span>
+          <span>필수요건·자격증·전공·학위·경력·대외활동을 구분한 참고 점수</span>
         </div>
         {result.eligibility && (
           <div className={`match-eligibility ${result.eligibility.status === '지원 가능성 있음' || result.eligibility.status === '필수 자격증 일치' ? 'possible' : ''}`}>
-            <span>필수요건 판정</span>
+            <span>지원 가능 여부</span>
             <strong>{result.eligibility.status}</strong>
             <p>{result.eligibility.detail}</p>
           </div>
@@ -1300,7 +1300,7 @@ function MatchDialog({ value, onClose, onOpenSource }) {
         <div className="match-summary">{result.summary}</div>
         {result.strengths?.length > 0 && (
           <div className="match-points strengths">
-            <strong>확인된 강점</strong>
+            <strong>판정 근거</strong>
             <ul>
               {result.strengths.map((item) => (
                 <li key={item}>{item}</li>

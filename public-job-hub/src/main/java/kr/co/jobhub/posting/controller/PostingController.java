@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.net.URI;
 import java.net.InetAddress;
+import java.text.Normalizer;
 import java.security.Principal;
 import java.util.Optional;
 import java.util.function.Function;
@@ -168,7 +169,7 @@ public class PostingController {
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             if (matchedProvinces.isEmpty()) {
                 Set<String> inferred = REGION_DISTRICTS.entrySet().stream()
-                        .filter(entry -> entry.getValue().stream().anyMatch(region::contains))
+                        .filter(entry -> entry.getValue().stream().anyMatch(district -> districtMatches(region, district)))
                         .map(Map.Entry::getKey)
                         .collect(Collectors.toCollection(LinkedHashSet::new));
                 if (inferred.size() == 1) matchedProvinces.addAll(inferred);
@@ -176,7 +177,7 @@ public class PostingController {
             matchedProvinces.forEach(province -> {
                 provincePostingIds.get(province).add(postingId);
                 Map<String, Set<Long>> values = districtPostingIds.get(province);
-                REGION_DISTRICTS.get(province).stream().filter(region::contains)
+                REGION_DISTRICTS.get(province).stream().filter(district -> districtMatches(region, district))
                         .forEach(district -> values.get(district).add(postingId));
             });
         }
@@ -199,16 +200,45 @@ public class PostingController {
 
     /** API마다 다른 시·도 약칭과 정식 명칭을 같은 지역으로 처리한다. */
     private static boolean matchesProvince(String region, String province) {
-        if (region.contains(province)) return true;
+        String normalized = normalizeRegion(region);
+        if (normalized.isBlank()) return false;
         return switch (province) {
-            case "충북" -> region.contains("충청북도");
-            case "충남" -> region.contains("충청남도");
-            case "전북" -> region.contains("전라북도") || region.contains("전북특별자치도");
-            case "전남" -> region.contains("전라남도");
-            case "경북" -> region.contains("경상북도");
-            case "경남" -> region.contains("경상남도");
-            default -> false;
+            case "서울" -> normalized.contains("서울특별시") || normalized.contains("서울");
+            case "부산" -> normalized.contains("부산광역시") || normalized.contains("부산");
+            case "대구" -> normalized.contains("대구광역시") || normalized.contains("대구");
+            case "인천" -> normalized.contains("인천광역시") || normalized.contains("인천");
+            case "광주" -> normalized.contains("광주광역시")
+                    || (normalized.contains("광주") && !normalized.contains("광주시"));
+            case "대전" -> normalized.contains("대전광역시") || normalized.contains("대전");
+            case "울산" -> normalized.contains("울산광역시") || normalized.contains("울산");
+            case "세종" -> normalized.contains("세종특별자치시") || normalized.contains("세종시") || normalized.contains("세종");
+            case "경기" -> normalized.contains("경기도") || normalized.contains("경기");
+            case "강원" -> normalized.contains("강원특별자치도") || normalized.contains("강원도") || normalized.contains("강원");
+            case "충북" -> normalized.contains("충청북도") || normalized.contains("충북");
+            case "충남" -> normalized.contains("충청남도") || normalized.contains("충남");
+            case "전북" -> normalized.contains("전라북도") || normalized.contains("전북특별자치도") || normalized.contains("전북");
+            case "전남" -> normalized.contains("전라남도") || normalized.contains("전남");
+            case "경북" -> normalized.contains("경상북도") || normalized.contains("경북");
+            case "경남" -> normalized.contains("경상남도") || normalized.contains("경남");
+            case "제주" -> normalized.contains("제주특별자치도") || normalized.contains("제주도") || normalized.contains("제주");
+            default -> normalized.contains(province);
         };
+    }
+
+    /** '수원시'와 '수원', '해운대구'와 '해운대'처럼 출처별 행정구역 표기 차이를 흡수한다. */
+    private static boolean districtMatches(String region, String district) {
+        String source = normalizeRegion(region);
+        String target = normalizeRegion(district);
+        if (source.contains(target)) return true;
+        String stem = target.replaceFirst("(?:시|군|구)$", "");
+        return stem.length() >= 2 && source.contains(stem);
+    }
+
+    private static String normalizeRegion(String value) {
+        if (value == null) return "";
+        return Normalizer.normalize(value, Normalizer.Form.NFKC)
+                .replaceAll("[\\s·ㆍ,，/|>\\-]+", "")
+                .trim();
     }
 
     private static Map<String, List<String>> regionDistricts() {
@@ -220,7 +250,7 @@ public class PostingController {
         values.put("광주", List.of("동구", "서구", "남구", "북구", "광산구"));
         values.put("대전", List.of("동구", "중구", "서구", "유성구", "대덕구"));
         values.put("울산", List.of("중구", "남구", "동구", "북구", "울주군"));
-        values.put("세종", List.of());
+        values.put("세종", List.of("세종시"));
         values.put("경기", List.of("수원시", "용인시", "고양시", "화성시", "성남시", "부천시", "남양주시", "안산시", "평택시", "안양시", "시흥시", "파주시", "김포시", "의정부시", "광주시", "하남시", "광명시", "군포시", "양주시", "오산시", "이천시", "구리시", "안성시", "포천시", "의왕시", "여주시", "동두천시", "과천시", "양평군", "가평군", "연천군"));
         values.put("강원", List.of("춘천시", "원주시", "강릉시", "동해시", "태백시", "속초시", "삼척시", "홍천군", "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군", "양구군", "인제군", "고성군", "양양군"));
         values.put("충북", List.of("청주시", "충주시", "제천시", "보은군", "옥천군", "영동군", "증평군", "진천군", "괴산군", "음성군", "단양군"));
