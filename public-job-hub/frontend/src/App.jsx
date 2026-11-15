@@ -1275,7 +1275,7 @@ function MatchDialog({ value, onClose, onOpenSource }) {
           <span>필수요건·자격증·전공·학위·경력·대외활동을 구분한 참고 점수</span>
         </div>
         {result.eligibility && (
-          <div className={`match-eligibility ${result.eligibility.status === '지원 가능성 있음' || result.eligibility.status === '필수 자격증 일치' ? 'possible' : ''}`}>
+          <div className={`match-eligibility ${result.eligibility.status === '지원 가능' ? 'possible' : ''}`}>
             <span>지원 가능 여부</span>
             <strong>{result.eligibility.status}</strong>
             <p>{result.eligibility.detail}</p>

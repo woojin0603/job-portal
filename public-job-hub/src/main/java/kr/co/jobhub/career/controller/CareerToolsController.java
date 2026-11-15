@@ -394,8 +394,8 @@ public class CareerToolsController {
     }
 
     private int eligibilityRank(String status) {
-        if ("지원 가능성 있음".equals(status)) return 3;
-        if ("지원 가능 여부 확인 필요".equals(status)) return 2;
+        if ("지원 가능".equals(status)) return 3;
+        if ("확인 필요".equals(status)) return 2;
         return 1;
     }
 
@@ -467,12 +467,12 @@ public class CareerToolsController {
         boolean hasRequirementEvidence = (position != null && position.requirements != null
                 && !position.requirements.isBlank()) || (evidence != null && !evidence.isEmpty());
         Eligibility eligibility = hardRequirementMismatch
-                ? new Eligibility("지원 어려움 가능", "확인된 필수 자격증·전공·학위·경력기간 중 등록 정보로 충족 여부를 확인하지 못한 조건이 있습니다.")
+                ? new Eligibility("지원 불가", "현재 등록한 스펙을 기준으로 확인된 필수 자격증·전공·학위·경력기간 중 충족하지 못한 조건이 있습니다.")
                 : hardRequirementFound
-                ? new Eligibility("지원 가능성 있음", "등록 정보가 현재 분석된 필수조건과 일치합니다. 연령·어학·세부 경력 등 원문의 나머지 조건도 최종 확인하세요.")
+                ? new Eligibility("지원 가능", "등록 정보가 현재 분석된 필수조건과 일치합니다. 연령·어학·세부 경력 등 원문의 나머지 조건도 최종 확인하세요.")
                 : hasRequirementEvidence
-                ? new Eligibility("지원 가능성 있음", "공고문에서 등록 스펙과 충돌하는 명시적 필수 자격증·전공·학위·경력조건을 찾지 못했습니다. 원문 최종 확인이 필요합니다.")
-                : new Eligibility("지원 가능 여부 확인 필요", "저장된 공고 정보에 판정 가능한 필수요건이 부족합니다. 원문 자격요건을 확인해 주세요.");
+                ? new Eligibility("지원 가능", "공고문에서 등록 스펙과 충돌하는 명시적 필수 자격증·전공·학위·경력조건을 찾지 못했습니다. 원문 최종 확인이 필요합니다.")
+                : new Eligibility("확인 필요", "저장된 공고 정보에 판정 가능한 필수요건이 부족합니다. 원문 자격요건을 확인해 주세요.");
 
         int qualificationScore = requiredCertificateFound
                 ? (requiredCertificateMatched ? 40 : 0)

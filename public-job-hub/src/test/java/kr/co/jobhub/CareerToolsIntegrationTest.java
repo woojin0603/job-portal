@@ -172,8 +172,8 @@ class CareerToolsIntegrationTest {
                         .with(user("tools@example.com")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.positionMatches.length()").value(2))
-                .andExpect(jsonPath("$.positionMatches[0].eligibility.status").value("지원 어려움 가능"))
-                .andExpect(jsonPath("$.positionMatches[1].eligibility.status").value("지원 어려움 가능"));
+                .andExpect(jsonPath("$.positionMatches[0].eligibility.status").value("지원 불가"))
+                .andExpect(jsonPath("$.positionMatches[1].eligibility.status").value("지원 불가"));
     }
 
     @Test
