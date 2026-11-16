@@ -6908,3 +6908,113 @@ html[data-app-theme='dark'] .admin-review button:disabled {
   -webkit-text-fill-color: #b9c7bf !important;
   opacity: .72 !important;
 }
+
+/* 관리자 변경·신고, 팝업, 오류 진단의 직접 자식에 남은 고정 라이트 색상 제거 */
+html[data-app-theme='dark'] .admin-review .admin-operations-logs > div {
+  background: #18211c !important;
+  border-color: #405147 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-operations-logs > div > h2 {
+  color: #f7fbf8 !important;
+  -webkit-text-fill-color: #f7fbf8 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-operations-logs article {
+  background: #202b25 !important;
+  border: 1px solid #405147 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-operations-logs article > :where(span, strong, p, small),
+html[data-app-theme='dark'] .admin-review .admin-operations-logs .empty {
+  color: #e3ede7 !important;
+  -webkit-text-fill-color: #e3ede7 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-operations-logs article > span {
+  color: #bce8cf !important;
+  -webkit-text-fill-color: #bce8cf !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-operations-logs article > select {
+  background: #101713 !important;
+  border-color: #5a7164 !important;
+  color: #f2f7f4 !important;
+  -webkit-text-fill-color: #f2f7f4 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-change-badges > .change-importance {
+  background: #34423a !important;
+  border: 1px solid #62776c !important;
+  color: #edf4ef !important;
+  -webkit-text-fill-color: #edf4ef !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-change-badges > .change-importance.important {
+  background: #5b302d !important;
+  border-color: #a86059 !important;
+  color: #ffd6d1 !important;
+  -webkit-text-fill-color: #ffd6d1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-popup-title-field > input::placeholder {
+  color: #d0ddd5 !important;
+  -webkit-text-fill-color: #d0ddd5 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-popup-editor-toolbar > label {
+  background: #315a48 !important;
+  border-color: #78a68e !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-client-error-list article > div > span {
+  background: #5b302d !important;
+  border: 1px solid #a86059 !important;
+  color: #ffe0dc !important;
+  -webkit-text-fill-color: #ffe0dc !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-client-error-list article > div > time {
+  color: #c5d3cb !important;
+  -webkit-text-fill-color: #c5d3cb !important;
+  opacity: 1 !important;
+}
+
+/* 오류 경계는 admin-review 바깥에서 렌더링되므로 별도로 다크 모드를 적용한다. */
+html[data-app-theme='dark'] .admin-recovery-panel {
+  background: #18211c !important;
+  border-color: #52685c !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .34) !important;
+}
+
+html[data-app-theme='dark'] .admin-recovery-panel > span {
+  color: #ffb8af !important;
+  -webkit-text-fill-color: #ffb8af !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-recovery-panel h2 {
+  color: #f5faf7 !important;
+  -webkit-text-fill-color: #f5faf7 !important;
+}
+
+html[data-app-theme='dark'] .admin-recovery-panel p {
+  color: #cfdbd3 !important;
+  -webkit-text-fill-color: #cfdbd3 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-recovery-panel button {
+  background: #38634e !important;
+  border: 1px solid #78a68e !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
