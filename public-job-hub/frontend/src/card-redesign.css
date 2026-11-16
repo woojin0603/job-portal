@@ -6687,3 +6687,224 @@ html[data-app-theme='dark'] .admin-review :where(
 ) {
   background: #101713 !important;
 }
+
+/* 관리자 운영 다크 모드 세부 화면 보정.
+   공통 규칙으로 해결되지 않는 실제 운영 컴포넌트의 대비를 명시적으로 고정한다. */
+html[data-app-theme='dark'] .admin-review :where(
+  .operations-heading > button,
+  .collection-audit-head > button,
+  .admin-logo-toolbar button,
+  .admin-client-errors .operations-heading button
+) {
+  background: #2b4035 !important;
+  border: 1px solid #5f786a !important;
+  color: #f7fbf8 !important;
+  -webkit-text-fill-color: #f7fbf8 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .infrastructure-metrics > div,
+  .operations-job-status article,
+  .security-check-list article,
+  .admin-collection-control dl > div
+) {
+  background: #202b25 !important;
+  border-color: #405147 !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .infrastructure-metrics strong,
+  .operations-job-status strong,
+  .job-state.healthy,
+  .audit-ok
+) {
+  color: #9fe0b9 !important;
+  -webkit-text-fill-color: #9fe0b9 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .infrastructure-metrics span,
+  .infrastructure-metrics small,
+  .operations-job-status article > div,
+  .operations-job-status p,
+  .admin-collection-control dt,
+  .admin-collection-control dd
+) {
+  color: #d5e2da !important;
+  -webkit-text-fill-color: #d5e2da !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .security-check-list article > div > :where(strong, small),
+html[data-app-theme='dark'] .admin-review .security-check-list article > :where(strong, small) {
+  color: #e4eee8 !important;
+  -webkit-text-fill-color: #e4eee8 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .admin-collection-actions button,
+  .admin-logo-actions button,
+  .admin-logo-toolbar button,
+  .admin-position-head button,
+  .admin-client-error-list article > button
+) {
+  border-color: #638071 !important;
+  color: #f3f8f5 !important;
+  -webkit-text-fill-color: #f3f8f5 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-collection-actions button {
+  background: #38634e !important;
+  border: 1px solid #78a68e !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-collection-actions button.secondary {
+  background: #2b4035 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-popup-title-field input,
+html[data-app-theme='dark'] .admin-review .admin-popup-title-field input::placeholder,
+html[data-app-theme='dark'] .admin-review .admin-popup-rich-editor,
+html[data-app-theme='dark'] .admin-review .admin-popup-rich-editor textarea,
+html[data-app-theme='dark'] .admin-review .admin-popup-rich-editor::before {
+  color: #f4f8f5 !important;
+  -webkit-text-fill-color: #f4f8f5 !important;
+  caret-color: #f4f8f5 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-popup-title-field input::placeholder,
+html[data-app-theme='dark'] .admin-review .admin-popup-rich-editor textarea::placeholder,
+html[data-app-theme='dark'] .admin-review .admin-popup-rich-editor[data-placeholder]::before {
+  color: #aebfb5 !important;
+  -webkit-text-fill-color: #aebfb5 !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .admin-popup-content-editor,
+  .admin-popup-rich-editor,
+  .admin-popup-inline-image,
+  .admin-popup-image-dropzone,
+  .admin-popup-attachment,
+  .admin-attachment-picker
+) {
+  background: #111914 !important;
+  border-color: #52685c !important;
+  color: #e8f0eb !important;
+  -webkit-text-fill-color: #e8f0eb !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-attachment-picker :where(label, span, button),
+html[data-app-theme='dark'] .admin-review .admin-popup-editor-toolbar :where(label, span, button) {
+  color: #edf5f0 !important;
+  -webkit-text-fill-color: #edf5f0 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-client-error-list article :where(
+  strong, span, small, summary, pre, code
+) {
+  color: #dde9e1 !important;
+  -webkit-text-fill-color: #dde9e1 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-client-error-list article > button {
+  background: #315a48 !important;
+  border-color: #72a38a !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-position {
+  border: 1px solid #405147 !important;
+  border-radius: 10px !important;
+  background: #202b25 !important;
+  padding: 12px !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-save {
+  border-top-color: #405147 !important;
+  background: transparent !important;
+  color: #d8e4dc !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-save button {
+  background: #38634e !important;
+  border-color: #78a68e !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .admin-operations-logs h2,
+  .admin-operations-logs article strong,
+  .admin-operations-logs article span,
+  .admin-operations-logs article small,
+  .admin-change-heading h2,
+  .admin-change-heading strong,
+  .admin-change-summary strong,
+  .admin-change-summary span,
+  .admin-change-summary time,
+  .admin-change-compare p,
+  .admin-change-compare p span
+) {
+  color: #e4eee8 !important;
+  -webkit-text-fill-color: #e4eee8 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-change-heading > strong {
+  background: #2b4035 !important;
+  border: 1px solid #52685c !important;
+  border-radius: 999px !important;
+  padding: 5px 10px !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-change-compare p {
+  background: #111914 !important;
+  border: 1px solid #405147 !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .qualification-import,
+  .admin-retention-policy,
+  .admin-retention-manual
+) {
+  background: #202b25 !important;
+  border-color: #405147 !important;
+  color: #e2ece6 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .qualification-import > :where(strong, label, span) {
+  color: #f0f6f2 !important;
+  -webkit-text-fill-color: #f0f6f2 !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .qualification-import button {
+  background: #38634e !important;
+  border: 1px solid #78a68e !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html[data-app-theme='dark'] .admin-review .qualification-import input[type='file']::file-selector-button {
+  background: #2b4035 !important;
+  border: 1px solid #638071 !important;
+  color: #f3f8f5 !important;
+  -webkit-text-fill-color: #f3f8f5 !important;
+}
+
+html[data-app-theme='dark'] .admin-review button:disabled {
+  color: #b9c7bf !important;
+  -webkit-text-fill-color: #b9c7bf !important;
+  opacity: .72 !important;
+}
