@@ -6499,3 +6499,191 @@ html[data-app-theme='dark'] .legal-dialog .close {
     padding: 24px 18px;
   }
 }
+
+/* 관리자 운영 다크 모드 최종 대비 보정.
+   모든 운영 탭을 감싸는 admin-review 아래에서만 적용하며 기능·배치는 변경하지 않는다. */
+html[data-app-theme='dark'] .admin-review {
+  --admin-dark-surface: #18211c;
+  --admin-dark-raised: #202b25;
+  --admin-dark-soft: #26332c;
+  --admin-dark-line: #405147;
+  --admin-dark-title: #f3f8f5;
+  --admin-dark-text: #d6e1da;
+  --admin-dark-muted: #b4c3ba;
+  color: var(--admin-dark-text) !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  h1, h2, h3, h4, h5, strong, b, summary, legend, dd
+) {
+  color: var(--admin-dark-title) !important;
+  -webkit-text-fill-color: var(--admin-dark-title) !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  p, span, small, label, dt, time, li, pre, code
+) {
+  color: var(--admin-dark-text) !important;
+  -webkit-text-fill-color: var(--admin-dark-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .operations-heading span, .admin-crawl-actions span,
+  .admin-card-head span, .admin-logo-info span, .admin-logo-info small,
+  .admin-popup-list small, .admin-popup-list p,
+  .admin-change-summary span, .admin-change-summary time,
+  .admin-change-compare span, .retention-last-run,
+  .infrastructure-note, .security-privacy-note,
+  .operations-job-status p, .operations-job-status time,
+  .source-health-list span, .source-health-list small,
+  .admin-activity time, .admin-push-test-note
+) {
+  color: var(--admin-dark-muted) !important;
+  -webkit-text-fill-color: var(--admin-dark-muted) !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .admin-console-tabs, .admin-collection-control, .admin-logo-manager,
+  .admin-popup-manager > form, .admin-client-errors,
+  .admin-statistics, .admin-security-overview, .admin-push-tests,
+  .operations-dashboard, .infrastructure-status, .incident-center,
+  .collection-audit, .admin-retention, .admin-change-history,
+  .admin-card, .qualification-import, .admin-operations-logs
+) {
+  background: var(--admin-dark-surface) !important;
+  border-color: var(--admin-dark-line) !important;
+  color: var(--admin-dark-text) !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .statistics-summary > div, .security-summary > div,
+  .operations-stats > div, .infrastructure-metrics > div,
+  .statistics-grid > section, .security-detail-grid > section,
+  .operations-detail-grid > section, .operations-job-status article,
+  .source-health-list > div, .admin-activity article,
+  .quality-overview > div, .admin-logo-list article,
+  .admin-logo-form, .admin-popup-editor-main, .admin-popup-options,
+  .admin-popup-live-preview, .admin-popup-list article,
+  .admin-client-error-list article, .admin-client-error-list details,
+  .admin-change-list article, .admin-change-compare,
+  .admin-change-compare p, .admin-retention-policy,
+  .admin-retention-manual, .incident-policy, .incident-empty,
+  .admin-operations-logs article, .community-panel,
+  .board-list details, .answer-form
+) {
+  background: var(--admin-dark-raised) !important;
+  border-color: var(--admin-dark-line) !important;
+  color: var(--admin-dark-text) !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .collection-audit-counts span, .admin-change-badges,
+  .admin-logo-preview, .admin-popup-attachment,
+  .admin-popup-attachment > div:last-child,
+  .admin-popup-editor-toolbar, .admin-popup-inline-image,
+  .admin-popup-image-dropzone
+) {
+  background: var(--admin-dark-soft) !important;
+  border-color: #506458 !important;
+  color: var(--admin-dark-text) !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(input, select, textarea) {
+  background: #101713 !important;
+  border-color: #546a5d !important;
+  color: #f3f8f5 !important;
+  -webkit-text-fill-color: #f3f8f5 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme='dark'] .admin-review :where(input, textarea)::placeholder {
+  color: #98a9a0 !important;
+  -webkit-text-fill-color: #98a9a0 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme='dark'] .admin-review select option {
+  background: #18211c;
+  color: #f3f8f5;
+}
+
+html[data-app-theme='dark'] .admin-review :where(button, a) {
+  color: #eaf4ee;
+}
+html[data-app-theme='dark'] .admin-review :where(
+  .operations-heading button, .admin-collection-actions button.secondary,
+  .admin-logo-actions button.secondary, .admin-logo-form button.secondary,
+  .admin-position-head button, .admin-client-error-list article > button,
+  .pagination button
+) {
+  background: var(--admin-dark-soft) !important;
+  border-color: #597064 !important;
+  color: #eef6f1 !important;
+  -webkit-text-fill-color: #eef6f1 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-console-tabs button {
+  background: #202b25 !important;
+  border-color: transparent !important;
+  color: #d3dfd7 !important;
+  -webkit-text-fill-color: #d3dfd7 !important;
+}
+html[data-app-theme='dark'] .admin-review .admin-console-tabs button:hover {
+  background: #2a3930 !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+html[data-app-theme='dark'] .admin-review .admin-console-tabs button.active {
+  background: #365f4b !important;
+  border-color: #75a389 !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html[data-app-theme='dark'] .admin-review :where(
+  .statistics-summary > div.attention, .security-summary > div.attention,
+  .operations-stats > div.attention, .infrastructure-metrics > div.attention,
+  .operations-job-status article.attention, .incident-list article,
+  .admin-push-test-result.attention
+) {
+  background: #352722 !important;
+  border-color: #91604d !important;
+}
+html[data-app-theme='dark'] .admin-review :where(
+  .attention strong, .status-error, .danger-text, .error
+) {
+  color: #ffb0a8 !important;
+  -webkit-text-fill-color: #ffb0a8 !important;
+}
+
+html[data-app-theme='dark'] .admin-review .audit-ok,
+html[data-app-theme='dark'] .admin-review .job-state.healthy,
+html[data-app-theme='dark'] .admin-review .security-check-list article.enabled > span {
+  background: #244837 !important;
+  color: #bff0d2 !important;
+  -webkit-text-fill-color: #bff0d2 !important;
+}
+html[data-app-theme='dark'] .admin-review .audit-warning,
+html[data-app-theme='dark'] .admin-review .job-state.failed,
+html[data-app-theme='dark'] .admin-review .security-check-list article.attention > span {
+  background: #553128 !important;
+  color: #ffc0b5 !important;
+  -webkit-text-fill-color: #ffc0b5 !important;
+}
+html[data-app-theme='dark'] .admin-review .admin-activity article > span,
+html[data-app-theme='dark'] .admin-review .admin-change-badges > b:first-child {
+  background: #294438 !important;
+  color: #bfe3cf !important;
+  -webkit-text-fill-color: #bfe3cf !important;
+}
+
+html[data-app-theme='dark'] .admin-review .admin-trend-chart svg line {
+  stroke: #4a5d52 !important;
+}
+html[data-app-theme='dark'] .admin-review .admin-trend-chart svg text {
+  fill: #c5d2ca !important;
+}
+html[data-app-theme='dark'] .admin-review :where(
+  .source-share-track, .security-failure-chart i
+) {
+  background: #101713 !important;
+}
