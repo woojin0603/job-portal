@@ -4458,6 +4458,13 @@ html[data-app-theme='dark'] .security-dialog .security-actions button {
   border-color: #547661;
   color: #eef6f1;
 }
+html[data-app-theme='dark'] .security-dialog .security-actions b {
+  background: #294839 !important;
+  border: 1px solid #5c806a;
+  color: #f2fff7 !important;
+  -webkit-text-fill-color: #f2fff7 !important;
+  font-weight: 850;
+}
 
 @media (max-width: 760px) {
   .admin-push-tests { padding: 15px; }

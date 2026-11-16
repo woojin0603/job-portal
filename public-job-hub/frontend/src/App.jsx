@@ -7439,14 +7439,18 @@ export default function App() {
       setAuthBusy(false)
     }
   }
-  /** 서버 세션을 종료하고 공고 목록 화면으로 돌아간다. */
+  /** 서버 세션을 종료하고 계정 종류나 현재 작업 화면과 관계없이 메인으로 돌아간다. */
   async function logout() {
     try {
       await unregisterPushNotifications(securePost).catch(() => {})
       await securePost('/api/auth/logout')
       await refreshAuth()
-      setMine(false)
-      setPage(0)
+      setMobileMenuOpen(false)
+      setSecurityOpen(false)
+      setAppSettingsOpen(false)
+      setApplicationSpecDialog(null)
+      setSuccessShareDialog(null)
+      resetHome()
       await load()
     } catch (e) {
       setError(e.message)
