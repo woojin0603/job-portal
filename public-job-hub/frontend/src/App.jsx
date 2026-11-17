@@ -1105,7 +1105,7 @@ function SalaryDialog({ value, onClose }) {
             <p className="eyebrow">ALIO SALARY</p>
             <h2>신입사원 초임</h2>
           </div>
-          <button className="close" onClick={onClose} aria-label="닫기">
+          <button type="button" className="close salary-dialog-close" onClick={onClose} aria-label="연봉정보 닫기">
             ×
           </button>
         </div>
