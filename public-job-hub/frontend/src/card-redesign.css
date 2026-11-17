@@ -5307,6 +5307,12 @@ html[data-app-theme='dark'] body:has(> #root > main.landing-main) > #root > head
   overscroll-behavior: contain;
   padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
 }
+
+/* 묶음 공고 모아보기 안에서 연봉정보를 열어도 부가정보 창이 항상 앞에 표시된다. */
+.salary-overlay {
+  z-index: 1000 !important;
+  isolation: isolate;
+}
 .competition-dialog {
   position: relative;
   width: min(720px, calc(100vw - 40px));

@@ -1098,7 +1098,7 @@ function SalaryDialog({ value, onClose }) {
   const money = (amount) =>
     amount == null ? '—' : `${(Number(amount) * 1000).toLocaleString('ko-KR')}원`
   return (
-    <div className="match-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="match-overlay salary-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <section className="salary-dialog" role="dialog" aria-modal="true" aria-label="신입사원 초임">
         <div className="match-dialog-head">
           <div>
