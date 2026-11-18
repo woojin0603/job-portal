@@ -7155,6 +7155,81 @@ html[data-app-theme='dark'] .posting-freshness.stale {
   -webkit-text-fill-color: #f2c58f !important;
 }
 
+/* 카드의 게시일·마감일이 늘어나도 본문과 하단 기능을 덮지 않도록 한다. */
+.grid > .card,
+.grid > .card.deadline-urgent {
+  height: auto;
+  min-height: 465px;
+}
+
+.grid .date,
+.grid .card.deadline-urgent .date {
+  position: static;
+  display: grid;
+  width: 100%;
+  min-height: 62px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin: auto 0 0;
+}
+
+.grid .date > div {
+  min-width: 0;
+}
+
+.grid .date small,
+.grid .date strong {
+  display: block;
+}
+
+.grid .date strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grid .card-dday {
+  min-width: max-content;
+  margin-left: 0;
+  align-self: end;
+}
+
+.grid > .card > .posting-freshness {
+  flex: 0 0 auto;
+  min-height: 17px;
+  margin: 7px 0 11px;
+  line-height: 1.45;
+}
+
+.grid .card > .actions {
+  position: static;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 700px) {
+  .grid > .card,
+  .grid > .card.deadline-urgent {
+    height: auto;
+    min-height: 0;
+  }
+
+  .grid .date,
+  .grid .card.deadline-urgent .date {
+    display: grid !important;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+    gap: 9px 12px;
+    margin-top: 14px !important;
+  }
+
+  .grid .card-dday {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
 .offline-notice {
   display: flex;
   align-items: center;
