@@ -2062,7 +2062,13 @@ function SecurityCenter({ user, securePost, onClose }) {
     setMessage('현재 기기를 제외한 기존 로그인 세션을 종료했습니다.')
   }
   const setup = async () => {
-    const setupValue = await securePost('/api/auth/security/2fa/setup')
+    const password = window.prompt('2단계 인증을 설정하려면 현재 비밀번호를 입력하세요.')
+    if (!password) return
+    const setupValue = await securePost(
+      '/api/auth/security/2fa/setup',
+      JSON.stringify({ password }),
+      'application/json',
+    )
     const code = window.prompt(
       `인증 앱에 아래 키를 등록한 뒤 6자리 코드를 입력하세요.\n\n${setupValue.secret}`,
     )

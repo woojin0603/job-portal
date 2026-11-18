@@ -84,8 +84,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register",
                                 "/api/auth/password-reset/request", "/api/auth/password-reset/confirm").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/auth/csrf", "/api/auth/me").permitAll()
+                        .requestMatchers("/api/auth/security", "/api/auth/security/**").authenticated()
+                        .requestMatchers("/api/account", "/api/account/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/community/notices").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/success-stories").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/service-popups", "/api/service-popups/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/push/config").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/operations/collection-status").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/crawl-status").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/postings", "/api/postings/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/qualifications").permitAll()
                         .requestMatchers("/api/success-stories/**").authenticated()
                         .requestMatchers("/api/community/inquiries", "/api/community/inquiries/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/postings/**").authenticated()
@@ -93,11 +102,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/tools/filters").permitAll()
                         .requestMatchers("/api/tools/**").authenticated()
                         .requestMatchers("/h2-console/**").denyAll()
-                        // 새 API가 추가되더라도 상태 변경 요청이 실수로 공개되지 않도록 기본 차단한다.
-                        .requestMatchers(HttpMethod.POST, "/api/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/**").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/api/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/**").authenticated()
+                        // 새 API는 조회 요청까지 기본적으로 인증을 요구한다. 공개 API만 위에서 명시한다.
+                        .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .formLogin(form -> form.loginProcessingUrl("/api/auth/login")
                         .successHandler((request, response, authentication) -> {

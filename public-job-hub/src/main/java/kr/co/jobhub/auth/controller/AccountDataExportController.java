@@ -16,6 +16,7 @@ import kr.co.jobhub.success.repository.SuccessStoryRepository;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -104,6 +105,8 @@ public class AccountDataExportController {
         String filename = "public-job-hub-my-data-" + LocalDate.now(ZoneId.of("Asia/Seoul")) + ".json";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setCacheControl(CacheControl.noStore());
+        headers.setPragma("no-cache");
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename, StandardCharsets.UTF_8).build());
         headers.setContentLength(body.length);
         return new ResponseEntity<>(body, headers, HttpStatus.OK);

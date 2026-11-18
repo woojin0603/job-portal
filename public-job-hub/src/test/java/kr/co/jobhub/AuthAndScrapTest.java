@@ -99,4 +99,18 @@ class AuthAndScrapTest {
                 .content("{\"careers\":[{\"duties\":\"연락처 010-1234-5678\"}]}"))
                 .andExpect(status().isBadRequest());
     }
+
+    /** 공개 조회 경로는 유지하면서 계정·보안 데이터 API는 익명 접근을 차단한다. */
+    @Test
+    void sensitiveGetApisRequireAuthentication() throws Exception {
+        mvc.perform(get("/api/postings"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/auth/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user").doesNotExist());
+        mvc.perform(get("/api/account/export"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/auth/security"))
+                .andExpect(status().isUnauthorized());
+    }
 }

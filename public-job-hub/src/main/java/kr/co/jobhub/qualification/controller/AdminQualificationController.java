@@ -15,8 +15,11 @@ public class AdminQualificationController {
  @PostMapping(value="/import",consumes="multipart/form-data")
  public ImportResult importCsv(@RequestParam MultipartFile file,@RequestParam String type,@RequestParam(defaultValue="AUTO") String encoding){
   if(!List.of("AUTO","NATIONAL_TECHNICAL","NATIONAL_PROFESSIONAL","ACCREDITED_PRIVATE","PUBLIC_OFFICIAL").contains(type))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"자격 유형이 올바르지 않습니다.");
+  if(file.isEmpty()||file.getSize()>5_000_000)throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"5MB 이하 CSV 파일을 선택해 주세요.");
+  String normalizedEncoding=encoding.trim().toUpperCase(Locale.ROOT).replace("_","-");
+  if(!List.of("AUTO","UTF-8","MS949","EUC-KR").contains(normalizedEncoding))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"지원하지 않는 CSV 인코딩입니다.");
   int imported=0,skipped=0;
-  try{byte[] bytes=file.getBytes(); Charset charset=charset(bytes,encoding); BufferedReader reader=new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytes),charset));
+  try{byte[] bytes=file.getBytes(); Charset charset=charset(bytes,normalizedEncoding); BufferedReader reader=new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytes),charset));
    List<String> headers=parse(reader.readLine()); String line;
    while((line=reader.readLine())!=null){List<String> values=parse(line); String name=value(headers,values,"자격명","자격종목명","자격종목","종목명","국가자격명칭"); String issuer=value(headers,values,"시행기관","발급기관","자격발급기관","자격관리자","기관명"); String code=value(headers,values,"종목코드","자격코드","등록번호"); String rowType=type.equals("AUTO")?detectedType(headers,values):type; if(name.isBlank()||rowType.isBlank()){skipped++;continue;} String cleanIssuer=issuer.trim(); QualificationCatalog item=qualifications.findByTypeAndNameAndIssuer(rowType,name.trim(),cleanIssuer).orElseGet(QualificationCatalog::new); item.name=name.trim();item.type=rowType;item.issuer=cleanIssuer;item.officialCode=code.isBlank()?null:code.trim();item.source=source(rowType);item.active=true;item.sourceUpdatedAt=Instant.now();qualifications.save(item);imported++;}
    reader.close();

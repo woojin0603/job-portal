@@ -34,6 +34,7 @@ public class AccountSecurityController {
     public record History(boolean success, String ipAddress, String userAgent, Instant createdAt) {}
     public record View(boolean twoFactorEnabled, boolean twoFactorVerified, List<History> loginHistory) {}
     public record CodeRequest(@NotBlank @Pattern(regexp = "\\d{6}") String code) {}
+    public record SetupRequest(@NotBlank String password) {}
     public record DisableRequest(@NotBlank String password, @NotBlank String code) {}
     public record Setup(String secret, String otpauthUri) {}
 
@@ -78,8 +79,16 @@ public class AccountSecurityController {
     }
 
     @PostMapping("/2fa/setup")
-    public Setup setup(Principal principal) {
+    public Setup setup(@Valid @RequestBody SetupRequest request, Principal principal) {
         AppUser user = admin(principal);
+        attempts.require("admin-2fa-setup", String.valueOf(user.id), 5, Duration.ofMinutes(30));
+        if (Boolean.TRUE.equals(user.twoFactorEnabled)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 2단계 인증을 사용 중입니다.");
+        }
+        if (!passwords.matches(request.password(), user.passwordHash)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 비밀번호를 확인해 주세요.");
+        }
+        attempts.clear("admin-2fa-setup", String.valueOf(user.id));
         String rawSecret = totp.secret();
         user.twoFactorSecret = secretCipher.encrypt(rawSecret);
         users.save(user);
