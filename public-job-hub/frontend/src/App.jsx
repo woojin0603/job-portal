@@ -15,6 +15,16 @@ async function getJson(url, options = {}) {
   return data
 }
 
+function postingFreshnessLabel(value) {
+  if (!value) return '갱신 시각 미확인'
+  const checked = new Date(value)
+  if (Number.isNaN(checked.getTime())) return '갱신 시각 미확인'
+  const days = Math.max(0, Math.floor((Date.now() - checked.getTime()) / 86400000))
+  if (days === 0) return '오늘 공고 정보 확인'
+  if (days === 1) return '어제 공고 정보 확인'
+  return `${days}일 전 공고 정보 확인`
+}
+
 function ReportIcon() {
   return (
     <svg className="report-siren-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -622,6 +632,9 @@ function PostingListRow({
           <strong className="posting-list-deadline">{deadlineLabel}</strong>
           <time dateTime={job.deadline || undefined}>{job.deadline || '마감일 미정'}</time>
           <small>게시 {job.postedAt || '미확인'}</small>
+          <small className={Date.now() - new Date(job.updatedAt || 0).getTime() > 172800000 ? 'posting-freshness stale' : 'posting-freshness'}>
+            {postingFreshnessLabel(job.updatedAt)}
+          </small>
         </span>
         <div className="posting-list-inline-tools" aria-label="공고 도구">
           <button
@@ -873,6 +886,9 @@ function JobCard({
           </b>
         )}
       </div>
+      <small className={Date.now() - new Date(job.updatedAt || 0).getTime() > 172800000 ? 'posting-freshness stale' : 'posting-freshness'}>
+        {postingFreshnessLabel(job.updatedAt)}
+      </small>
       <div className="actions">
         <div className="job-info-actions">
           <button className="preview-link" onClick={() => onSalary(job)}>
@@ -2113,16 +2129,22 @@ function NotificationCenter({ user, securePost, onOpen, onEnablePush, refreshVer
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [deliveryHistory, setDeliveryHistory] = useState([])
+  const [activeDevices, setActiveDevices] = useState(0)
 
   const load = async () => {
     if (!user) return
     setLoading(true)
     try {
-      const [alerts, favoritePostings, notificationStates] = await Promise.all([
+      const [alerts, favoritePostings, notificationStates, deliveries, subscription] = await Promise.all([
         getJson('/api/tools/alerts'),
         getJson('/api/tools/favorite-organizations/postings'),
         getJson('/api/tools/notification-states'),
+        getJson('/api/tools/push-subscriptions/history'),
+        getJson('/api/tools/push-subscriptions'),
       ])
+      setDeliveryHistory(deliveries)
+      setActiveDevices(subscription.activeDevices || 0)
       const stateByKey = new Map(notificationStates.map((item) => [item.key, item]))
       const alertItems = alerts.map((item) => ({
           ...item,
@@ -2306,6 +2328,18 @@ function NotificationCenter({ user, securePost, onOpen, onEnablePush, refreshVer
         {loading && <p className="empty">알림을 불러오는 중...</p>}
         {!loading && !items.length && <p className="empty">현재 확인할 알림이 없습니다.</p>}
       </div>
+      <details className="notification-delivery-history">
+        <summary>최근 푸시 발송 기록 · 연결 기기 {activeDevices}대</summary>
+        <div>
+          {deliveryHistory.slice(0, 10).map((item, index) => (
+            <p key={`${item.deliveredAt}-${index}`}>
+              <strong>{item.category}</strong>
+              <time>{new Date(item.deliveredAt).toLocaleString('ko-KR')}</time>
+            </p>
+          ))}
+          {!deliveryHistory.length && <span>아직 자동 푸시 발송 기록이 없습니다.</span>}
+        </div>
+      </details>
     </section>
   )
 
@@ -6924,6 +6958,7 @@ export default function App() {
   const [regionCounts, setRegionCounts] = useState({ provinces: {}, districts: {}, total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [serverUnavailable, setServerUnavailable] = useState(false)
   const [busyId, setBusyId] = useState(null)
   const [profile, setProfile] = useState({
     displayName: '',
@@ -7137,6 +7172,52 @@ export default function App() {
     window.history.replaceState({}, '', `${url.pathname}${url.search}`)
   }, [page])
 
+  /** 열린 대화상자 안으로 포커스를 제한하고 Esc로 닫을 수 있게 한다. */
+  useEffect(() => {
+    const visibleDialogs = () => [...document.querySelectorAll('[role="dialog"][aria-modal="true"]')]
+      .filter((dialog) => dialog.getClientRects().length > 0)
+    const focusDialog = () => {
+      const dialog = visibleDialogs().at(-1)
+      if (!dialog || dialog.dataset.focusReady === 'true') return
+      dialog.dataset.focusReady = 'true'
+      dialog.querySelector('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [href]')
+        ?.focus({ preventScroll: true })
+    }
+    const observer = new MutationObserver(focusDialog)
+    observer.observe(document.body, { childList: true, subtree: true })
+    const handleKey = (event) => {
+      const dialog = visibleDialogs().at(-1)
+      if (!dialog) return
+      if (event.key === 'Escape') {
+        const close = dialog.querySelector('.close, .notification-close, .service-popup-close, [aria-label*="닫기"]')
+        if (close) {
+          event.preventDefault()
+          close.click()
+        }
+        return
+      }
+      if (event.key !== 'Tab') return
+      const controls = [...dialog.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')]
+        .filter((item) => item.getClientRects().length > 0)
+      if (!controls.length) return
+      const first = controls[0]
+      const last = controls.at(-1)
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    focusDialog()
+    return () => {
+      observer.disconnect()
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [])
+
   /** 브라우저의 설치 제안을 보관하고 온라인·오프라인 전환을 화면에 반영한다. */
   useEffect(() => {
     const onInstall = (event) => {
@@ -7238,10 +7319,13 @@ export default function App() {
           employmentType: mine ? '' : employmentType,
         })
         setData(await getJson(`/api/postings?${params}`, { signal }))
+        setServerUnavailable(false)
         setError('')
       } catch (e) {
-        if (e.name !== 'AbortError')
+        if (e.name !== 'AbortError') {
+          setServerUnavailable(true)
           setError('공고를 불러오지 못했습니다. Spring Boot 서버를 확인해 주세요.')
+        }
       } finally {
         if (!signal?.aborted) setLoading(false)
       }
@@ -7489,6 +7573,28 @@ export default function App() {
       setAccountDeletionError(e.message)
     } finally {
       setAccountDeletionBusy(false)
+    }
+  }
+  async function downloadMyData() {
+    try {
+      const response = await fetch('/api/account/export', { credentials: 'same-origin' })
+      if (!response.ok) throw new Error('내 데이터를 내려받지 못했습니다.')
+      const blob = await response.blob()
+      const disposition = response.headers.get('Content-Disposition') || ''
+      const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+      const plain = disposition.match(/filename="?([^";]+)"?/i)?.[1]
+      const filename = encoded ? decodeURIComponent(encoded) : plain || 'public-job-hub-my-data.json'
+      const href = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = href
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(href)
+      setError('내 데이터 파일을 내려받았습니다.')
+    } catch (e) {
+      setError(e.message)
     }
   }
   /** 스크랩·지원 완료 상태를 토글한 뒤 최신 목록을 다시 읽는다. */
@@ -8062,6 +8168,15 @@ export default function App() {
                     {!user?.admin && (
                       <button
                         type="button"
+                        className="account-export-button"
+                        onClick={downloadMyData}
+                      >
+                        내 데이터 내려받기
+                      </button>
+                    )}
+                    {!user?.admin && (
+                      <button
+                        type="button"
                         className="account-delete-button"
                         onClick={() => setAccountDeletionOpen(true)}
                       >
@@ -8277,11 +8392,18 @@ export default function App() {
                 </button>
               </div>
             )}
-            {!mine && !online && (
-              <p className="offline-notice" role="status">
-                오프라인 상태입니다. 앱 화면은 열리지만 공고 조회·로그인·스크랩에는 인터넷 연결이
-                필요합니다.
-              </p>
+            {!mine && (!online || serverUnavailable) && (
+              <div className="offline-notice" role="status">
+                <div>
+                  <strong>{online ? '서버 연결을 확인하고 있습니다.' : '인터넷 연결이 끊겼습니다.'}</strong>
+                  <span>{online
+                    ? '잠시 후 다시 시도해 주세요. 마지막으로 받은 화면은 그대로 유지됩니다.'
+                    : '앱 화면은 열리지만 공고 조회·로그인·스크랩에는 인터넷 연결이 필요합니다.'}</span>
+                </div>
+                <button type="button" disabled={!online || loading} onClick={() => load()}>
+                  {loading ? '확인 중…' : '다시 연결'}
+                </button>
+              </div>
             )}
             {!mine && status?.lastSuccess && (
               <p className="status">

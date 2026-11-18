@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface SuccessStoryRepository extends JpaRepository<SuccessStory, Long> {
     List<SuccessStory> findAllByOrderByCreatedAtDesc();
+    List<SuccessStory> findByUserIdOrderByCreatedAtDesc(Long userId);
     Optional<SuccessStory> findByUserIdAndScrapId(Long userId, Long scrapId);
 }

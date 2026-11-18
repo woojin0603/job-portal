@@ -7059,3 +7059,133 @@ html[data-app-theme='dark'] .admin-recovery-panel button {
   color: #fff !important;
   -webkit-text-fill-color: #fff !important;
 }
+
+/* 개인정보 열람용 내 데이터 내려받기와 최근 푸시 발송 이력 */
+.account-export-button {
+  border: 1px solid #9db3a7;
+  border-radius: 9px;
+  background: #f5f9f6;
+  color: #285642;
+  font-weight: 750;
+}
+
+.notification-delivery-history {
+  margin: 10px 14px 14px;
+  border: 1px solid #dbe5df;
+  border-radius: 10px;
+  background: #f8faf9;
+  color: #41574b;
+}
+
+.notification-delivery-history summary {
+  cursor: pointer;
+  padding: 11px 13px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.notification-delivery-history > div {
+  display: grid;
+  gap: 7px;
+  padding: 0 13px 12px;
+}
+
+.notification-delivery-history p {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-size: 11px;
+}
+
+.notification-delivery-history time,
+.notification-delivery-history > div > span {
+  color: #718078;
+}
+
+html[data-app-theme='dark'] .account-export-button {
+  border-color: #587064 !important;
+  background: #243229 !important;
+  color: #e4eee8 !important;
+  -webkit-text-fill-color: #e4eee8 !important;
+}
+
+html[data-app-theme='dark'] .notification-delivery-history {
+  border-color: #405147 !important;
+  background: #18211c !important;
+  color: #e1ebe5 !important;
+}
+
+html[data-app-theme='dark'] .notification-delivery-history :where(summary, strong, time, span) {
+  color: #dce7e0 !important;
+  -webkit-text-fill-color: #dce7e0 !important;
+}
+
+/* 공고별 원문 확인 시각과 오래된 정보 경고 */
+.posting-freshness {
+  display: block;
+  margin-top: 6px;
+  color: #64786d;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.posting-freshness::before {
+  content: '●';
+  margin-right: 5px;
+  color: #4b9a71;
+  font-size: 8px;
+}
+
+.posting-freshness.stale {
+  color: #96612e;
+}
+
+.posting-freshness.stale::before {
+  color: #c9863e;
+}
+
+html[data-app-theme='dark'] .posting-freshness {
+  color: #b9c9c0 !important;
+  -webkit-text-fill-color: #b9c9c0 !important;
+}
+
+html[data-app-theme='dark'] .posting-freshness.stale {
+  color: #f2c58f !important;
+  -webkit-text-fill-color: #f2c58f !important;
+}
+
+.offline-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.offline-notice > div { display: grid; gap: 3px; }
+.offline-notice strong,
+.offline-notice span { display: block; }
+.offline-notice button {
+  flex: none;
+  border: 1px solid #bd9e5e;
+  border-radius: 8px;
+  background: #fff;
+  color: #664b18;
+  padding: 8px 12px;
+  font-weight: 750;
+}
+
+html[data-app-theme='dark'] .offline-notice :where(strong, span, button) {
+  color: #f1d4a3 !important;
+  -webkit-text-fill-color: #f1d4a3 !important;
+}
+
+html[data-app-theme='dark'] .offline-notice button {
+  border-color: #806c45 !important;
+  background: #302a20 !important;
+}
+
+@media (max-width: 620px) {
+  .offline-notice { align-items: stretch; flex-direction: column; }
+  .offline-notice button { width: 100%; }
+}

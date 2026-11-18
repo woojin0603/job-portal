@@ -8,6 +8,7 @@ import kr.co.jobhub.auth.domain.AppUser;
 import kr.co.jobhub.auth.repository.AppUserRepository;
 import kr.co.jobhub.career.domain.PushSubscription;
 import kr.co.jobhub.career.repository.PushSubscriptionRepository;
+import kr.co.jobhub.career.repository.PushDeliveryReceiptRepository;
 import kr.co.jobhub.career.service.PushNotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.security.Principal;
 import java.time.Instant;
+import java.util.List;
 
 /** 향후 Android·iOS 앱이 푸시 토큰을 안전하게 등록하고 해제할 API다. */
 @RestController
@@ -24,16 +26,27 @@ public class PushSubscriptionController {
                                       @NotBlank @Pattern(regexp = "ANDROID|IOS|WEB") String platform) {}
     public record SubscriptionStatus(long activeDevices) {}
     public record TestResult(boolean configured, int delivered) {}
+    public record DeliveryHistory(String category, Instant deliveredAt) {}
 
     private final PushSubscriptionRepository subscriptions;
     private final AppUserRepository users;
     private final PushNotificationService notifications;
+    private final PushDeliveryReceiptRepository deliveries;
 
     public PushSubscriptionController(PushSubscriptionRepository subscriptions, AppUserRepository users,
-                                      PushNotificationService notifications) {
+                                      PushNotificationService notifications,
+                                      PushDeliveryReceiptRepository deliveries) {
         this.subscriptions = subscriptions;
         this.users = users;
         this.notifications = notifications;
+        this.deliveries = deliveries;
+    }
+
+    @GetMapping("/history")
+    public List<DeliveryHistory> history(Principal principal) {
+        AppUser user = user(principal);
+        return deliveries.findTop50ByUserIdOrderByDeliveredAtDesc(user.id).stream()
+                .map(value -> new DeliveryHistory(value.category, value.deliveredAt)).toList();
     }
 
     @GetMapping

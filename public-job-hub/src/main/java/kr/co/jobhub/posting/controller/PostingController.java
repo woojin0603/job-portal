@@ -59,7 +59,7 @@ public class PostingController {
                              String mobilityType, LocalDate postedAt, LocalDate deadline,
                              String sourceUrl, boolean scrapped, boolean applied,
                              String applicationStage, LocalDate nextStepDate, String applicationMemo,
-                             List<PositionDto> positions) {
+                             List<PositionDto> positions, Instant firstSeenAt, Instant updatedAt) {
     }
 
     /** 현재 페이지 목록과 다음 페이지 여부 및 최근 수집 상태. */
@@ -428,7 +428,8 @@ public class PostingController {
                             s == null ? null : s.nextStepDate, s == null ? "" : s.memo,
                             positions.findByPostingIdOrderById(p.id).stream()
                                     .map(rp -> new PositionDto(rp.standardCategory, rp.originalName, rp.headcount,
-                                            rp.workRegion, rp.requirements)).toList());
+                                            rp.workRegion, rp.requirements)).toList(),
+                            p.firstSeenAt, p.updatedAt);
                 })
                 .toList();
         return new PostingPage(items, result.getTotalElements(), safePage, result.getTotalPages(),
@@ -488,7 +489,8 @@ public class PostingController {
                 s == null ? null : s.nextStepDate, s == null ? "" : s.memo,
                 positions.findByPostingIdOrderById(p.id).stream()
                         .map(rp -> new PositionDto(rp.standardCategory, rp.originalName, rp.headcount,
-                                rp.workRegion, rp.requirements)).toList());
+                                rp.workRegion, rp.requirements)).toList(),
+                p.firstSeenAt, p.updatedAt);
     }
 
     /** 새로고침 가능한 공고 상세 화면에 카드와 동일한 공고 정보를 제공한다. */
