@@ -801,55 +801,6 @@ h1 {
 .card.posting-expired .date strong {
   color: #6c798a;
 }
-.archive-page {
-  max-width: 1280px;
-  margin: 0 auto;
-}
-.archive-heading {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 20px;
-}
-.archive-filters {
-  display: flex;
-  align-items: end;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 24px;
-  border: 1px solid #dce5f0;
-  border-radius: 12px;
-  background: #fff;
-  padding: 16px;
-}
-.archive-filters label {
-  display: flex;
-  min-width: 150px;
-  flex-direction: column;
-  gap: 5px;
-  color: #63748b;
-  font-size: 12px;
-  font-weight: 700;
-}
-.archive-filters select {
-  min-height: 40px;
-  border: 1px solid #c8d6e5;
-  border-radius: 8px;
-  background: #fff;
-  padding: 0 10px;
-}
-.archive-filters > button {
-  min-height: 40px;
-  border: 1px solid #b9cbe0;
-  border-radius: 8px;
-  background: #f4f8fd;
-  color: #245d9e;
-  padding: 0 13px;
-  font-weight: 800;
-}
-.archive-grid .card {
-  border-top-color: #75859a;
-}
 .report-link {
   border: 0;
   background: transparent;
@@ -1312,16 +1263,6 @@ button {
   }
   .heading {
     display: block;
-  }
-  .archive-heading {
-    display: block;
-  }
-  .archive-filters {
-    align-items: stretch;
-    flex-direction: column;
-  }
-  .archive-filters label {
-    width: 100%;
   }
   .insight-stats,
   .admin-operations-logs {

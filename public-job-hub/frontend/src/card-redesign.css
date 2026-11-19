@@ -3383,7 +3383,7 @@ html[data-app-theme='dark'] .service-popup-notification { background: #243129; b
 
 /* 다크 모드 v3: 웹 전용 페이지와 운영 화면의 고정 라이트 색상을 최종 보정한다. */
 html[data-app-theme='dark'] :where(
-  .archive-page, .community-page, .posting-detail-page, .application-dashboard,
+  .community-page, .posting-detail-page, .application-dashboard,
   .capability-dialog, .qualification-dialog, .report-dialog, .insight-dialog,
   .security-dialog, .success-share-dialog, .password-reset-dialog,
   .admin-card, .admin-statistics, .admin-review, .admin-activity,
@@ -3395,7 +3395,7 @@ html[data-app-theme='dark'] :where(
 }
 
 html[data-app-theme='dark'] :where(
-  .archive-heading, .archive-filters, .community-heading, .board-list,
+  .community-heading, .board-list,
   .community-login-guide, .answer-form, .capability-sections, .capability-item,
   .qualification-search, .qualification-selected, .qualification-dialog-results,
   .salary-breakdown, .salary-organization, .salary-note, .competition-list,
@@ -3424,7 +3424,7 @@ html[data-app-theme='dark'] :where(
 }
 
 html[data-app-theme='dark'] :where(
-  .admin-console-tabs, .community-tabs, .inquiry-filters, .archive-filters,
+  .admin-console-tabs, .community-tabs, .inquiry-filters,
   .admin-change-badges, .admin-change-values, .admin-change-compare,
   .statistics-summary, .chart-legend, .source-share-track,
   .retention-last-run, .retention-preview, .incident-empty,

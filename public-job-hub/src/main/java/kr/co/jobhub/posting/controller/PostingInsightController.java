@@ -100,10 +100,6 @@ public class PostingInsightController {
         return positions.findByPostingIdIn(values.stream().map(value -> value.id).toList()).stream()
                 .collect(Collectors.groupingBy(value -> value.posting.getId()));
     }
-    private boolean sameOrganization(String left, String right) {
-        return normalize(left).equals(normalize(right));
-    }
-
     private List<JobPosting> organizationPostings(String organization) {
         String normalized = normalize(organization);
         List<String> aliases = postings.distinctOrganizations().stream()

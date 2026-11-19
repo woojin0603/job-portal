@@ -695,12 +695,6 @@ public class CareerToolsController {
                 normalizedDeadlineDays(value.deadlineDays), value.postingChangeAlerts == null || value.postingChangeAlerts,
                 value.importantChangeOnly != null && value.importantChangeOnly, value.lastViewedAt);
     }
-    private Set<String> csv(String raw) {
-        if (raw == null || raw.isBlank()) return Set.of();
-        Set<String> result = new LinkedHashSet<>();
-        for (String value : raw.split(",")) if (!value.trim().isBlank()) result.add(value.trim());
-        return result;
-    }
     private boolean contains(String text, String value) {
         return text != null && text.toLowerCase(Locale.ROOT).contains(value.toLowerCase(Locale.ROOT));
     }
