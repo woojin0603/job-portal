@@ -4,6 +4,8 @@ Spring Boot 프로젝트를 `build.gradle`로 가져와 Java 17로 실행하세�
 
 OCI·TiDB 운영 배포, 백업, 복구, 자동 점검과 장애 대응은 [운영 매뉴얼](docs/OPERATIONS.md)을 따르세요.
 
+개인정보·출시 정책은 [법적 감사 기록](docs/PRIVACY_LEGAL_AUDIT_2026-11-09.md), 외부 자료는 [데이터 출처·권리 대장](docs/DATA_SOURCE_AND_RIGHTS_REGISTER.md), 오픈소스는 [제3자 소프트웨어 고지](docs/THIRD_PARTY_NOTICES.md)를 따릅니다.
+
 한 주소에서 개발 화면을 확인하려면 프로젝트 루트에서 `gradlew.bat bootRun`을 실행하세요. 이 작업은 React를 먼저 빌드해 Spring Boot의 http://localhost:8080 에서 함께 제공합니다. Gradle 설정을 바꾼 뒤에는 실행 중인 서버를 종료하고 다시 시작해야 합니다.
 
 ## 휴대폰 앱처럼 설치하기 (PWA)
