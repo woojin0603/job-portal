@@ -1,7 +1,9 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { reportClientError } from './client-error.js'
-import { registerPushNotifications, unregisterPushNotifications } from './firebase-push.js'
+
+/** Firebase SDK는 알림 기능을 실제로 사용할 때만 내려받아 첫 화면 번들을 줄인다. */
+const loadPushNotifications = () => import('./firebase-push.js')
 
 /** 모든 API 요청에서 JSON 응답을 읽고 HTTP 오류를 화면에서 처리할 예외로 변환한다. */
 async function getJson(url, options = {}) {
@@ -7068,6 +7070,7 @@ export default function App() {
       setAuthMode('login')
       throw new Error('로그인 후 푸시 알림을 연결할 수 있습니다.')
     }
+    const { registerPushNotifications } = await loadPushNotifications()
     const token = await registerPushNotifications(securePost, true)
     const test = await securePost('/api/tools/push-subscriptions/test')
     if (!test.configured || test.delivered < 1) {
@@ -7080,9 +7083,11 @@ export default function App() {
 
   useEffect(() => {
     if (!user || !('Notification' in window) || Notification.permission !== 'granted') return
-    registerPushNotifications(securePost, false).catch((pushError) => {
-      console.warn('푸시 알림 자동 연결을 건너뜁니다.', pushError)
-    })
+    loadPushNotifications()
+      .then(({ registerPushNotifications }) => registerPushNotifications(securePost, false))
+      .catch((pushError) => {
+        console.warn('푸시 알림 자동 연결을 건너뜁니다.', pushError)
+      })
   }, [user?.email])
 
   useEffect(() => {
@@ -7532,7 +7537,12 @@ export default function App() {
   /** 서버 세션을 종료하고 계정 종류나 현재 작업 화면과 관계없이 메인으로 돌아간다. */
   async function logout() {
     try {
-      await unregisterPushNotifications(securePost).catch(() => {})
+      const { unregisterPushNotifications } = await loadPushNotifications()
+      await unregisterPushNotifications(securePost)
+    } catch {
+      // 푸시 SDK 또는 기기 연결 해제가 실패해도 서버 로그인 세션은 반드시 종료한다.
+    }
+    try {
       await securePost('/api/auth/logout')
       await refreshAuth()
       setMobileMenuOpen(false)

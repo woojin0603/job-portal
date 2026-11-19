@@ -52,8 +52,14 @@ public class FavoriteOrganizationController {
     public List<FavoriteView> list(Principal principal) {
         AppUser user = user(principal);
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        List<JobPosting> all = postings.findAll();
-        return favorites.findByUserIdOrderByOrganizationName(user.id).stream().map(favorite -> {
+        List<String> organizationNames = postings.distinctOrganizations();
+        Map<String, List<String>> aliasesByNormalized = aliasesByNormalized(organizationNames);
+        List<FavoriteOrganization> userFavorites = favorites.findByUserIdOrderByOrganizationName(user.id);
+        Set<String> selectedAliases = new HashSet<>();
+        userFavorites.forEach(value ->
+                selectedAliases.addAll(aliasesByNormalized.getOrDefault(value.normalizedName, List.of())));
+        List<JobPosting> all = selectedAliases.isEmpty() ? List.of() : postings.findByOrganizationIn(selectedAliases);
+        return userFavorites.stream().map(favorite -> {
             List<JobPosting> matched = all.stream()
                     .filter(value -> favorite.normalizedName.equals(normalize(value.organization))).toList();
             List<JobPosting> open = matched.stream()
@@ -81,7 +87,8 @@ public class FavoriteOrganizationController {
             return new ToggleResult(false);
         }
         boolean known = postings.existsByOrganizationIgnoreCase(name)
-                || postings.findAll().stream().anyMatch(value -> normalized.equals(normalize(value.organization)));
+                || postings.distinctOrganizations().stream()
+                .anyMatch(value -> normalized.equals(normalize(value)));
         if (!known) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "수집된 공고에서 기관을 찾을 수 없습니다.");
         FavoriteOrganization value = new FavoriteOrganization();
         value.user = user;
@@ -99,7 +106,13 @@ public class FavoriteOrganizationController {
         Map<String, FavoriteOrganization> followed = new HashMap<>();
         favorites.findByUserIdOrderByOrganizationName(user.id)
                 .forEach(value -> followed.put(value.normalizedName, value));
-        return postings.findAll().stream()
+        Map<String, List<String>> aliasesByNormalized = aliasesByNormalized(postings.distinctOrganizations());
+        Set<String> selectedAliases = new HashSet<>();
+        followed.keySet().forEach(value -> selectedAliases.addAll(
+                aliasesByNormalized.getOrDefault(value, List.of())));
+        List<JobPosting> followedPostings = selectedAliases.isEmpty()
+                ? List.of() : postings.findByOrganizationIn(selectedAliases);
+        return followedPostings.stream()
                 .filter(value -> followed.containsKey(normalize(value.organization)))
                 .filter(value -> value.deadline == null || !value.deadline.isBefore(today))
                 .sorted(Comparator.comparing((JobPosting value) -> value.deadline,
@@ -134,5 +147,13 @@ public class FavoriteOrganizationController {
         return value.toLowerCase(Locale.KOREA)
                 .replaceAll("^(주식회사|재단법인|사단법인|학교법인|의료법인|\\(주\\)|\\(재\\)|\\(사\\)|㈜)", "")
                 .replaceAll("[^가-힣a-z0-9]", "");
+    }
+
+    private Map<String, List<String>> aliasesByNormalized(List<String> organizations) {
+        Map<String, List<String>> result = new HashMap<>();
+        for (String organization : organizations) {
+            result.computeIfAbsent(normalize(organization), ignored -> new ArrayList<>()).add(organization);
+        }
+        return result;
     }
 }

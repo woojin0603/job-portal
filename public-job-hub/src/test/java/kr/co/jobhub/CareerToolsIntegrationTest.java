@@ -208,4 +208,30 @@ class CareerToolsIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.districts.경기.수원시").value(1));
     }
+
+    @Test
+    void loadsOrganizationInsightsAndFavoritesWithoutScanningAllPostingEntities() throws Exception {
+        mvc.perform(get("/api/postings/{id}/similar", postingId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.organization").value("테스트 공공기관"));
+        mvc.perform(get("/api/postings/{id}/organization-stats", postingId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalPostings").value(1));
+
+        mvc.perform(post("/api/tools/favorite-organizations/toggle")
+                        .with(user("tools@example.com")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"organization\":\"테스트 공공기관\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.followed").value(true));
+        mvc.perform(get("/api/tools/favorite-organizations")
+                        .with(user("tools@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].organization").value("테스트 공공기관"))
+                .andExpect(jsonPath("$[0].openPostings").value(1));
+        mvc.perform(get("/api/tools/favorite-organizations/postings")
+                        .with(user("tools@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(postingId));
+    }
 }

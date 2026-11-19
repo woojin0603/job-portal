@@ -36,8 +36,8 @@ public class PostingInsightController {
     public SimilarView similar(@PathVariable Long id) {
         JobPosting current = posting(id);
         Set<String> currentCategories = categories(id);
-        List<JobPosting> candidates = postings.findAll().stream()
-                .filter(value -> !value.id.equals(id) && sameOrganization(current.organization, value.organization))
+        List<JobPosting> candidates = organizationPostings(current.organization).stream()
+                .filter(value -> !value.id.equals(id))
                 .sorted(Comparator.comparing((JobPosting value) -> value.postedAt,
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
@@ -62,8 +62,7 @@ public class PostingInsightController {
     @GetMapping("/{id}/organization-stats")
     public OrganizationStats stats(@PathVariable Long id) {
         JobPosting current = posting(id);
-        List<JobPosting> values = postings.findAll().stream()
-                .filter(value -> sameOrganization(current.organization, value.organization)).toList();
+        List<JobPosting> values = organizationPostings(current.organization);
         Map<Long, List<RecruitmentPosition>> positionsByPosting = positionsByPosting(values);
         List<Integer> headcounts = values.stream().map(value -> positionsByPosting
                         .getOrDefault(value.id, List.of()).stream()
@@ -103,6 +102,13 @@ public class PostingInsightController {
     }
     private boolean sameOrganization(String left, String right) {
         return normalize(left).equals(normalize(right));
+    }
+
+    private List<JobPosting> organizationPostings(String organization) {
+        String normalized = normalize(organization);
+        List<String> aliases = postings.distinctOrganizations().stream()
+                .filter(value -> normalized.equals(normalize(value))).toList();
+        return aliases.isEmpty() ? List.of() : postings.findByOrganizationIn(aliases);
     }
 
     private String normalize(String value) {

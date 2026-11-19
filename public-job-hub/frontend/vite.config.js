@@ -41,6 +41,8 @@ const pwa = VitePWA({
   },
   workbox: {
     globPatterns: ['**/*.{js,css,html,png,svg}'],
+    // Firebase SDK는 푸시 연결 시점에만 필요하며 오프라인 사전 캐시 대상이 아니다.
+    globIgnores: ['**/firebase-push-*.js'],
     navigateFallback: '/index.html',
     navigateFallbackDenylist: [/^\/api\//],
   },

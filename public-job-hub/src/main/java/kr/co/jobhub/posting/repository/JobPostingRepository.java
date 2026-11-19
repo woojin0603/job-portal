@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,6 +33,12 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
     List<Object[]> searchOrganizationCandidates(@Param("q") String q, Pageable pageable);
 
     boolean existsByOrganizationIgnoreCase(String organization);
+
+    /** 기관 기반 화면은 전체 공고 엔티티 대신 기관명 목록과 선택된 기관 공고만 읽는다. */
+    @Query("select distinct p.organization from JobPosting p where p.organization is not null and p.organization <> ''")
+    List<String> distinctOrganizations();
+
+    List<JobPosting> findByOrganizationIn(Collection<String> organizations);
 
     /** 공고 대표 지역과 직렬별 근무지역을 함께 반환한다. 컨트롤러에서 공고 ID 기준으로 중복 제거한다. */
     @Query("select p.id, p.region, rp.workRegion from JobPosting p " +
