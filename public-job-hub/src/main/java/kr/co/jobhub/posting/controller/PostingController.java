@@ -17,8 +17,6 @@ import org.jsoup.nodes.Element;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,12 +31,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.net.URI;
-import java.net.InetAddress;
 import java.text.Normalizer;
 import java.security.Principal;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -78,7 +73,7 @@ public class PostingController {
     public record ScrapState(boolean scrapped, boolean applied) {
     }
 
-    /** 외부 상세 페이지의 구조와 이미지를 유지하는 격리 프레임용 HTML. */
+    /** 공식 원문 이동에 필요한 출처 주소. html은 구버전 응답 호환을 위해 비워서 유지한다. */
     public record Preview(String title, String organization, String sourceUrl, String publisherUrl,
                           String originalUrl, String html) {
     }
@@ -105,8 +100,8 @@ public class PostingController {
     private final InstitutionCompensationRepository compensations;
     private final RecruitmentCompetitionRepository competitions;
     private final InstitutionLogoRepository institutionLogos;
+    private final RobotsPolicy robots;
     private final Set<String> sourceHosts;
-    private final Map<Long, Optional<URI>> institutionLogoUrls = new ConcurrentHashMap<>();
 
     /** 공고·회원·스크랩 저장소와 수집 상태 제공자를 주입받는다. */
     public PostingController(JobPostingRepository postings, ScrapRepository scraps,
@@ -114,6 +109,7 @@ public class PostingController {
                          InstitutionCompensationRepository compensations,
                          RecruitmentCompetitionRepository competitions,
                          InstitutionLogoRepository institutionLogos,
+                         RobotsPolicy robots,
                          @Value("${jobhub.crawl.sources}") String configuredSources) {
         this.postings = postings;
         this.scraps = scraps;
@@ -123,6 +119,7 @@ public class PostingController {
         this.compensations = compensations;
         this.competitions = competitions;
         this.institutionLogos = institutionLogos;
+        this.robots = robots;
         this.sourceHosts = java.util.Arrays.stream(configuredSources.split(","))
                 .map(raw -> raw.split("\\|", -1))
                 .filter(parts -> parts.length >= 2)
@@ -263,126 +260,15 @@ public class PostingController {
         return Map.copyOf(values);
     }
 
-    /** JOB-ALIO 공통 아이콘 대신 각 채용기관이 선언한 대표 아이콘으로 이동시킨다. */
+    /** 관리자 검수로 등록된 기관 로고만 표시한다. 미등록 기관은 화면의 문자형 대체 마크를 사용한다. */
     @GetMapping("/postings/{id}/logo")
     public ResponseEntity<Void> institutionLogo(@PathVariable Long id) {
         JobPosting posting = postings.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        var manualLogo = institutionLogos.findByOrganizationIgnoreCase(posting.organization);
-        if (manualLogo.isPresent()) {
-            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(manualLogo.get().logoUrl)).build();
-        }
-        Optional<URI> cached = institutionLogoUrls.get(id);
-        if (cached != null) {
-            return cached.map(uri -> ResponseEntity.status(HttpStatus.FOUND).location(uri).<Void>build())
-                    .orElseGet(() -> ResponseEntity.notFound().build());
-        }
-        try {
-            URI source = URI.create(posting.sourceUrl);
-            if (!"https".equalsIgnoreCase(source.getScheme()) || source.getHost() == null
-                    || !sourceHosts.contains(source.getHost().toLowerCase())) {
-                return ResponseEntity.notFound().build();
-            }
-            Document doc = Jsoup.connect(posting.sourceUrl).userAgent("Mozilla/5.0 PublicJobHub/0.3")
-                    .followRedirects(false).maxBodySize(3_000_000).timeout(10000).get();
-            String publisherUrl = publisherPostingUrl(doc, posting.sourceUrl);
-            if (publisherUrl.equals(posting.sourceUrl)
-                    && source.getHost().toLowerCase().endsWith("alio.go.kr")) {
-                institutionLogoUrls.put(id, Optional.empty());
-                return ResponseEntity.notFound().build();
-            }
-            URI publisher = URI.create(publisherUrl);
-            if (!isSafePublisherHost(publisher)) {
-                institutionLogoUrls.put(id, Optional.empty());
-                return ResponseEntity.notFound().build();
-            }
-            URI logo = discoverInstitutionLogo(publisher);
-            institutionLogoUrls.put(id, Optional.of(logo));
-            return ResponseEntity.status(HttpStatus.FOUND).location(logo).build();
-        } catch (Exception ignored) {
-            institutionLogoUrls.put(id, Optional.empty());
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    /** 기관 페이지가 명시한 아이콘과 로고를 우선 사용하고 마지막에 표준 favicon 경로를 사용한다. */
-    private URI discoverInstitutionLogo(URI publisher) throws Exception {
-        Document publisherPage;
-        try {
-            publisherPage = Jsoup.connect(publisher.toString())
-                    .userAgent("Mozilla/5.0 PublicJobHub/0.3")
-                    .followRedirects(false)
-                    .maxBodySize(2_000_000)
-                    .timeout(7000)
-                    .get();
-        } catch (Exception ignored) {
-            return rootFavicon(publisher);
-        }
-
-        String[] selectors = {
-                "link[rel~=(?i)icon][href]",
-                "link[rel~=(?i)apple-touch-icon][href]",
-                "meta[property=(?i)og:image][content]",
-                "img[class~=(?i).*logo.*][src]",
-                "img[id~=(?i).*logo.*][src]",
-                "header img[src]"
-        };
-        for (String selector : selectors) {
-            for (Element element : publisherPage.select(selector)) {
-                String attribute = element.hasAttr("href") ? "href"
-                        : element.hasAttr("content") ? "content" : "src";
-                String candidate = element.absUrl(attribute);
-                if (candidate.isBlank()) {
-                    candidate = publisher.resolve(element.attr(attribute)).toString();
-                }
-                if (isSafeLogoUrl(candidate, publisher.getHost())) {
-                    return URI.create(candidate);
-                }
-            }
-        }
-        return rootFavicon(publisher);
-    }
-
-    private URI rootFavicon(URI publisher) throws Exception {
-        return new URI(publisher.getScheme(), null, publisher.getHost(), publisher.getPort(),
-                "/favicon.ico", null, null);
-    }
-
-    private boolean isSafeLogoUrl(String candidate, String publisherHost) {
-        try {
-            URI logo = URI.create(candidate);
-            if (logo.getHost() == null || logo.getScheme() == null) return false;
-            if (!"https".equalsIgnoreCase(logo.getScheme()) && !"http".equalsIgnoreCase(logo.getScheme())) {
-                return false;
-            }
-            String host = logo.getHost().toLowerCase();
-            String institutionHost = publisherHost.toLowerCase();
-            return host.equals(institutionHost)
-                    || host.endsWith("." + institutionHost)
-                    || institutionHost.endsWith("." + host);
-        } catch (IllegalArgumentException ignored) {
-            return false;
-        }
-    }
-
-    /** 서버가 로컬·사설망 주소를 기관 사이트로 요청하지 않도록 제한한다. */
-    private boolean isSafePublisherHost(URI publisher) {
-        if (publisher.getHost() == null || publisher.getScheme() == null
-                || (!"https".equalsIgnoreCase(publisher.getScheme())
-                && !"http".equalsIgnoreCase(publisher.getScheme()))) {
-            return false;
-        }
-        try {
-            for (InetAddress address : InetAddress.getAllByName(publisher.getHost())) {
-                if (address.isAnyLocalAddress() || address.isLoopbackAddress()
-                        || address.isLinkLocalAddress() || address.isSiteLocalAddress()) {
-                    return false;
-                }
-            }
-            return true;
-        } catch (Exception ignored) {
-            return false;
-        }
+        return institutionLogos.findByOrganizationIgnoreCase(posting.organization)
+                .map(logo -> ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create(logo.logoUrl)).<Void>build())
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /** 검색어·마이페이지 여부·페이지 번호에 맞는 공고 12건을 반환한다. */
@@ -600,10 +486,7 @@ public class PostingController {
         return new ScrapState(true, s.applied);
     }
 
-    /**
-     * 등록된 잡알리오 상세 페이지의 HTML 구조, 표, 이미지 및 스타일시트를 보존한다.
-     * 신뢰할 수 있는 출처만 읽고 활성 콘텐츠를 제거하여 sandbox iframe에 제공한다.
-     */
+    /** 원문은 복제하지 않고 공식 게시 주소만 확인해 제공한다. */
     @GetMapping("/postings/{id}/preview")
     public Preview preview(@PathVariable Long id) {
         JobPosting p = postings.findById(id)
@@ -613,132 +496,25 @@ public class PostingController {
                 || !sourceHosts.contains(uri.getHost().toLowerCase())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "미리보기를 제공할 수 없습니다.");
         }
+        if (!robots.allows(uri)) {
+            return new Preview(p.title, p.organization, p.sourceUrl, p.sourceUrl, p.sourceUrl, null);
+        }
         try {
             Document doc = Jsoup.connect(p.sourceUrl).userAgent("Mozilla/5.0 PublicJobHub/0.3")
                     .followRedirects(false).maxBodySize(3_000_000).timeout(12000).get();
-            // 기관 채용사이트 주소는 개별 공고가 아닌 통합 홈페이지인 경우가 많다.
-            // 따라서 실제 공고문 PDF를 우선하고, 없으면 JOB-ALIO 개별 상세 페이지를 사용한다.
-            String originalUrl = p.sourceUrl;
             String publisherUrl = publisherPostingUrl(doc, p.sourceUrl);
-            if (postingPdf(doc) != null) {
-                originalUrl = "/api/postings/" + p.id + "/document";
-            }
-            // JOB-ALIO는 상세 본문을 #contentRV 안의 #txt에 넣고, 바깥에는 모달 제목·로더·닫기 버튼을 둔다.
-            // 모달 전체가 아니라 실제 본문을 우선 선택해 외부 화면 장식을 서비스 상세 페이지에 섞지 않는다.
-            Element original = doc.selectFirst("#contentRV #txt, #contentRV .modal-body, main, article, #contentRV");
-            if (original == null) {
-                original = doc.body();
-            }
-            Element content = original.clone();
-            content.select("script, iframe, object, embed, form, meta, base").remove();
-            content.select(".loading, .loader, .spinner, .spinner-border, .btn-close, .close, "
-                    + ".pop_share, .open_pop_share, "
-                    + "[class*=close], [title*=닫기], [aria-label*=닫기], img[alt*=닫기], button").remove();
-            for (Element decoration : List.copyOf(content.getAllElements())) {
-                String ownText = decoration.ownText().trim();
-                if (decoration.children().isEmpty()
-                        && Set.of("X", "x", "×", "✕", "✖").contains(ownText)) {
-                    decoration.remove();
-                } else if (decoration.children().isEmpty()
-                        && ownText.replace(" ", "").contains("클립보드에주소가복사")) {
-                    // 원문 사이트의 JavaScript 토스트 문구만 남는 것을 방지한다.
-                    decoration.remove();
-                }
-            }
-            for (Element element : content.getAllElements()) {
-                for (var attribute : List.copyOf(element.attributes().asList())) {
-                    String key = attribute.getKey().toLowerCase();
-                    if (key.startsWith("on")) {
-                        element.removeAttr(attribute.getKey());
-                    } else if (List.of("href", "src", "poster", "data-src").contains(key)) {
-                        String absolute = element.absUrl(attribute.getKey());
-                        if (absolute.startsWith("https://") || absolute.startsWith("http://")) {
-                            element.attr(attribute.getKey(), absolute);
-                        } else {
-                            element.removeAttr(attribute.getKey());
-                        }
-                    } else if (key.equals("srcset")) {
-                        element.removeAttr(attribute.getKey());
-                    }
-                }
-                if (element.hasAttr("data-src") && !element.hasAttr("src")) {
-                    element.attr("src", element.attr("data-src"));
-                }
-                if (element.normalName().equals("a")) {
-                    element.attr("target", "_blank")
-                            .attr("rel", "noopener noreferrer")
-                            .attr("referrerpolicy", "no-referrer");
-                }
-            }
-            String html = "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\">"
-                    + "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; "
-                    + "img-src https: http: data:; style-src 'unsafe-inline';\">"
-                    + "<style>html,body{margin:0;padding:0;background:#fff;color:#28352f;"
-                    + "font-family:Arial,'Noto Sans KR',sans-serif;font-size:15px;line-height:1.65;}"
-                    + "body{overflow-x:hidden;padding:4px;}*{box-sizing:border-box;}"
-                    + "h1,h2,h3,h4{color:#263b31;line-height:1.35;}"
-                    + "img{display:block;max-width:100%;height:auto;margin:12px auto;}"
-                    + "table{width:100%!important;max-width:100%;border-collapse:collapse!important;table-layout:auto;}"
-                    + "th,td{border:1px solid #d9dfda!important;padding:9px 11px!important;vertical-align:top;"
-                    + "word-break:keep-all;overflow-wrap:anywhere;}th{background:#f1f4f1!important;color:#344b3f;}"
-                    + "ul,ol{padding-left:24px;}a{color:#355f4b;text-decoration:underline;}"
-                    + ".hidden,.hide,[style*='display:none'],[style*='display: none']{display:none!important;}"
-                    + "a[href]{cursor:pointer!important;pointer-events:auto!important;}</style></head><body>"
-                    + content.outerHtml() + "</body></html>";
-            return new Preview(p.title, p.organization, p.sourceUrl, publisherUrl, originalUrl, html);
+            return new Preview(p.title, p.organization, p.sourceUrl, publisherUrl, publisherUrl, null);
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "원문을 가져오지 못했습니다.");
+            return new Preview(p.title, p.organization, p.sourceUrl, p.sourceUrl, p.sourceUrl, null);
         }
     }
 
-    /** 공고문 PDF를 브라우저가 작은 창 안에서 표시하도록 inline 응답으로 중계한다. */
+    /** 기존 주소 호환성을 유지하되 파일을 복제하지 않고 공식 원문으로 이동시킨다. */
     @GetMapping("/postings/{id}/document")
-    public ResponseEntity<?> document(@PathVariable Long id,
-                                      @RequestParam(defaultValue = "false") boolean download) {
+    public ResponseEntity<Void> document(@PathVariable Long id) {
         JobPosting p = postings.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        try {
-            Document detail = Jsoup.connect(p.sourceUrl).userAgent("Mozilla/5.0 PublicJobHub/0.3")
-                    .followRedirects(false).maxBodySize(3_000_000).timeout(12000).get();
-            String pdfUrl = postingPdf(detail);
-            if (pdfUrl == null) {
-                return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(p.sourceUrl)).build();
-            }
-            URI pdfUri = URI.create(pdfUrl);
-            if (!"https".equalsIgnoreCase(pdfUri.getScheme()) || !isAlioHost(pdfUri.getHost())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-            }
-            var response = Jsoup.connect(pdfUrl).userAgent("Mozilla/5.0 PublicJobHub/0.3")
-                    .ignoreContentType(true).maxBodySize(20_000_000).timeout(20000).execute();
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_PDF)
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            (download ? "attachment" : "inline") + "; filename=job-posting.pdf")
-                    .body(response.bodyAsBytes());
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "공고문을 가져오지 못했습니다.");
-        }
-    }
-
-    private boolean isAlioHost(String host) {
-        if (host == null) return false;
-        String normalized = host.toLowerCase(java.util.Locale.ROOT);
-        return normalized.equals("alio.go.kr") || normalized.endsWith(".alio.go.kr");
-    }
-
-    /** JOB-ALIO 상세 페이지에서 실제 채용 공고문 PDF 링크를 찾는다. */
-    private String postingPdf(Document doc) {
-        for (Element attachment : doc.select("#contentRV a[href]")) {
-            String label = attachment.text().trim().toLowerCase();
-            String candidate = attachment.absUrl("href");
-            if (label.contains("공고문") && label.contains("pdf")
-                    && (candidate.startsWith("https://") || candidate.startsWith("http://"))) {
-                return candidate;
-            }
-        }
-        return null;
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(p.sourceUrl)).build();
     }
 
     /** JOB-ALIO 상세 화면의 '원문 URL' 항목에서 실제 채용기관 공고 주소를 찾는다. */

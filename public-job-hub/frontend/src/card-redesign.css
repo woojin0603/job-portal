@@ -97,9 +97,10 @@
     min-height: 490px;
     overflow: hidden;
     background-image:
-      linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.94) 35%, rgba(255,255,255,.52) 58%, rgba(255,255,255,.06) 100%),
-      url('/assets/jobhub-riverside-hero.jpg');
-    background-position: center, center;
+      radial-gradient(circle at 82% 28%, rgba(91, 177, 137, .28) 0 7%, transparent 7.5%),
+      radial-gradient(circle at 77% 65%, rgba(111, 176, 207, .22) 0 19%, transparent 19.5%),
+      linear-gradient(125deg, #ffffff 0%, #f3faf6 55%, #dcefe6 100%);
+    background-position: center;
     background-size: cover;
   }
   .landing-main .landing-hero::after {
@@ -272,8 +273,10 @@
     min-height: 330px;
     margin: 0 -16px;
     overflow: hidden;
-    background-image: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.84)), url('/assets/jobhub-riverside-hero.jpg');
-    background-position: center, 67% center;
+    background-image:
+      radial-gradient(circle at 80% 24%, rgba(91, 177, 137, .24) 0 9%, transparent 9.5%),
+      linear-gradient(145deg, #ffffff 0%, #eef8f2 62%, #d9ede3 100%);
+    background-position: center;
     background-size: cover;
   }
   .landing-main .landing-intro { padding: 48px 22px 36px; }
@@ -416,7 +419,10 @@ html[data-app-theme='dark'] .landing-board-list em { background: #263d31; color:
 }
 
 html[data-app-theme='dark'] .landing-hero {
-  background-image: linear-gradient(90deg, rgba(14,22,18,.98), rgba(14,22,18,.91) 39%, rgba(14,22,18,.35)), url('/assets/jobhub-riverside-hero.jpg');
+  background-image:
+    radial-gradient(circle at 82% 28%, rgba(83, 171, 128, .2) 0 7%, transparent 7.5%),
+    radial-gradient(circle at 77% 65%, rgba(64, 119, 96, .2) 0 19%, transparent 19.5%),
+    linear-gradient(125deg, #0e1612 0%, #14231b 58%, #1c382a 100%);
 }
 html[data-app-theme='dark'] .landing-search,
 html[data-app-theme='dark'] .landing-main .landing-menu,
@@ -4562,7 +4568,7 @@ html[data-app-theme='dark'] .profile-summary-item > p {
   .landing-main .landing-hero {
     min-height: 490px !important;
     margin: 0 !important;
-    background-image: linear-gradient(90deg,rgba(255,255,255,.98),rgba(255,255,255,.94) 35%,rgba(255,255,255,.52) 58%,rgba(255,255,255,.06)),url('/assets/jobhub-riverside-hero.jpg') !important;
+    background-image: radial-gradient(circle at 82% 28%,rgba(91,177,137,.28) 0 7%,transparent 7.5%),radial-gradient(circle at 77% 65%,rgba(111,176,207,.22) 0 19%,transparent 19.5%),linear-gradient(125deg,#fff 0%,#f3faf6 55%,#dcefe6 100%) !important;
     background-position: center !important;
     background-size: cover !important;
   }
@@ -4614,11 +4620,39 @@ html[data-app-theme='dark'] .profile-summary-item > p {
 }
 
 html[data-app-theme='dark'] .landing-main .landing-hero {
-  background-image: linear-gradient(90deg,rgba(14,22,18,.98),rgba(14,22,18,.91) 39%,rgba(14,22,18,.35)),url('/assets/jobhub-riverside-hero.jpg') !important;
+  background-image: radial-gradient(circle at 82% 28%,rgba(83,171,128,.2) 0 7%,transparent 7.5%),radial-gradient(circle at 77% 65%,rgba(64,119,96,.2) 0 19%,transparent 19.5%),linear-gradient(125deg,#0e1612 0%,#14231b 58%,#1c382a 100%) !important;
 }
 html[data-app-theme='dark'] .landing-main .landing-intro h1 { color: #f1f6f3 !important; }
 html[data-app-theme='dark'] .landing-main .landing-intro > p:last-of-type { color: #b7c4bc !important; }
 html[data-app-theme='dark'] .landing-main .landing-menu { background: rgba(24,33,28,.96) !important; border-color: #34443a !important; }
+
+.original-link-notice {
+  display: grid;
+  min-height: 180px;
+  place-content: center;
+  justify-items: center;
+  padding: 34px;
+  border: 1px solid #dbe6df;
+  border-radius: 14px;
+  background: #f7faf8;
+  color: #40534a;
+  text-align: center;
+}
+.original-link-notice strong { color: #193b2d; font-size: 1.05rem; }
+.original-link-notice p { margin: 9px 0 20px; color: #68786f; }
+.original-link-notice a {
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 9px;
+  background: #18573f;
+  color: #fff;
+  font-weight: 750;
+  text-decoration: none;
+}
+html[data-app-theme='dark'] .original-link-notice { border-color: #394a40; background: #202b25; color: #c6d2ca; }
+html[data-app-theme='dark'] .original-link-notice strong { color: #f0f6f2; }
+html[data-app-theme='dark'] .original-link-notice p { color: #adbbb2; }
+html[data-app-theme='dark'] .original-link-notice a { background: #70b28d; color: #102219; }
 
 /* 메인 배너와 주요 서비스 바로가기 최종 정리 */
 .landing-main .landing-intro h1 > span {
@@ -4951,11 +4985,11 @@ html[data-app-theme='dark'] .landing-main .landing-card > strong {
   }
 
   .landing-main .landing-hero {
-    background-image: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.9)), url('/assets/jobhub-riverside-hero.jpg') !important;
+    background-image: radial-gradient(circle at 80% 24%,rgba(91,177,137,.24) 0 9%,transparent 9.5%),linear-gradient(145deg,#fff 0%,#eef8f2 62%,#d9ede3 100%) !important;
   }
 
   html[data-app-theme='dark'] .landing-main .landing-hero {
-    background-image: linear-gradient(180deg, rgba(14,22,18,.98), rgba(14,22,18,.92)), url('/assets/jobhub-riverside-hero.jpg') !important;
+    background-image: radial-gradient(circle at 80% 24%,rgba(83,171,128,.18) 0 9%,transparent 9.5%),linear-gradient(145deg,#0e1612 0%,#14231b 62%,#1c382a 100%) !important;
   }
 
   .landing-main .landing-menu {
